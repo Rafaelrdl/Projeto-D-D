@@ -21,8 +21,17 @@ import pytest
 
 from tacticore.core import serde
 from tacticore.core.dice import DamageExpr, DamageRoll, DiceTerm, DieRoll, parse_dice
-from tacticore.core.enums import SkipReason
+from tacticore.core.enums import (
+    Ability,
+    AdvantageState,
+    AttackOutcome,
+    SkipReason,
+)
 from tacticore.core.events import (
+    AttackRolled,
+    CreatureDowned,
+    DamageRolled,
+    HpChanged,
     InitiativeRolled,
     MovementSpent,
     RoundStarted,
@@ -31,7 +40,7 @@ from tacticore.core.events import (
     TurnSkipped,
     TurnStarted,
 )
-from tacticore.core.ids import CreatureId
+from tacticore.core.ids import AttackId, CreatureId
 from tacticore.core.model import (
     Abilities,
     AttackProfile,
@@ -171,6 +180,60 @@ EVENT_CODECS: Mapping[type, tuple[Callable[[object], dict[str, JsonValue]], obje
     MovementSpent: (  # type: ignore[dict-item]
         serde.dump_movement_spent,
         MovementSpent(creature=CreatureId("heroi"), feet=15, remaining_ft=15),
+    ),
+    AttackRolled: (  # type: ignore[dict-item]
+        serde.dump_attack_rolled,
+        AttackRolled(
+            actor=CreatureId("heroi"),
+            target=CreatureId("vilao"),
+            attack_id=AttackId("cimitarra"),
+            attack_name="Cimitarra",
+            advantage=AdvantageState.ADVANTAGE,
+            advantage_sources=("flanqueando",),
+            disadvantage_sources=(),
+            pair=(3, 18),
+            chosen_index=1,
+            natural=18,
+            ability=Ability.FOR,
+            ability_mod=3,
+            proficiency=2,
+            total=23,
+            target_ac=15,
+            target_was_down=False,
+            outcome=AttackOutcome.HIT,
+            rng_before=4,
+            rng_after=6,
+        ),
+    ),
+    DamageRolled: (  # type: ignore[dict-item]
+        serde.dump_damage_rolled,
+        DamageRolled(
+            actor=CreatureId("heroi"),
+            target=CreatureId("vilao"),
+            roll=DamageRoll(
+                dice=(DieRoll(term_index=0, faces=6, value=5, from_crit=False),),
+                flat=0,
+                ability_bonus=3,
+                critical=False,
+                total=8,
+            ),
+            rng_before=6,
+            rng_after=7,
+        ),
+    ),
+    HpChanged: (  # type: ignore[dict-item]
+        serde.dump_hp_changed,
+        HpChanged(
+            creature=CreatureId("vilao"),
+            before=HitPoints(current=8, maximum=12),
+            after=HitPoints(current=0, maximum=12),
+            dealt=8,
+            overkill=0,
+        ),
+    ),
+    CreatureDowned: (  # type: ignore[dict-item]
+        serde.dump_creature_downed,
+        CreatureDowned(creature=CreatureId("vilao")),
     ),
 }
 

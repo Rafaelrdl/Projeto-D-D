@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from tacticore.core.ids import CreatureId
+from tacticore.core.ids import AttackId, CreatureId
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -46,4 +46,30 @@ class EndTurnAction:
     actor: CreatureId
 
 
-type Action = MoveAction | EndTurnAction
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AttackAction:
+    """Atacar alguem com um dos ataques da propria ficha."""
+
+    kind: Literal["attack"] = "attack"
+    actor: CreatureId
+    target: CreatureId
+    attack_id: AttackId
+    """Slug do ataque na ficha, nunca posicao na lista.
+
+    Reordenar os ataques de um monstro nao pode invalidar um replay em
+    silencio, e uma asercao que falha diz `'cimitarra'` em vez de `1`.
+    """
+
+    advantage_sources: tuple[str, ...] = ()
+    """Por que ha vantagem, e nao so quanta.
+
+    Tupla **ordenada** e jamais `set`: ordem de iteracao de conjunto varia com
+    `PYTHONHASHSEED`, e isso quebraria o determinismo de um jeito que so
+    aparece de vez em quando -- o pior modo de falha possivel aqui. Guardar os
+    motivos, e nao um contador, e o que faz o log explicar a rolagem.
+    """
+
+    disadvantage_sources: tuple[str, ...] = ()
+
+
+type Action = AttackAction | MoveAction | EndTurnAction

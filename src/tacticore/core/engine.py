@@ -11,11 +11,16 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, replace
 from typing import assert_never
 
-from tacticore.core.actions import Action, EndTurnAction, MoveAction
-from tacticore.core.enums import Ability, RejectionReason, SkipReason
-from tacticore.core.errors import InvalidEncounterError
+from tacticore.core.actions import Action, AttackAction, EndTurnAction, MoveAction
+from tacticore.core.dice import roll_damage
+from tacticore.core.enums import Ability, AttackOutcome, RejectionReason, SkipReason
+from tacticore.core.errors import CorruptStateError, InvalidEncounterError
 from tacticore.core.events import (
+    AttackRolled,
+    CreatureDowned,
+    DamageRolled,
     Event,
+    HpChanged,
     InitiativeRolled,
     MovementSpent,
     RoundStarted,
@@ -33,7 +38,13 @@ from tacticore.core.model import (
     TurnBudget,
     TurnOrder,
 )
-from tacticore.core.queries import combatant_of, is_standing, statblock_of
+from tacticore.core.queries import (
+    attack_of,
+    combatant_of,
+    derive_advantage_sources,
+    is_standing,
+    statblock_of,
+)
 from tacticore.core.results import ActionResult, Applied, Rejected
 from tacticore.core.rng import RngState, position, roll_die
 from tacticore.core.rules import (
@@ -41,7 +52,12 @@ from tacticore.core.rules import (
     InitiativeEntry,
     ability_modifier,
     ability_score,
+    apply_damage,
+    classify_attack,
+    d20_check,
     initiative_sort_key,
+    resolve_advantage,
+    roll_d20,
 )
 
 PRIMEIRA_RODADA = 1
@@ -196,6 +212,62 @@ def _rejeitar(state: CombatState, reason: RejectionReason, detail: str) -> Rejec
     return Rejected(reason=reason, detail=detail, state=state)
 
 
+def _validar_ataque(
+    state: CombatState,
+    ator: Combatant,
+    action: AttackAction,
+) -> Rejected | None:
+    if not ator.budget.action_available:
+        return _rejeitar(
+            state,
+            RejectionReason.ACTION_ALREADY_USED,
+            f"{ator.id!r} ja usou a acao deste turno",
+        )
+    if action.target == ator.id:
+        # Atacar a si mesmo e mecanicamente legal em 5e, mas na pratica e
+        # sempre bug de chamador ou de IA. Quando houver efeito em area, a
+        # excecao entra como campo com default no AttackProfile -- e nao como
+        # um caso especial aqui dentro.
+        return _rejeitar(
+            state,
+            RejectionReason.SELF_TARGET_NOT_ALLOWED,
+            f"{ator.id!r} nao pode atacar a si mesmo",
+        )
+    if combatant_of(state, action.target) is None:
+        return _rejeitar(
+            state,
+            RejectionReason.NO_SUCH_TARGET,
+            f"{action.target!r} nao esta neste combate",
+        )
+    if attack_of(statblock_of(state, ator.id), action.attack_id) is None:
+        return _rejeitar(
+            state,
+            RejectionReason.NO_SUCH_ATTACK,
+            f"{ator.id!r} nao tem o ataque {action.attack_id!r}",
+        )
+    return None
+
+
+def _validar_movimento(
+    state: CombatState,
+    ator: Combatant,
+    action: MoveAction,
+) -> Rejected | None:
+    if action.distance_ft < 0:
+        return _rejeitar(
+            state,
+            RejectionReason.INVALID_DISTANCE,
+            f"distancia negativa: {action.distance_ft}",
+        )
+    if action.distance_ft > ator.budget.movement_remaining_ft:
+        return _rejeitar(
+            state,
+            RejectionReason.NOT_ENOUGH_MOVEMENT,
+            f"{action.distance_ft} pes pedidos e {ator.budget.movement_remaining_ft} disponiveis",
+        )
+    return None
+
+
 def validate(state: CombatState, action: Action) -> Rejected | None:
     """Confere a legalidade da acao. `None` quer dizer "pode".
 
@@ -203,6 +275,8 @@ def validate(state: CombatState, action: Action) -> Rejected | None:
     depois de uma rolagem, uma acao recusada teria consumido entropia, e dois
     combates com a mesma seed divergiriam so porque um deles tentou uma jogada
     ilegal pelo caminho.
+
+    As tres primeiras checagens valem para qualquer acao; o resto e por tipo.
     """
     ator = combatant_of(state, action.actor)
     if ator is None:
@@ -219,26 +293,14 @@ def validate(state: CombatState, action: Action) -> Rejected | None:
         return _rejeitar(state, RejectionReason.ACTOR_IS_DOWN, f"{ator.id!r} esta caido")
 
     match action:
+        case AttackAction():
+            return _validar_ataque(state, ator, action)
         case MoveAction():
-            if action.distance_ft < 0:
-                return _rejeitar(
-                    state,
-                    RejectionReason.INVALID_DISTANCE,
-                    f"distancia negativa: {action.distance_ft}",
-                )
-            if action.distance_ft > ator.budget.movement_remaining_ft:
-                return _rejeitar(
-                    state,
-                    RejectionReason.NOT_ENOUGH_MOVEMENT,
-                    f"{action.distance_ft} pes pedidos e {ator.budget.movement_remaining_ft} "
-                    "disponiveis",
-                )
+            return _validar_movimento(state, ator, action)
         case EndTurnAction():
-            pass
+            return None
         case _:  # pragma: no cover - inalcancavel: mypy fecha a uniao
             assert_never(action)
-
-    return None
 
 
 def _com_combatente(state: CombatState, combatant: Combatant) -> CombatState:
@@ -298,6 +360,9 @@ def apply(state: CombatState, action: Action) -> ActionResult:
         return rejeicao
 
     match action:
+        case AttackAction():
+            return _atacar(state, action)
+
         case MoveAction():
             ator = state.combatants[action.actor]
             restante = ator.budget.movement_remaining_ft - action.distance_ft
@@ -314,3 +379,106 @@ def apply(state: CombatState, action: Action) -> ActionResult:
 
         case _:  # pragma: no cover - inalcancavel: mypy fecha a uniao
             assert_never(action)
+
+
+def _atacar(state: CombatState, action: AttackAction) -> Applied:
+    """A acao de ataque, ja validada, na ordem que o contrato do RNG fixa.
+
+    Sempre dois d20 para o acerto; o dano so e rolado **em acerto**, e por isso
+    a ausencia de `DamageRolled` no log e a prova de que um erro nao consumiu
+    entropia. A acao e gasta aconteça o que acontecer -- errar tambem custa o
+    turno.
+    """
+    ator = state.combatants[action.actor]
+    alvo = state.combatants[action.target]
+    ficha_ator = statblock_of(state, ator.id)
+    ficha_alvo = statblock_of(state, alvo.id)
+
+    perfil = attack_of(ficha_ator, action.attack_id)
+    if perfil is None:  # pragma: no cover - `validate` ja recusou
+        msg = f"{ator.id!r} nao tem o ataque {action.attack_id!r}"
+        raise CorruptStateError(msg)
+
+    derivadas_adv, derivadas_dis = derive_advantage_sources(state, action)
+    fontes_adv = action.advantage_sources + derivadas_adv
+    fontes_dis = action.disadvantage_sources + derivadas_dis
+    vantagem = resolve_advantage(fontes_adv, fontes_dis)
+
+    antes_d20 = position(state.rng)
+    rolagem, rng = roll_d20(state.rng, vantagem)
+
+    ability_mod = ability_modifier(ability_score(ficha_ator.abilities, perfil.ability))
+    proficiencia = ficha_ator.proficiency_bonus if perfil.proficient else 0
+    bonus = ability_mod + proficiencia
+
+    checagem = d20_check(rolagem, bonus=bonus, dc=ficha_alvo.armor_class)
+    desfecho = classify_attack(checagem)
+    alvo_estava_caido = not is_standing(alvo)
+
+    eventos: list[Event] = [
+        AttackRolled(
+            actor=ator.id,
+            target=alvo.id,
+            attack_id=perfil.id,
+            attack_name=perfil.name,
+            advantage=vantagem,
+            advantage_sources=fontes_adv,
+            disadvantage_sources=fontes_dis,
+            pair=rolagem.pair,
+            chosen_index=rolagem.chosen_index,
+            natural=rolagem.natural,
+            ability=perfil.ability,
+            ability_mod=ability_mod,
+            proficiency=proficiencia,
+            total=checagem.total,
+            target_ac=ficha_alvo.armor_class,
+            target_was_down=alvo_estava_caido,
+            outcome=desfecho,
+            rng_before=antes_d20,
+            rng_after=position(rng),
+        )
+    ]
+
+    novo = replace(
+        _com_combatente(state, replace(ator, budget=replace(ator.budget, action_available=False))),
+        rng=rng,
+    )
+
+    if desfecho not in (AttackOutcome.HIT, AttackOutcome.CRITICAL_HIT):
+        return Applied(state=novo, events=tuple(eventos))
+
+    antes_dano = position(novo.rng)
+    dano, rng = roll_damage(
+        novo.rng,
+        perfil.damage,
+        ability_bonus=ability_mod,
+        critical=desfecho is AttackOutcome.CRITICAL_HIT,
+    )
+    eventos.append(
+        DamageRolled(
+            actor=ator.id,
+            target=alvo.id,
+            roll=dano,
+            rng_before=antes_dano,
+            rng_after=position(rng),
+        )
+    )
+
+    hp, aplicado = apply_damage(alvo.hp, dano.total)
+    eventos.append(
+        HpChanged(
+            creature=alvo.id,
+            before=alvo.hp,
+            after=hp,
+            dealt=aplicado.dealt,
+            overkill=aplicado.overkill,
+        )
+    )
+    if aplicado.dropped_to_zero:
+        eventos.append(CreatureDowned(creature=alvo.id))
+
+    novo = replace(
+        _com_combatente(novo, replace(novo.combatants[alvo.id], hp=hp)),
+        rng=rng,
+    )
+    return Applied(state=novo, events=tuple(eventos))

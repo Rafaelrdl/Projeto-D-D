@@ -12,19 +12,25 @@ from __future__ import annotations
 
 import pytest
 
-from tacticore.core.actions import Action, EndTurnAction, MoveAction
+from tacticore.core.actions import Action, AttackAction, EndTurnAction, MoveAction
 from tacticore.core.engine import apply, validate
 from tacticore.core.enums import RejectionReason
-from tacticore.core.ids import CreatureId
+from tacticore.core.ids import AttackId, CreatureId
 from tacticore.core.model import CombatState, TurnBudget
 from tacticore.core.results import Applied, Rejected
 from tacticore.core.rng import SplitMix64, position
-from tacticore.core.testing import make_budget, make_combatant, make_statblock, make_state
+from tacticore.core.testing import (
+    make_attack,
+    make_budget,
+    make_combatant,
+    make_statblock,
+    make_state,
+)
 
 
 def duelo(*, current: str = "a", hp_a: int = 10, budget_a: TurnBudget | None = None) -> CombatState:
     return make_state(
-        statblocks=(make_statblock(id="ficha", speed_ft=30),),
+        statblocks=(make_statblock(id="ficha", speed_ft=30, attacks=(make_attack(id="espada"),)),),
         combatants=(
             make_combatant(id="a", team="herois", hp=hp_a, budget=budget_a),
             make_combatant(id="b", team="viloes"),
@@ -71,6 +77,24 @@ CASOS: dict[RejectionReason, tuple[CombatState, Action]] = {
     RejectionReason.INVALID_DISTANCE: (
         duelo(),
         MoveAction(actor=CreatureId("a"), distance_ft=-5),
+    ),
+    RejectionReason.ACTION_ALREADY_USED: (
+        duelo(budget_a=make_budget(action_available=False)),
+        AttackAction(actor=CreatureId("a"), target=CreatureId("b"), attack_id=AttackId("espada")),
+    ),
+    RejectionReason.NO_SUCH_TARGET: (
+        duelo(),
+        AttackAction(
+            actor=CreatureId("a"), target=CreatureId("fantasma"), attack_id=AttackId("espada")
+        ),
+    ),
+    RejectionReason.NO_SUCH_ATTACK: (
+        duelo(),
+        AttackAction(actor=CreatureId("a"), target=CreatureId("b"), attack_id=AttackId("bazuca")),
+    ),
+    RejectionReason.SELF_TARGET_NOT_ALLOWED: (
+        duelo(),
+        AttackAction(actor=CreatureId("a"), target=CreatureId("a"), attack_id=AttackId("espada")),
     ),
 }
 

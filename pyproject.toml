@@ -33,7 +33,10 @@ select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "ANN", "PT", "TID", "C4", "PL"
 # PLR2004 (numero magico) fica LIGADO no core de proposito: numero magico no
 # core e regra sem nome. Em teste, numero magico E o valor esperado.
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["PLR2004", "ANN201"]
+# PLR0913 pelo mesmo motivo do builder de `testing.py`: um helper de cenario
+# kw-only que espelha um encontro tem um argumento por eixo do cenario, e
+# nenhum deles e posicional.
+"tests/**" = ["PLR2004", "ANN201", "PLR0913"]
 # PLR0913 conta argumento nomeado tambem. Um builder kw-only que espelha uma
 # dataclass de oito campos tem oito kwargs por definicao, e nenhum deles e
 # posicional -- a complexidade que a regra persegue nao existe aqui.

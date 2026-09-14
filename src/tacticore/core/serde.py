@@ -39,7 +39,11 @@ from tacticore.core.dice import DamageExpr, DamageRoll, DiceTerm, DieRoll
 from tacticore.core.enums import Ability
 from tacticore.core.errors import InvalidSaveError, UnsupportedSchemaVersion
 from tacticore.core.events import (
+    AttackRolled,
+    CreatureDowned,
+    DamageRolled,
     Event,
+    HpChanged,
     InitiativeRolled,
     MovementSpent,
     RoundStarted,
@@ -585,8 +589,60 @@ def dump_movement_spent(event: MovementSpent) -> dict[str, JsonValue]:
     }
 
 
+def dump_attack_rolled(event: AttackRolled) -> dict[str, JsonValue]:
+    return {
+        "kind": event.kind,
+        "actor": str(event.actor),
+        "target": str(event.target),
+        "attack_id": str(event.attack_id),
+        "attack_name": event.attack_name,
+        "advantage": event.advantage.value,
+        "advantage_sources": list(event.advantage_sources),
+        "disadvantage_sources": list(event.disadvantage_sources),
+        "pair": list(event.pair),
+        "chosen_index": event.chosen_index,
+        "natural": event.natural,
+        "ability": event.ability.value,
+        "ability_mod": event.ability_mod,
+        "proficiency": event.proficiency,
+        "total": event.total,
+        "target_ac": event.target_ac,
+        "target_was_down": event.target_was_down,
+        "outcome": event.outcome.value,
+        "rng_before": event.rng_before,
+        "rng_after": event.rng_after,
+    }
+
+
+def dump_damage_rolled(event: DamageRolled) -> dict[str, JsonValue]:
+    return {
+        "kind": event.kind,
+        "actor": str(event.actor),
+        "target": str(event.target),
+        "roll": dump_damage_roll(event.roll),
+        "rng_before": event.rng_before,
+        "rng_after": event.rng_after,
+    }
+
+
+def dump_hp_changed(event: HpChanged) -> dict[str, JsonValue]:
+    return {
+        "kind": event.kind,
+        "creature": str(event.creature),
+        "before": dump_hit_points(event.before),
+        "after": dump_hit_points(event.after),
+        "dealt": event.dealt,
+        "overkill": event.overkill,
+    }
+
+
+def dump_creature_downed(event: CreatureDowned) -> dict[str, JsonValue]:
+    return {"kind": event.kind, "creature": str(event.creature)}
+
+
 # PLR0911 e silenciado na linha, e nao no arquivo: num despacho total sobre
 # uma uniao fechada o numero de returns E o numero de eventos, por construcao.
+# PLR0912 pelo mesmo motivo: cada ramo e um tipo de evento, nao uma decisao.
 # Desligar a regra no arquivo inteiro deixaria passar uma funcao ramificada de
 # verdade escondida aqui dentro.
 def event_to_dict(event: Event) -> dict[str, JsonValue]:  # noqa: PLR0911
@@ -606,6 +662,14 @@ def event_to_dict(event: Event) -> dict[str, JsonValue]:  # noqa: PLR0911
             return dump_turn_ended(event)
         case MovementSpent():
             return dump_movement_spent(event)
+        case AttackRolled():
+            return dump_attack_rolled(event)
+        case DamageRolled():
+            return dump_damage_rolled(event)
+        case HpChanged():
+            return dump_hp_changed(event)
+        case CreatureDowned():
+            return dump_creature_downed(event)
         case _:  # pragma: no cover - inalcancavel: mypy fecha a uniao
             assert_never(event)
 

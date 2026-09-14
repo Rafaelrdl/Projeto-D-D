@@ -26,9 +26,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from tacticore.core.enums import SkipReason
-from tacticore.core.ids import CreatureId
-from tacticore.core.model import TurnBudget
+from tacticore.core.dice import DamageRoll
+from tacticore.core.enums import Ability, AdvantageState, AttackOutcome, SkipReason
+from tacticore.core.ids import AttackId, CreatureId
+from tacticore.core.model import HitPoints, TurnBudget
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -98,6 +99,80 @@ class MovementSpent:
     remaining_ft: int
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AttackRolled:
+    """A rolagem de ataque com a conta **decomposta**.
+
+    Decomposta e nao so o total: quando item magico, bencao ou cobertura
+    entrarem, cada um vira uma parcela a mais aqui, e quem le o log consegue
+    conferir de onde saiu o numero. Guardar so `total` obrigaria a adivinhar.
+    """
+
+    kind: Literal["attack_rolled"] = "attack_rolled"
+    actor: CreatureId
+    target: CreatureId
+    attack_id: AttackId
+    attack_name: str
+
+    advantage: AdvantageState
+    advantage_sources: tuple[str, ...]
+    disadvantage_sources: tuple[str, ...]
+
+    pair: tuple[int, int]
+    """Os dois dados, sempre -- inclusive em NORMAL, onde o segundo foi
+    descartado. E a prova, no log, de que o quadro fixo foi respeitado."""
+
+    chosen_index: Literal[0, 1]
+    natural: int
+
+    ability: Ability
+    ability_mod: int
+    proficiency: int
+    total: int
+
+    target_ac: int
+    target_was_down: bool
+    """Se o alvo ja estava caido. Bater em quem caiu e legal na SRD (e a porta
+    para o golpe de misericordia), e o log registra para nao virar surpresa."""
+
+    outcome: AttackOutcome
+    rng_before: int
+    rng_after: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class DamageRolled:
+    """So existe quando o ataque acerta.
+
+    A ausencia dele no log e a prova de que um erro nao rolou dano -- e,
+    portanto, de que nao consumiu entropia.
+    """
+
+    kind: Literal["damage_rolled"] = "damage_rolled"
+    actor: CreatureId
+    target: CreatureId
+    roll: DamageRoll
+    rng_before: int
+    rng_after: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HpChanged:
+    kind: Literal["hp_changed"] = "hp_changed"
+    creature: CreatureId
+    before: HitPoints
+    after: HitPoints
+    dealt: int
+    overkill: int
+    """O que sobrou depois de zerar a vida. Vive aqui e nunca no HP."""
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CreatureDowned:
+    kind: Literal["creature_downed"] = "creature_downed"
+    creature: CreatureId
+
+
 type Event = (
     InitiativeRolled
     | TurnOrderSet
@@ -106,4 +181,8 @@ type Event = (
     | TurnSkipped
     | TurnEnded
     | MovementSpent
+    | AttackRolled
+    | DamageRolled
+    | HpChanged
+    | CreatureDowned
 )

@@ -7,9 +7,10 @@ condicao de inconsciente, ou morte separada de queda -- muda aqui e so aqui.
 
 from __future__ import annotations
 
+from tacticore.core.actions import AttackAction
 from tacticore.core.errors import CorruptStateError
-from tacticore.core.ids import CreatureId
-from tacticore.core.model import Combatant, CombatState, Statblock
+from tacticore.core.ids import AttackId, CreatureId
+from tacticore.core.model import AttackProfile, Combatant, CombatState, Statblock
 
 
 def is_standing(combatant: Combatant) -> bool:
@@ -49,3 +50,34 @@ def standing_teams(state: CombatState) -> tuple[str, ...]:
     colecao cuja ordem de iteracao varia com `PYTHONHASHSEED`.
     """
     return tuple(sorted({c.team for c in state.combatants.values() if is_standing(c)}))
+
+
+def attack_of(statblock: Statblock, attack: AttackId) -> AttackProfile | None:
+    """O ataque pelo slug, ou `None` se a ficha nao tem esse.
+
+    Busca linear: uma ficha tem tres ataques, nao tres mil, e um indice seria
+    uma estrutura a mais para manter sincronizada em troca de nada.
+    """
+    for perfil in statblock.attacks:
+        if perfil.id == attack:
+            return perfil
+    return None
+
+
+def derive_advantage_sources(
+    state: CombatState,
+    action: AttackAction,
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Vantagem e desvantagem que vem do **estado**, e nao da acao.
+
+    Hoje nao deriva nada, e e de proposito que a funcao exista mesmo assim.
+    Quando condicoes, flanqueamento e magias entrarem, a vantagem passa a
+    depender do estado -- e sem este gancho essa mudanca cairia dentro de
+    `apply`, que a essa altura vai ter quarenta testes de ataque em cima. Com
+    ele, a mudanca e aqui, isolada, com teste proprio.
+
+    As fontes derivadas sao concatenadas **depois** das declaradas na acao, e a
+    ordem e fixa porque ela aparece no log.
+    """
+    del state, action
+    return (), ()
