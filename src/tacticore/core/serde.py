@@ -33,11 +33,18 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping, Sequence
-from typing import Final
+from typing import Final, assert_never
 
 from tacticore.core.dice import DamageExpr, DamageRoll, DiceTerm, DieRoll
 from tacticore.core.enums import Ability
 from tacticore.core.errors import InvalidSaveError, UnsupportedSchemaVersion
+from tacticore.core.events import (
+    Event,
+    InitiativeRolled,
+    RoundStarted,
+    TurnOrderSet,
+    TurnStarted,
+)
 from tacticore.core.ids import AttackId, CreatureId, StatblockId
 from tacticore.core.model import (
     Abilities,
@@ -517,3 +524,57 @@ def fingerprint(state: CombatState) -> str:
     """
     texto = canonical_json(dump_state(state))
     return hashlib.sha256(texto.encode("utf-8")).hexdigest()
+
+
+# -------------------------------------------------------------- eventos -----
+# Eventos so tem ida: eles saem do motor para o log, para a interface e para o
+# golden, e nunca voltam para dentro. Um `load` de evento seria codigo sem
+# consumidor -- o que reconstroi estado e `load_state`, a partir do save.
+
+
+def dump_initiative_rolled(event: InitiativeRolled) -> dict[str, JsonValue]:
+    return {
+        "kind": event.kind,
+        "creature": str(event.creature),
+        "d20": event.d20,
+        "dex_mod": event.dex_mod,
+        "dex_score": event.dex_score,
+        "total": event.total,
+        "rng_before": event.rng_before,
+        "rng_after": event.rng_after,
+    }
+
+
+def dump_turn_order_set(event: TurnOrderSet) -> dict[str, JsonValue]:
+    return {"kind": event.kind, "order": [str(cid) for cid in event.order]}
+
+
+def dump_round_started(event: RoundStarted) -> dict[str, JsonValue]:
+    return {"kind": event.kind, "round_number": event.round_number}
+
+
+def dump_turn_started(event: TurnStarted) -> dict[str, JsonValue]:
+    return {
+        "kind": event.kind,
+        "creature": str(event.creature),
+        "budget": dump_turn_budget(event.budget),
+    }
+
+
+def event_to_dict(event: Event) -> dict[str, JsonValue]:
+    """Um evento em forma serializavel, escolhido pelo `kind`."""
+    match event:
+        case InitiativeRolled():
+            return dump_initiative_rolled(event)
+        case TurnOrderSet():
+            return dump_turn_order_set(event)
+        case RoundStarted():
+            return dump_round_started(event)
+        case TurnStarted():
+            return dump_turn_started(event)
+        case _:  # pragma: no cover - inalcancavel: mypy fecha a uniao
+            assert_never(event)
+
+
+def events_to_list(events: Sequence[Event]) -> list[JsonValue]:
+    return [event_to_dict(e) for e in events]

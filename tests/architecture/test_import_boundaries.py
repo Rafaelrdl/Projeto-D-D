@@ -34,9 +34,18 @@ LAYERS: dict[str, int] = {
     "engine": 8,
 }
 
-# Fora da pilha de camadas: importam ate `results` (camada 5) e nada acima.
-OFF_LAYER_MAX = 5
-OFF_LAYER: dict[str, int] = {"serde": OFF_LAYER_MAX, "testing": OFF_LAYER_MAX}
+# Fora da pilha de camadas, por motivos diferentes.
+OFF_LAYER: dict[str, int] = {
+    # `serde` fala de estado e de evento, e nunca de orquestracao. Prende-la
+    # abaixo de `rules` e o que impede o codec de "dar uma ajudinha" aplicando
+    # regra na hora de carregar -- que e como um save deixa de ser um retrato
+    # do estado e vira uma segunda implementacao das regras.
+    "serde": 5,
+    # `testing` e consumidora do core inteiro, como os proprios testes: os
+    # builders de encontro precisam dos tipos de entrada do `engine`. Fica
+    # acima de tudo, e por isso ninguem no core pode importa-la.
+    "testing": 9,
+}
 
 # A fachada pode importar tudo; ela existe para reexportar.
 FACADE = "__init__"

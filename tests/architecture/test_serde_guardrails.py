@@ -21,6 +21,8 @@ import pytest
 
 from tacticore.core import serde
 from tacticore.core.dice import DamageExpr, DamageRoll, DiceTerm, DieRoll, parse_dice
+from tacticore.core.events import InitiativeRolled, RoundStarted, TurnOrderSet, TurnStarted
+from tacticore.core.ids import CreatureId
 from tacticore.core.model import (
     Abilities,
     AttackProfile,
@@ -42,10 +44,11 @@ from tacticore.core.testing import (
     make_state,
 )
 
-# Os modulos que descrevem coisa que entra num save ou num evento. Tudo que for
+# Modulos cujas dataclasses atravessam a fronteira do motor. Tudo que for
 # dataclass neles precisa de codec -- a lista e de MODULOS e nao de classes
 # justamente para nao existir um lugar onde esquecer de registrar a classe nova.
 MODULOS_COM_ESTADO = ("rng", "dice", "model")
+MODULOS_COM_EVENTO = ("events",)
 
 
 def _exemplo_state() -> CombatState:
@@ -126,12 +129,40 @@ CODECS: Mapping[
     CombatState: (serde.dump_state, serde.load_state, _exemplo_state()),  # type: ignore[dict-item]
 }
 
+# Eventos so tem ida: saem para o log, para a interface e para o golden, e
+# nunca voltam para dentro do motor. Por isso o registro deles nao tem `load`,
+# e o guardiao confere as chaves sem pedir round-trip.
+EVENT_CODECS: Mapping[type, tuple[Callable[[object], dict[str, JsonValue]], object]] = {
+    InitiativeRolled: (  # type: ignore[dict-item]
+        serde.dump_initiative_rolled,
+        InitiativeRolled(
+            creature=CreatureId("heroi"),
+            d20=17,
+            dex_mod=2,
+            dex_score=14,
+            total=19,
+            rng_before=0,
+            rng_after=1,
+        ),
+    ),
+    TurnOrderSet: (  # type: ignore[dict-item]
+        serde.dump_turn_order_set,
+        TurnOrderSet(order=(CreatureId("heroi"), CreatureId("vilao"))),
+    ),
+    RoundStarted: (serde.dump_round_started, RoundStarted(round_number=2)),  # type: ignore[dict-item]
+    TurnStarted: (  # type: ignore[dict-item]
+        serde.dump_turn_started,
+        TurnStarted(creature=CreatureId("heroi"), budget=make_budget()),
+    ),
+}
+
 IDS = [c.__name__ for c in CODECS]
+IDS_EVENTO = [c.__name__ for c in EVENT_CODECS]
 
 
-def _dataclasses_com_estado() -> set[type]:
+def _dataclasses_de(modulos: tuple[str, ...]) -> set[type]:
     encontradas: set[type] = set()
-    for nome in MODULOS_COM_ESTADO:
+    for nome in modulos:
         modulo = importlib.import_module(f"tacticore.core.{nome}")
         encontradas.update(
             obj
@@ -139,6 +170,14 @@ def _dataclasses_com_estado() -> set[type]:
             if dataclasses.is_dataclass(obj) and obj.__module__ == modulo.__name__
         )
     return encontradas
+
+
+def _dataclasses_com_estado() -> set[type]:
+    return _dataclasses_de(MODULOS_COM_ESTADO)
+
+
+def _dataclasses_de_evento() -> set[type]:
+    return _dataclasses_de(MODULOS_COM_EVENTO)
 
 
 def test_todo_tipo_de_estado_tem_codec():
@@ -178,3 +217,38 @@ def test_round_trip_passando_por_json_de_verdade(cls: type):
     dump, load, exemplo = CODECS[cls]
     texto = json.dumps(dump(exemplo))
     assert load(json.loads(texto)) == exemplo
+
+
+def test_todo_evento_tem_codec():
+    """Evento novo sem codec sumiria do log e do golden sem avisar."""
+    sem_codec = _dataclasses_de_evento() - set(EVENT_CODECS)
+    assert not sem_codec, (
+        f"sem codec em serde.py: {sorted(c.__name__ for c in sem_codec)}. "
+        "Evento novo entra com codec e com entrada aqui, no mesmo commit."
+    )
+
+
+def test_o_registro_de_eventos_nao_tem_classe_fantasma():
+    fantasmas = set(EVENT_CODECS) - _dataclasses_de_evento()
+    assert not fantasmas, f"codec sem evento: {sorted(c.__name__ for c in fantasmas)}"
+
+
+@pytest.mark.parametrize("cls", list(EVENT_CODECS), ids=IDS_EVENTO)
+def test_chaves_do_evento_batem_com_os_campos(cls: type):
+    dump, exemplo = EVENT_CODECS[cls]
+    declarados = {f.name for f in dataclasses.fields(cls)}  # type: ignore[arg-type]
+    assert set(dump(exemplo)) == declarados
+
+
+@pytest.mark.parametrize("cls", list(EVENT_CODECS), ids=IDS_EVENTO)
+def test_evento_sobrevive_ao_json(cls: type):
+    """Nao ha round-trip, mas o dicionario emitido tem que ser serializavel."""
+    dump, exemplo = EVENT_CODECS[cls]
+    assert json.loads(json.dumps(dump(exemplo))) == dump(exemplo)
+
+
+def test_despacho_de_evento_cobre_a_uniao_inteira():
+    """`event_to_dict` escolhe pelo kind; um evento fora do match seria erro."""
+    for cls, (_, exemplo) in EVENT_CODECS.items():
+        emitido = serde.event_to_dict(exemplo)  # type: ignore[arg-type]
+        assert emitido["kind"] == exemplo.kind, cls.__name__

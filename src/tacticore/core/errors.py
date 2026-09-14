@@ -63,3 +63,16 @@ class CorruptStateError(RuntimeError):
     Nunca e regra de jogo violada -- regra violada vira `Rejected`, que o
     chamador e obrigado a tratar porque o tipo de retorno diz isso.
     """
+
+
+class InvalidEncounterError(ValueError):
+    """O encontro que tentaram montar nao descreve um combate possivel.
+
+    E excecao e nao rejeicao porque o dado do encontro vem de fora do motor, do
+    mesmo lugar que a notacao de dados: e erro de autoria, nao jogada ilegal.
+
+    Existir tambem sustenta uma afirmacao do desenho: como `start_combat` e o
+    unico construtor e recusa encontro impossivel, o estado sempre nasce com
+    combate em andamento -- e por isso `TurnOrder.current` pode ser um id
+    obrigatorio em vez de opcional, e nao precisa existir uma fase SETUP.
+    """

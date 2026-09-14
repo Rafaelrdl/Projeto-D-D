@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from typing import Literal, assert_never
 
 from tacticore.core.enums import Ability, AdvantageState, AttackOutcome
+from tacticore.core.ids import CreatureId
 from tacticore.core.model import Abilities, AttackProfile, HitPoints
 from tacticore.core.rng import RngState, roll_dice
 
@@ -237,3 +238,31 @@ def apply_damage(hp: HitPoints, amount: int) -> tuple[HitPoints, DamageApplied]:
             dropped_to_zero=hp.current > 0 and dealt == hp.current,
         ),
     )
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class InitiativeEntry:
+    """A rolagem de iniciativa de um participante, com o que desempata."""
+
+    creature: CreatureId
+    d20: int
+    dex_mod: int
+    dex_score: int
+    total: int
+
+
+def initiative_sort_key(entry: InitiativeEntry) -> tuple[int, int, str]:
+    """Chave de ordem **total**: nunca empata de verdade.
+
+    A SRD manda desempatar por Destreza e, se persistir, delega ao mestre. Nao
+    existe mestre aqui, e deixar o resto por conta da ordem de montagem do
+    encontro mataria o determinismo em silencio -- dois goblins identicos e o
+    caso comum, nao o exotico. O ultimo criterio e o id, que e arbitrario mas
+    estavel, e portanto reproduzivel.
+
+    O desempate usa o **valor** de Destreza e nao o modificador porque 16 e 17
+    dao o mesmo modificador e ainda assim devem desempatar. O modificador nao
+    entra na chave por ser funcao monotona do valor: incluir os dois ordenaria
+    exatamente igual, com um componente a mais para alguem ter que entender.
+    """
+    return (-entry.total, -entry.dex_score, str(entry.creature))

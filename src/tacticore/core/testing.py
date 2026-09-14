@@ -18,6 +18,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 
 from tacticore.core.dice import DamageExpr, parse_dice
+from tacticore.core.engine import Participant
 from tacticore.core.enums import Ability
 from tacticore.core.ids import AttackId, CreatureId, StatblockId
 from tacticore.core.model import (
@@ -163,3 +164,35 @@ def make_state(
         turn_order=TurnOrder(order=ids, current=ativo, round_number=round_number),
         rng=ScriptedRng(script=()) if rng is None else rng,
     )
+
+
+def make_participant(
+    *,
+    id: str = "heroi",
+    statblock_id: str = "ficha",
+    team: str = "herois",
+) -> Participant:
+    return Participant(id=CreatureId(id), statblock_id=StatblockId(statblock_id), team=team)
+
+
+def make_duelo(
+    *,
+    a: str = "heroi",
+    b: str = "vilao",
+    ficha_a: Statblock | None = None,
+    ficha_b: Statblock | None = None,
+) -> tuple[dict[StatblockId, Statblock], tuple[Participant, ...]]:
+    """Um encontro de dois, um de cada time: o menor combate que existe.
+
+    Devolve `(catalogo, participantes)` no formato que `start_combat` pede, e e
+    o ponto de partida da maioria dos testes de motor.
+    """
+    primeira = make_statblock(id=f"ficha_{a}", name=a) if ficha_a is None else ficha_a
+    segunda = make_statblock(id=f"ficha_{b}", name=b) if ficha_b is None else ficha_b
+
+    catalogo = {primeira.id: primeira, segunda.id: segunda}
+    participantes = (
+        make_participant(id=a, statblock_id=str(primeira.id), team="herois"),
+        make_participant(id=b, statblock_id=str(segunda.id), team="viloes"),
+    )
+    return catalogo, participantes
