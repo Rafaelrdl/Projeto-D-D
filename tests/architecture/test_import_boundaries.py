@@ -24,18 +24,18 @@ LAYERS: dict[str, int] = {
     "enums": 0,
     "errors": 0,
     "rng": 1,
-    "dice": 1,
-    "model": 2,
-    "actions": 3,
-    "events": 3,
-    "results": 4,
-    "rules": 5,
-    "queries": 6,
-    "engine": 7,
+    "dice": 2,
+    "model": 3,
+    "actions": 4,
+    "events": 4,
+    "results": 5,
+    "rules": 6,
+    "queries": 7,
+    "engine": 8,
 }
 
-# Fora da pilha de camadas: importam ate `results` (camada 4) e nada acima.
-OFF_LAYER_MAX = 4
+# Fora da pilha de camadas: importam ate `results` (camada 5) e nada acima.
+OFF_LAYER_MAX = 5
 OFF_LAYER: dict[str, int] = {"serde": OFF_LAYER_MAX, "testing": OFF_LAYER_MAX}
 
 # A fachada pode importar tudo; ela existe para reexportar.

@@ -24,3 +24,13 @@ class ScriptedRngOutOfRange(ValueError):
     Devolver o valor mesmo assim seria o pior modo de falha do projeto: o teste
     passaria afirmando um resultado que o motor de verdade nunca produz.
     """
+
+
+class DiceSyntaxError(ValueError):
+    """Notacao de dados invalida.
+
+    Notacao e **formato de autoria**: entra uma vez, vinda de fora do motor,
+    e vira `DamageExpr` estruturada. Por isso a gramatica e estrita e a falha e
+    alta -- uma expressao malformada aceita em silencio vira dano errado tres
+    camadas adiante, sem nada apontando para a origem.
+    """
