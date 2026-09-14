@@ -41,8 +41,11 @@ from tacticore.core.errors import InvalidSaveError, UnsupportedSchemaVersion
 from tacticore.core.events import (
     Event,
     InitiativeRolled,
+    MovementSpent,
     RoundStarted,
+    TurnEnded,
     TurnOrderSet,
+    TurnSkipped,
     TurnStarted,
 )
 from tacticore.core.ids import AttackId, CreatureId, StatblockId
@@ -561,7 +564,32 @@ def dump_turn_started(event: TurnStarted) -> dict[str, JsonValue]:
     }
 
 
-def event_to_dict(event: Event) -> dict[str, JsonValue]:
+def dump_turn_ended(event: TurnEnded) -> dict[str, JsonValue]:
+    return {"kind": event.kind, "creature": str(event.creature)}
+
+
+def dump_turn_skipped(event: TurnSkipped) -> dict[str, JsonValue]:
+    return {
+        "kind": event.kind,
+        "creature": str(event.creature),
+        "reason": event.reason.value,
+    }
+
+
+def dump_movement_spent(event: MovementSpent) -> dict[str, JsonValue]:
+    return {
+        "kind": event.kind,
+        "creature": str(event.creature),
+        "feet": event.feet,
+        "remaining_ft": event.remaining_ft,
+    }
+
+
+# PLR0911 e silenciado na linha, e nao no arquivo: num despacho total sobre
+# uma uniao fechada o numero de returns E o numero de eventos, por construcao.
+# Desligar a regra no arquivo inteiro deixaria passar uma funcao ramificada de
+# verdade escondida aqui dentro.
+def event_to_dict(event: Event) -> dict[str, JsonValue]:  # noqa: PLR0911
     """Um evento em forma serializavel, escolhido pelo `kind`."""
     match event:
         case InitiativeRolled():
@@ -572,6 +600,12 @@ def event_to_dict(event: Event) -> dict[str, JsonValue]:
             return dump_round_started(event)
         case TurnStarted():
             return dump_turn_started(event)
+        case TurnSkipped():
+            return dump_turn_skipped(event)
+        case TurnEnded():
+            return dump_turn_ended(event)
+        case MovementSpent():
+            return dump_movement_spent(event)
         case _:  # pragma: no cover - inalcancavel: mypy fecha a uniao
             assert_never(event)
 

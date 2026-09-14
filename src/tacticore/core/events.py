@@ -26,6 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
+from tacticore.core.enums import SkipReason
 from tacticore.core.ids import CreatureId
 from tacticore.core.model import TurnBudget
 
@@ -70,4 +71,39 @@ class TurnStarted:
     budget: TurnBudget
 
 
-type Event = InitiativeRolled | TurnOrderSet | RoundStarted | TurnStarted
+@dataclass(frozen=True, slots=True, kw_only=True)
+class TurnEnded:
+    kind: Literal["turn_ended"] = "turn_ended"
+    creature: CreatureId
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class TurnSkipped:
+    """O turno de alguem que nao pode agir passou sem abrir.
+
+    Sai **antes** de qualquer `TurnStarted`, e sem reset de orcamento: quem
+    esta caido nao ganha um turno para depois nao usar.
+    """
+
+    kind: Literal["turn_skipped"] = "turn_skipped"
+    creature: CreatureId
+    reason: SkipReason
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MovementSpent:
+    kind: Literal["movement_spent"] = "movement_spent"
+    creature: CreatureId
+    feet: int
+    remaining_ft: int
+
+
+type Event = (
+    InitiativeRolled
+    | TurnOrderSet
+    | RoundStarted
+    | TurnStarted
+    | TurnSkipped
+    | TurnEnded
+    | MovementSpent
+)

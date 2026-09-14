@@ -8,15 +8,20 @@ gasto e daqui.
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from typing import assert_never
 
-from tacticore.core.enums import Ability
+from tacticore.core.actions import Action, EndTurnAction, MoveAction
+from tacticore.core.enums import Ability, RejectionReason, SkipReason
 from tacticore.core.errors import InvalidEncounterError
 from tacticore.core.events import (
     Event,
     InitiativeRolled,
+    MovementSpent,
     RoundStarted,
+    TurnEnded,
     TurnOrderSet,
+    TurnSkipped,
     TurnStarted,
 )
 from tacticore.core.ids import CreatureId, StatblockId
@@ -28,8 +33,8 @@ from tacticore.core.model import (
     TurnBudget,
     TurnOrder,
 )
-from tacticore.core.queries import statblock_of
-from tacticore.core.results import Applied
+from tacticore.core.queries import combatant_of, is_standing, statblock_of
+from tacticore.core.results import ActionResult, Applied, Rejected
 from tacticore.core.rng import RngState, position, roll_die
 from tacticore.core.rules import (
     D20_FACES,
@@ -185,3 +190,127 @@ def start_combat(
     )
 
     return Applied(state=state, events=tuple(eventos))
+
+
+def _rejeitar(state: CombatState, reason: RejectionReason, detail: str) -> Rejected:
+    return Rejected(reason=reason, detail=detail, state=state)
+
+
+def validate(state: CombatState, action: Action) -> Rejected | None:
+    """Confere a legalidade da acao. `None` quer dizer "pode".
+
+    Roda **inteira antes de qualquer toque no RNG**. Se uma validacao viesse
+    depois de uma rolagem, uma acao recusada teria consumido entropia, e dois
+    combates com a mesma seed divergiriam so porque um deles tentou uma jogada
+    ilegal pelo caminho.
+    """
+    ator = combatant_of(state, action.actor)
+    if ator is None:
+        return _rejeitar(
+            state, RejectionReason.NO_SUCH_ACTOR, f"{action.actor!r} nao esta neste combate"
+        )
+    if state.turn_order.current != ator.id:
+        return _rejeitar(
+            state,
+            RejectionReason.NOT_YOUR_TURN,
+            f"o turno e de {state.turn_order.current!r}, nao de {ator.id!r}",
+        )
+    if not is_standing(ator):
+        return _rejeitar(state, RejectionReason.ACTOR_IS_DOWN, f"{ator.id!r} esta caido")
+
+    match action:
+        case MoveAction():
+            if action.distance_ft < 0:
+                return _rejeitar(
+                    state,
+                    RejectionReason.INVALID_DISTANCE,
+                    f"distancia negativa: {action.distance_ft}",
+                )
+            if action.distance_ft > ator.budget.movement_remaining_ft:
+                return _rejeitar(
+                    state,
+                    RejectionReason.NOT_ENOUGH_MOVEMENT,
+                    f"{action.distance_ft} pes pedidos e {ator.budget.movement_remaining_ft} "
+                    "disponiveis",
+                )
+        case EndTurnAction():
+            pass
+        case _:  # pragma: no cover - inalcancavel: mypy fecha a uniao
+            assert_never(action)
+
+    return None
+
+
+def _com_combatente(state: CombatState, combatant: Combatant) -> CombatState:
+    """O mesmo estado com um combatente trocado."""
+    return replace(state, combatants={**state.combatants, combatant.id: combatant})
+
+
+def advance_turn(state: CombatState) -> tuple[CombatState, tuple[Event, ...]]:
+    """Encerra o turno atual e abre o proximo que puder agir.
+
+    Quem esta caido tem o turno pulado **sem reset de orcamento**: nao se ganha
+    um turno para depois nao usar, e o `TurnSkipped` sai antes de qualquer
+    `TurnStarted`. Ninguem sai da ordem de iniciativa ao cair -- sair mudaria
+    a posicao de todo mundo no meio da rodada.
+
+    O laco anda no maximo uma volta inteira. Um estado sem ninguem de pe nao
+    tem proximo turno legitimo, e ficar rodando seria travar o processo em vez
+    de devolver um estado que o chamador consegue inspecionar.
+    """
+    ordem = state.turn_order.order
+    eventos: list[Event] = [TurnEnded(creature=state.turn_order.current)]
+
+    indice = ordem.index(state.turn_order.current)
+    rodada = state.turn_order.round_number
+    atual = state
+
+    for _ in range(len(ordem)):
+        indice += 1
+        if indice == len(ordem):
+            indice = 0
+            rodada += 1
+            eventos.append(RoundStarted(round_number=rodada))
+
+        candidato = atual.combatants[ordem[indice]]
+        if not is_standing(candidato):
+            eventos.append(TurnSkipped(creature=candidato.id, reason=SkipReason.ACTOR_IS_DOWN))
+            continue
+
+        orcamento = _orcamento_inicial(statblock_of(atual, candidato.id))
+        atual = _com_combatente(atual, replace(candidato, budget=orcamento))
+        atual = replace(
+            atual,
+            turn_order=replace(atual.turn_order, current=candidato.id, round_number=rodada),
+        )
+        eventos.append(TurnStarted(creature=candidato.id, budget=orcamento))
+        return atual, tuple(eventos)
+
+    # Ninguem de pe: a rodada avancou, mas nao ha turno para abrir.
+    atual = replace(atual, turn_order=replace(atual.turn_order, round_number=rodada))
+    return atual, tuple(eventos)
+
+
+def apply(state: CombatState, action: Action) -> ActionResult:
+    """O ponto de entrada unico: estado + acao, estado novo + o que aconteceu."""
+    rejeicao = validate(state, action)
+    if rejeicao is not None:
+        return rejeicao
+
+    match action:
+        case MoveAction():
+            ator = state.combatants[action.actor]
+            restante = ator.budget.movement_remaining_ft - action.distance_ft
+            novo = _com_combatente(
+                state,
+                replace(ator, budget=replace(ator.budget, movement_remaining_ft=restante)),
+            )
+            evento = MovementSpent(creature=ator.id, feet=action.distance_ft, remaining_ft=restante)
+            return Applied(state=novo, events=(evento,))
+
+        case EndTurnAction():
+            novo, eventos = advance_turn(state)
+            return Applied(state=novo, events=eventos)
+
+        case _:  # pragma: no cover - inalcancavel: mypy fecha a uniao
+            assert_never(action)

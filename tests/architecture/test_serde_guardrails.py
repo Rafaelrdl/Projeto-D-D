@@ -21,7 +21,16 @@ import pytest
 
 from tacticore.core import serde
 from tacticore.core.dice import DamageExpr, DamageRoll, DiceTerm, DieRoll, parse_dice
-from tacticore.core.events import InitiativeRolled, RoundStarted, TurnOrderSet, TurnStarted
+from tacticore.core.enums import SkipReason
+from tacticore.core.events import (
+    InitiativeRolled,
+    MovementSpent,
+    RoundStarted,
+    TurnEnded,
+    TurnOrderSet,
+    TurnSkipped,
+    TurnStarted,
+)
 from tacticore.core.ids import CreatureId
 from tacticore.core.model import (
     Abilities,
@@ -153,6 +162,15 @@ EVENT_CODECS: Mapping[type, tuple[Callable[[object], dict[str, JsonValue]], obje
     TurnStarted: (  # type: ignore[dict-item]
         serde.dump_turn_started,
         TurnStarted(creature=CreatureId("heroi"), budget=make_budget()),
+    ),
+    TurnSkipped: (  # type: ignore[dict-item]
+        serde.dump_turn_skipped,
+        TurnSkipped(creature=CreatureId("vilao"), reason=SkipReason.ACTOR_IS_DOWN),
+    ),
+    TurnEnded: (serde.dump_turn_ended, TurnEnded(creature=CreatureId("heroi"))),  # type: ignore[dict-item]
+    MovementSpent: (  # type: ignore[dict-item]
+        serde.dump_movement_spent,
+        MovementSpent(creature=CreatureId("heroi"), feet=15, remaining_ft=15),
     ),
 }
 

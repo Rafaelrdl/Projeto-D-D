@@ -56,3 +56,29 @@ class AttackOutcome(StrEnum):
     HIT = "HIT"
     MISS = "MISS"
     CRITICAL_MISS = "CRITICAL_MISS"
+
+
+class RejectionReason(StrEnum):
+    """Por que o motor recusou uma acao.
+
+    Enum fechado e nao texto livre: o chamador compara com um membro, nunca com
+    uma frase, e um teste de exaustividade garante que todo membro daqui tenha
+    teste proprio. Motivo novo sem teste fica vermelho no mesmo commit.
+    """
+
+    NO_SUCH_ACTOR = "NO_SUCH_ACTOR"
+    NOT_YOUR_TURN = "NOT_YOUR_TURN"
+    ACTOR_IS_DOWN = "ACTOR_IS_DOWN"
+    NOT_ENOUGH_MOVEMENT = "NOT_ENOUGH_MOVEMENT"
+    INVALID_DISTANCE = "INVALID_DISTANCE"
+
+
+class SkipReason(StrEnum):
+    """Por que um turno foi pulado.
+
+    Separado de `RejectionReason` de proposito: turno pulado nao e acao
+    recusada -- ninguem pediu nada. Reusar o outro enum aqui faria a interface
+    tratar as duas coisas pelo mesmo caminho.
+    """
+
+    ACTOR_IS_DOWN = "ACTOR_IS_DOWN"
