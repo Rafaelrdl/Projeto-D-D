@@ -26,3 +26,17 @@ class Ability(StrEnum):
     INT = "INT"
     SAB = "SAB"
     CAR = "CAR"
+
+
+class AdvantageState(StrEnum):
+    """O resultado de somar todas as fontes de vantagem e desvantagem.
+
+    Tres estados e nao um contador: na SRD a regra e binaria e nao acumula --
+    tres fontes de vantagem contra uma de desvantagem da NORMAL, e nunca
+    existem tres d20. Guardar o saldo numerico convidaria alguem a "somar
+    direito" um dia e mudaria a regra sem querer.
+    """
+
+    NORMAL = "NORMAL"
+    ADVANTAGE = "ADVANTAGE"
+    DISADVANTAGE = "DISADVANTAGE"
