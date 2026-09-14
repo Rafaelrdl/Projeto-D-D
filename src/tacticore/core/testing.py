@@ -15,11 +15,23 @@ quem le o teste teria que caçar qual dos vinte valores e o relevante.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 
 from tacticore.core.dice import DamageExpr, parse_dice
-from tacticore.core.engine import Participant
+from tacticore.core.engine import (
+    Participant,
+    apply,
+    combat_result,
+    legal_actions,
+)
 from tacticore.core.enums import Ability
+from tacticore.core.errors import CorruptStateError
+from tacticore.core.events import (
+    AttackRolled,
+    DamageRolled,
+    Event,
+    InitiativeRolled,
+)
 from tacticore.core.ids import AttackId, CreatureId, StatblockId
 from tacticore.core.model import (
     Abilities,
@@ -31,6 +43,7 @@ from tacticore.core.model import (
     TurnBudget,
     TurnOrder,
 )
+from tacticore.core.results import Applied
 from tacticore.core.rng import RngState, ScriptedRng
 
 PADRAO_ATRIBUTO = 10
@@ -196,3 +209,73 @@ def make_duelo(
         make_participant(id=b, statblock_id=str(segunda.id), team="viloes"),
     )
     return catalogo, participantes
+
+
+def tape_from_events(events: Sequence[Event]) -> tuple[int, ...]:
+    """A fita de dados que um log descreve, na ordem em que foram rolados.
+
+    Substitui um "RNG que grava": gravar exigiria um acumulador mutavel e um
+    quarto membro na uniao `RngState`, e os eventos ja publicam cada dado cru.
+    Com isto, um bug encontrado com seed de producao vira teste de regressao
+    com fita explicita em trinta segundos.
+
+    Tambem serve de prova de completude do log: reproduzir o combate com esta
+    fita tem que dar exatamente o mesmo log de volta. Se um dado tivesse sido
+    rolado sem aparecer em evento nenhum, a fita ficaria curta e a reproducao
+    estouraria com `RngExhausted`.
+    """
+    dados: list[int] = []
+    for evento in events:
+        match evento:
+            case InitiativeRolled():
+                dados.append(evento.d20)
+            case AttackRolled():
+                dados.extend(evento.pair)
+            case DamageRolled():
+                dados.extend(d.value for d in evento.roll.dice)
+            case _:
+                continue
+    return tuple(dados)
+
+
+def play_out(
+    state: CombatState,
+    *,
+    max_actions: int = 500,
+) -> tuple[CombatState, tuple[Event, ...]]:
+    """Joga o combate ate o fim escolhendo sempre a **primeira** acao legal.
+
+    Nao e uma IA e nao tenta ser: e um piloto automatico deterministico, que e
+    o que um teste de determinismo e um golden precisam. A primeira acao legal
+    e sempre atacar o primeiro inimigo de pe, entao o combate termina.
+
+    O limite de acoes existe para que um bug de regra vire uma falha de teste
+    legivel em vez de um processo travado.
+    """
+    atual = state
+    log: list[Event] = []
+
+    for _ in range(max_actions):
+        if combat_result(atual) is not None:
+            return atual, tuple(log)
+
+        acoes = legal_actions(atual)
+        if not acoes:
+            msg = f"sem acao legal para {atual.turn_order.current!r} e o combate nao acabou"
+            raise CorruptStateError(msg)
+
+        resultado = apply(atual, acoes[0])
+        if not isinstance(resultado, Applied):  # pragma: no cover
+            # Inalcancavel enquanto valer a propriedade central de
+            # `legal_actions`, que tem teste proprio em test_combat_end.py.
+            # Fica aqui assim mesmo: no dia em que a propriedade quebrar, o
+            # piloto automatico para com o motivo na mao em vez de seguir
+            # produzindo um log errado que o golden depois congela.
+            msg = f"legal_actions ofereceu {acoes[0]}, recusada com {resultado.reason}"
+            raise CorruptStateError(msg)
+
+        atual = resultado.state
+        log.extend(resultado.events)
+
+    msg = f"o combate nao terminou em {max_actions} acoes"
+    raise CorruptStateError(msg)

@@ -694,3 +694,15 @@ def event_to_dict(event: Event) -> dict[str, JsonValue]:
 
 def events_to_list(events: Sequence[Event]) -> list[JsonValue]:
     return [event_to_dict(e) for e in events]
+
+
+def events_digest(events: Sequence[Event]) -> str:
+    """Resumo de 64 hex do log inteiro.
+
+    Dois combates podem terminar no mesmo estado por caminhos diferentes -- o
+    `fingerprint` do estado nao veria a diferenca, e este ve. E o par dos dois
+    que faz um teste de determinismo dizer "divergiu" numa linha em vez de
+    deixar quem le comparar duas arvores de dataclass.
+    """
+    texto = canonical_json({"events": events_to_list(events)})
+    return hashlib.sha256(texto.encode("utf-8")).hexdigest()
