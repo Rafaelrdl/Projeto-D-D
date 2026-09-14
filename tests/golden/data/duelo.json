@@ -1,0 +1,209 @@
+{
+  "events": [
+    {
+      "creature": "bruto",
+      "d20": 2,
+      "dex_mod": -1,
+      "dex_score": 8,
+      "kind": "initiative_rolled",
+      "rng_after": 1,
+      "rng_before": 0,
+      "total": 1
+    },
+    {
+      "creature": "lamina",
+      "d20": 14,
+      "dex_mod": 3,
+      "dex_score": 17,
+      "kind": "initiative_rolled",
+      "rng_after": 2,
+      "rng_before": 1,
+      "total": 17
+    },
+    {
+      "kind": "turn_order_set",
+      "order": [
+        "lamina",
+        "bruto"
+      ]
+    },
+    {
+      "kind": "round_started",
+      "round_number": 1
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "lamina",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "lamina",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 15,
+      "outcome": "HIT",
+      "pair": [
+        15,
+        10
+      ],
+      "proficiency": 3,
+      "rng_after": 4,
+      "rng_before": 2,
+      "target": "bruto",
+      "target_ac": 13,
+      "target_was_down": false,
+      "total": 18
+    },
+    {
+      "actor": "lamina",
+      "kind": "damage_rolled",
+      "rng_after": 6,
+      "rng_before": 4,
+      "roll": {
+        "ability_bonus": 0,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 8,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 2
+          },
+          {
+            "faces": 4,
+            "from_crit": false,
+            "term_index": 1,
+            "value": 1
+          }
+        ],
+        "flat": 0,
+        "total": 3
+      },
+      "target": "bruto"
+    },
+    {
+      "after": {
+        "current": 11,
+        "maximum": 14
+      },
+      "before": {
+        "current": 14,
+        "maximum": 14
+      },
+      "creature": "bruto",
+      "dealt": 3,
+      "kind": "hp_changed",
+      "overkill": 0
+    },
+    {
+      "creature": "lamina",
+      "feet": 35,
+      "kind": "movement_spent",
+      "remaining_ft": 0
+    },
+    {
+      "creature": "lamina",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 30
+      },
+      "creature": "bruto",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 3,
+      "actor": "bruto",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "machado",
+      "attack_name": "Machado",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 20,
+      "outcome": "CRITICAL_HIT",
+      "pair": [
+        20,
+        16
+      ],
+      "proficiency": 2,
+      "rng_after": 8,
+      "rng_before": 6,
+      "target": "lamina",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 25
+    },
+    {
+      "actor": "bruto",
+      "kind": "damage_rolled",
+      "rng_after": 10,
+      "rng_before": 8,
+      "roll": {
+        "ability_bonus": 3,
+        "critical": true,
+        "dice": [
+          {
+            "faces": 12,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 11
+          },
+          {
+            "faces": 12,
+            "from_crit": true,
+            "term_index": 0,
+            "value": 7
+          }
+        ],
+        "flat": 1,
+        "total": 22
+      },
+      "target": "lamina"
+    },
+    {
+      "after": {
+        "current": 0,
+        "maximum": 11
+      },
+      "before": {
+        "current": 11,
+        "maximum": 11
+      },
+      "creature": "lamina",
+      "dealt": 11,
+      "kind": "hp_changed",
+      "overkill": 11
+    },
+    {
+      "creature": "lamina",
+      "kind": "creature_downed"
+    },
+    {
+      "kind": "combat_ended",
+      "outcome": {
+        "last_round": 1,
+        "winning_team": "herois"
+      }
+    }
+  ],
+  "final_fingerprint": "e81998086967a002d3cd296c97807f4fd94aba4e8c0e43cba63cf0e20454a659",
+  "rng_algo": "splitmix64-lemire/1",
+  "rules_version": 1,
+  "schema_version": 1,
+  "seed": "20250914"
+}

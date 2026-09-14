@@ -1,0 +1,124 @@
+{
+  "final_fingerprint_esperado": "f31b332ff3ec8a1615f1fa33dde094a2d376b4562d2a23d46ca803f654de3189",
+  "rng_algo": "splitmix64-lemire/1",
+  "rules_version": 1,
+  "schema_version": 1,
+  "state": {
+    "combatants": {
+      "bruto": {
+        "budget": {
+          "action_available": true,
+          "movement_remaining_ft": 30
+        },
+        "hp": {
+          "current": 14,
+          "maximum": 14
+        },
+        "id": "bruto",
+        "statblock_id": "brutamontes",
+        "team": "herois"
+      },
+      "lamina": {
+        "budget": {
+          "action_available": true,
+          "movement_remaining_ft": 35
+        },
+        "hp": {
+          "current": 11,
+          "maximum": 11
+        },
+        "id": "lamina",
+        "statblock_id": "duelista",
+        "team": "viloes"
+      }
+    },
+    "rng": {
+      "counter": 2,
+      "kind": "splitmix64",
+      "seed": "20250914"
+    },
+    "statblocks": {
+      "brutamontes": {
+        "abilities": {
+          "carisma": 10,
+          "constituicao": 10,
+          "destreza": 8,
+          "forca": 16,
+          "inteligencia": 10,
+          "sabedoria": 10
+        },
+        "armor_class": 13,
+        "attacks": [
+          {
+            "ability": "FOR",
+            "damage": {
+              "flat": 1,
+              "terms": [
+                {
+                  "count": 1,
+                  "doubles_on_crit": true,
+                  "faces": 12
+                }
+              ]
+            },
+            "id": "machado",
+            "name": "Machado",
+            "proficient": true
+          }
+        ],
+        "id": "brutamontes",
+        "max_hp": 14,
+        "name": "Brutamontes",
+        "proficiency_bonus": 2,
+        "speed_ft": 30
+      },
+      "duelista": {
+        "abilities": {
+          "carisma": 10,
+          "constituicao": 10,
+          "destreza": 17,
+          "forca": 10,
+          "inteligencia": 10,
+          "sabedoria": 10
+        },
+        "armor_class": 15,
+        "attacks": [
+          {
+            "ability": "FOR",
+            "damage": {
+              "flat": 0,
+              "terms": [
+                {
+                  "count": 1,
+                  "doubles_on_crit": true,
+                  "faces": 8
+                },
+                {
+                  "count": 1,
+                  "doubles_on_crit": true,
+                  "faces": 4
+                }
+              ]
+            },
+            "id": "estoque",
+            "name": "Estoque",
+            "proficient": true
+          }
+        ],
+        "id": "duelista",
+        "max_hp": 11,
+        "name": "Duelista",
+        "proficiency_bonus": 3,
+        "speed_ft": 35
+      }
+    },
+    "turn_order": {
+      "current": "bruto",
+      "order": [
+        "lamina",
+        "bruto"
+      ],
+      "round_number": 2
+    }
+  }
+}

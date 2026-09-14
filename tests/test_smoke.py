@@ -26,5 +26,5 @@ def test_pacote_se_declara_tipado():
     assert marcador.is_file(), "py.typed ausente: consumidores perdem a tipagem"
 
 
-def test_core_comeca_sem_api_publica():
-    assert tacticore.core.__all__ == ()
+def test_core_expoe_api_publica():
+    assert "apply" in tacticore.core.__all__

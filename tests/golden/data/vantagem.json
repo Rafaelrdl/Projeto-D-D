@@ -1,0 +1,361 @@
+{
+  "events": [
+    {
+      "creature": "atacante",
+      "d20": 18,
+      "dex_mod": -1,
+      "dex_score": 8,
+      "kind": "initiative_rolled",
+      "rng_after": 1,
+      "rng_before": 0,
+      "total": 17
+    },
+    {
+      "creature": "defensor",
+      "d20": 3,
+      "dex_mod": 3,
+      "dex_score": 17,
+      "kind": "initiative_rolled",
+      "rng_after": 2,
+      "rng_before": 1,
+      "total": 6
+    },
+    {
+      "kind": "turn_order_set",
+      "order": [
+        "atacante",
+        "defensor"
+      ]
+    },
+    {
+      "kind": "round_started",
+      "round_number": 1
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 30
+      },
+      "creature": "atacante",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 3,
+      "actor": "atacante",
+      "advantage": "ADVANTAGE",
+      "advantage_sources": [
+        "flanqueando"
+      ],
+      "attack_id": "machado",
+      "attack_name": "Machado",
+      "chosen_index": 1,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 16,
+      "outcome": "HIT",
+      "pair": [
+        1,
+        16
+      ],
+      "proficiency": 2,
+      "rng_after": 4,
+      "rng_before": 2,
+      "target": "defensor",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 21
+    },
+    {
+      "actor": "atacante",
+      "kind": "damage_rolled",
+      "rng_after": 5,
+      "rng_before": 4,
+      "roll": {
+        "ability_bonus": 3,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 12,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 6
+          }
+        ],
+        "flat": 1,
+        "total": 10
+      },
+      "target": "defensor"
+    },
+    {
+      "after": {
+        "current": 1,
+        "maximum": 11
+      },
+      "before": {
+        "current": 11,
+        "maximum": 11
+      },
+      "creature": "defensor",
+      "dealt": 10,
+      "kind": "hp_changed",
+      "overkill": 0
+    },
+    {
+      "creature": "atacante",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "defensor",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "defensor",
+      "advantage": "ADVANTAGE",
+      "advantage_sources": [
+        "flanqueando"
+      ],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 1,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 13,
+      "outcome": "HIT",
+      "pair": [
+        7,
+        13
+      ],
+      "proficiency": 3,
+      "rng_after": 7,
+      "rng_before": 5,
+      "target": "atacante",
+      "target_ac": 13,
+      "target_was_down": false,
+      "total": 16
+    },
+    {
+      "actor": "defensor",
+      "kind": "damage_rolled",
+      "rng_after": 9,
+      "rng_before": 7,
+      "roll": {
+        "ability_bonus": 0,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 8,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 8
+          },
+          {
+            "faces": 4,
+            "from_crit": false,
+            "term_index": 1,
+            "value": 1
+          }
+        ],
+        "flat": 0,
+        "total": 9
+      },
+      "target": "atacante"
+    },
+    {
+      "after": {
+        "current": 5,
+        "maximum": 14
+      },
+      "before": {
+        "current": 14,
+        "maximum": 14
+      },
+      "creature": "atacante",
+      "dealt": 9,
+      "kind": "hp_changed",
+      "overkill": 0
+    },
+    {
+      "creature": "defensor",
+      "kind": "turn_ended"
+    },
+    {
+      "kind": "round_started",
+      "round_number": 2
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 30
+      },
+      "creature": "atacante",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 3,
+      "actor": "atacante",
+      "advantage": "DISADVANTAGE",
+      "advantage_sources": [],
+      "attack_id": "machado",
+      "attack_name": "Machado",
+      "chosen_index": 1,
+      "disadvantage_sources": [
+        "cegado"
+      ],
+      "kind": "attack_rolled",
+      "natural": 7,
+      "outcome": "MISS",
+      "pair": [
+        15,
+        7
+      ],
+      "proficiency": 2,
+      "rng_after": 11,
+      "rng_before": 9,
+      "target": "defensor",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 12
+    },
+    {
+      "creature": "atacante",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "defensor",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "defensor",
+      "advantage": "DISADVANTAGE",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 1,
+      "disadvantage_sources": [
+        "cegado"
+      ],
+      "kind": "attack_rolled",
+      "natural": 7,
+      "outcome": "MISS",
+      "pair": [
+        8,
+        7
+      ],
+      "proficiency": 3,
+      "rng_after": 13,
+      "rng_before": 11,
+      "target": "atacante",
+      "target_ac": 13,
+      "target_was_down": false,
+      "total": 10
+    },
+    {
+      "creature": "defensor",
+      "kind": "turn_ended"
+    },
+    {
+      "kind": "round_started",
+      "round_number": 3
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 30
+      },
+      "creature": "atacante",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 3,
+      "actor": "atacante",
+      "advantage": "ADVANTAGE",
+      "advantage_sources": [
+        "flanqueando"
+      ],
+      "attack_id": "machado",
+      "attack_name": "Machado",
+      "chosen_index": 1,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 16,
+      "outcome": "HIT",
+      "pair": [
+        15,
+        16
+      ],
+      "proficiency": 2,
+      "rng_after": 15,
+      "rng_before": 13,
+      "target": "defensor",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 21
+    },
+    {
+      "actor": "atacante",
+      "kind": "damage_rolled",
+      "rng_after": 16,
+      "rng_before": 15,
+      "roll": {
+        "ability_bonus": 3,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 12,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 8
+          }
+        ],
+        "flat": 1,
+        "total": 12
+      },
+      "target": "defensor"
+    },
+    {
+      "after": {
+        "current": 0,
+        "maximum": 11
+      },
+      "before": {
+        "current": 1,
+        "maximum": 11
+      },
+      "creature": "defensor",
+      "dealt": 1,
+      "kind": "hp_changed",
+      "overkill": 11
+    },
+    {
+      "creature": "defensor",
+      "kind": "creature_downed"
+    },
+    {
+      "kind": "combat_ended",
+      "outcome": {
+        "last_round": 3,
+        "winning_team": "herois"
+      }
+    }
+  ],
+  "final_fingerprint": "3f7f6c6ce474d1bf8079250c86cb3b6be5dba28ba07756b41700d7e982ac51f5",
+  "rng_algo": "splitmix64-lemire/1",
+  "rules_version": 1,
+  "schema_version": 1,
+  "seed": "991"
+}

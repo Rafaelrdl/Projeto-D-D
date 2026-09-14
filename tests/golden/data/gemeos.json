@@ -1,0 +1,346 @@
+{
+  "events": [
+    {
+      "creature": "gemeo_a",
+      "d20": 8,
+      "dex_mod": 3,
+      "dex_score": 17,
+      "kind": "initiative_rolled",
+      "rng_after": 1,
+      "rng_before": 0,
+      "total": 11
+    },
+    {
+      "creature": "gemeo_b",
+      "d20": 1,
+      "dex_mod": 3,
+      "dex_score": 17,
+      "kind": "initiative_rolled",
+      "rng_after": 2,
+      "rng_before": 1,
+      "total": 4
+    },
+    {
+      "kind": "turn_order_set",
+      "order": [
+        "gemeo_a",
+        "gemeo_b"
+      ]
+    },
+    {
+      "kind": "round_started",
+      "round_number": 1
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "gemeo_a",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "gemeo_a",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 19,
+      "outcome": "HIT",
+      "pair": [
+        19,
+        12
+      ],
+      "proficiency": 3,
+      "rng_after": 4,
+      "rng_before": 2,
+      "target": "gemeo_b",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 22
+    },
+    {
+      "actor": "gemeo_a",
+      "kind": "damage_rolled",
+      "rng_after": 6,
+      "rng_before": 4,
+      "roll": {
+        "ability_bonus": 0,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 8,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 4
+          },
+          {
+            "faces": 4,
+            "from_crit": false,
+            "term_index": 1,
+            "value": 1
+          }
+        ],
+        "flat": 0,
+        "total": 5
+      },
+      "target": "gemeo_b"
+    },
+    {
+      "after": {
+        "current": 6,
+        "maximum": 11
+      },
+      "before": {
+        "current": 11,
+        "maximum": 11
+      },
+      "creature": "gemeo_b",
+      "dealt": 5,
+      "kind": "hp_changed",
+      "overkill": 0
+    },
+    {
+      "creature": "gemeo_a",
+      "feet": 35,
+      "kind": "movement_spent",
+      "remaining_ft": 0
+    },
+    {
+      "creature": "gemeo_a",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "gemeo_b",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "gemeo_b",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 10,
+      "outcome": "MISS",
+      "pair": [
+        10,
+        7
+      ],
+      "proficiency": 3,
+      "rng_after": 8,
+      "rng_before": 6,
+      "target": "gemeo_a",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 13
+    },
+    {
+      "creature": "gemeo_b",
+      "feet": 35,
+      "kind": "movement_spent",
+      "remaining_ft": 0
+    },
+    {
+      "creature": "gemeo_b",
+      "kind": "turn_ended"
+    },
+    {
+      "kind": "round_started",
+      "round_number": 2
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "gemeo_a",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "gemeo_a",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 3,
+      "outcome": "MISS",
+      "pair": [
+        3,
+        9
+      ],
+      "proficiency": 3,
+      "rng_after": 10,
+      "rng_before": 8,
+      "target": "gemeo_b",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 6
+    },
+    {
+      "creature": "gemeo_a",
+      "feet": 35,
+      "kind": "movement_spent",
+      "remaining_ft": 0
+    },
+    {
+      "creature": "gemeo_a",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "gemeo_b",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "gemeo_b",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 3,
+      "outcome": "MISS",
+      "pair": [
+        3,
+        20
+      ],
+      "proficiency": 3,
+      "rng_after": 12,
+      "rng_before": 10,
+      "target": "gemeo_a",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 6
+    },
+    {
+      "creature": "gemeo_b",
+      "feet": 35,
+      "kind": "movement_spent",
+      "remaining_ft": 0
+    },
+    {
+      "creature": "gemeo_b",
+      "kind": "turn_ended"
+    },
+    {
+      "kind": "round_started",
+      "round_number": 3
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "gemeo_a",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "gemeo_a",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 19,
+      "outcome": "HIT",
+      "pair": [
+        19,
+        18
+      ],
+      "proficiency": 3,
+      "rng_after": 14,
+      "rng_before": 12,
+      "target": "gemeo_b",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 22
+    },
+    {
+      "actor": "gemeo_a",
+      "kind": "damage_rolled",
+      "rng_after": 16,
+      "rng_before": 14,
+      "roll": {
+        "ability_bonus": 0,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 8,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 7
+          },
+          {
+            "faces": 4,
+            "from_crit": false,
+            "term_index": 1,
+            "value": 3
+          }
+        ],
+        "flat": 0,
+        "total": 10
+      },
+      "target": "gemeo_b"
+    },
+    {
+      "after": {
+        "current": 0,
+        "maximum": 11
+      },
+      "before": {
+        "current": 6,
+        "maximum": 11
+      },
+      "creature": "gemeo_b",
+      "dealt": 6,
+      "kind": "hp_changed",
+      "overkill": 4
+    },
+    {
+      "creature": "gemeo_b",
+      "kind": "creature_downed"
+    },
+    {
+      "kind": "combat_ended",
+      "outcome": {
+        "last_round": 3,
+        "winning_team": "herois"
+      }
+    }
+  ],
+  "final_fingerprint": "03585a00a6afcacadaec602990fe46a3f21a5f245095ed040551789e4f56e42c",
+  "rng_algo": "splitmix64-lemire/1",
+  "rules_version": 1,
+  "schema_version": 1,
+  "seed": "7"
+}

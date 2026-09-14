@@ -25,6 +25,19 @@ uv run mypy
 
 Detalhes e decisões de arquitetura em [CLAUDE.md](CLAUDE.md).
 
+## O contrato de consumo do RNG
+
+A ordem e a quantidade de dados rolados são **API pública**, não detalhe de
+implementação: mudá-las desloca todas as rolagens seguintes de todo combate em
+andamento e invalida todo save e todo golden existente.
+
+O contrato está escrito no docstring de `tacticore.core` — onde ele é lido, na
+hora de escrever a próxima regra — e o porquê de cada item está em
+[docs/adr/0001](docs/adr/0001-contrato-de-consumo-do-rng.md).
+
+Um teste falha se o docstring perder o bloco. Mudar qualquer ponto do contrato
+obriga a incrementar `serde.RULES_VERSION`.
+
 ## Tipos permitidos em campo de estado
 
 `str`, `int`, `bool`, `StrEnum`, `tuple`, dataclass frozen e `Mapping[str, ...]`.
