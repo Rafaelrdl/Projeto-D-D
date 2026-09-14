@@ -34,3 +34,32 @@ class DiceSyntaxError(ValueError):
     alta -- uma expressao malformada aceita em silencio vira dano errado tres
     camadas adiante, sem nada apontando para a origem.
     """
+
+
+class UnsupportedSchemaVersion(ValueError):
+    """O save veio num formato que este motor nao sabe ler.
+
+    Falhar alto e o ponto: um envelope de versao desconhecida aceito "na boa"
+    carregaria campos faltando com default e simularia um combate diferente do
+    que foi salvo, sem nada apontando para a causa.
+    """
+
+
+class InvalidSaveError(ValueError):
+    """O save carregou, mas o estado descrito nele nao faz sentido.
+
+    Save e dado externo: pode ter sido editado a mao, truncado ou gerado por
+    uma versao com bug. Sem esta checagem, um `current` que nao esta na ordem
+    de iniciativa entra no motor e reaparece como `CorruptStateError` tres
+    turnos depois, longe da causa.
+
+    Distinta de `CorruptStateError`, que fica reservada a bug **deste** motor.
+    """
+
+
+class CorruptStateError(RuntimeError):
+    """Uma invariante interna do motor foi quebrada. Isto e bug nosso.
+
+    Nunca e regra de jogo violada -- regra violada vira `Rejected`, que o
+    chamador e obrigado a tratar porque o tipo de retorno diz isso.
+    """

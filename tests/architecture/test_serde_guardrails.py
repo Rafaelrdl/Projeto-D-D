@@ -1,0 +1,180 @@
+"""Guardiao do codec manual.
+
+O codec escrito a mao tem um modo de falha conhecido: alguem acrescenta um
+campo e esquece do `from_dict`. O campo some no save, volta com o default, e o
+combate recarregado diverge sem nada apontando para a causa.
+
+Aqui isso vira teste vermelho no mesmo commit, de duas formas: nenhum tipo de
+estado pode existir sem codec, e as chaves emitidas por cada codec tem que
+bater **exatamente** com os campos declarados na dataclass.
+"""
+
+from __future__ import annotations
+
+import dataclasses
+import importlib
+import inspect
+import json
+from collections.abc import Callable, Mapping
+
+import pytest
+
+from tacticore.core import serde
+from tacticore.core.dice import DamageExpr, DamageRoll, DiceTerm, DieRoll, parse_dice
+from tacticore.core.model import (
+    Abilities,
+    AttackProfile,
+    Combatant,
+    CombatState,
+    HitPoints,
+    Statblock,
+    TurnBudget,
+    TurnOrder,
+)
+from tacticore.core.rng import ScriptedRng, SplitMix64
+from tacticore.core.serde import JsonValue
+from tacticore.core.testing import (
+    make_abilities,
+    make_attack,
+    make_budget,
+    make_combatant,
+    make_statblock,
+    make_state,
+)
+
+# Os modulos que descrevem coisa que entra num save ou num evento. Tudo que for
+# dataclass neles precisa de codec -- a lista e de MODULOS e nao de classes
+# justamente para nao existir um lugar onde esquecer de registrar a classe nova.
+MODULOS_COM_ESTADO = ("rng", "dice", "model")
+
+
+def _exemplo_state() -> CombatState:
+    return make_state()
+
+
+CODECS: Mapping[
+    type,
+    tuple[
+        Callable[[object], dict[str, JsonValue]],
+        Callable[[Mapping[str, JsonValue]], object],
+        object,
+    ],
+] = {
+    SplitMix64: (serde.dump_rng, serde.load_rng, SplitMix64(seed=2**63 - 1, counter=9)),  # type: ignore[dict-item]
+    ScriptedRng: (serde.dump_rng, serde.load_rng, ScriptedRng(script=(20, 1), cursor=1)),  # type: ignore[dict-item]
+    DiceTerm: (  # type: ignore[dict-item]
+        serde.dump_dice_term,
+        lambda raw: serde.load_dice_term(raw, "t"),
+        DiceTerm(count=2, faces=6, doubles_on_crit=False),
+    ),
+    DamageExpr: (  # type: ignore[dict-item]
+        serde.dump_damage_expr,
+        lambda raw: serde.load_damage_expr(raw, "t"),
+        parse_dice("1d8+1d4+3"),
+    ),
+    DieRoll: (  # type: ignore[dict-item]
+        serde.dump_die_roll,
+        lambda raw: serde.load_die_roll(raw, "t"),
+        DieRoll(term_index=1, faces=8, value=7, from_crit=True),
+    ),
+    DamageRoll: (  # type: ignore[dict-item]
+        serde.dump_damage_roll,
+        lambda raw: serde.load_damage_roll(raw, "t"),
+        DamageRoll(
+            dice=(DieRoll(term_index=0, faces=6, value=3, from_crit=False),),
+            flat=2,
+            ability_bonus=-1,
+            critical=False,
+            total=4,
+        ),
+    ),
+    Abilities: (  # type: ignore[dict-item]
+        serde.dump_abilities,
+        lambda raw: serde.load_abilities(raw, "t"),
+        make_abilities(forca=18, destreza=7),
+    ),
+    HitPoints: (  # type: ignore[dict-item]
+        serde.dump_hit_points,
+        lambda raw: serde.load_hit_points(raw, "t"),
+        HitPoints(current=0, maximum=13),
+    ),
+    AttackProfile: (  # type: ignore[dict-item]
+        serde.dump_attack_profile,
+        lambda raw: serde.load_attack_profile(raw, "t"),
+        make_attack(id="cimitarra", proficient=False, damage="1d6-1"),
+    ),
+    Statblock: (  # type: ignore[dict-item]
+        serde.dump_statblock,
+        lambda raw: serde.load_statblock(raw, "t"),
+        make_statblock(attacks=(make_attack(id="a"), make_attack(id="b"))),
+    ),
+    TurnBudget: (  # type: ignore[dict-item]
+        serde.dump_turn_budget,
+        lambda raw: serde.load_turn_budget(raw, "t"),
+        make_budget(action_available=False, movement_remaining_ft=0),
+    ),
+    Combatant: (  # type: ignore[dict-item]
+        serde.dump_combatant,
+        lambda raw: serde.load_combatant(raw, "t"),
+        make_combatant(id="goblin_1", team="inimigos", hp=3),
+    ),
+    TurnOrder: (  # type: ignore[dict-item]
+        serde.dump_turn_order,
+        lambda raw: serde.load_turn_order(raw, "t"),
+        _exemplo_state().turn_order,
+    ),
+    CombatState: (serde.dump_state, serde.load_state, _exemplo_state()),  # type: ignore[dict-item]
+}
+
+IDS = [c.__name__ for c in CODECS]
+
+
+def _dataclasses_com_estado() -> set[type]:
+    encontradas: set[type] = set()
+    for nome in MODULOS_COM_ESTADO:
+        modulo = importlib.import_module(f"tacticore.core.{nome}")
+        encontradas.update(
+            obj
+            for _, obj in inspect.getmembers(modulo, inspect.isclass)
+            if dataclasses.is_dataclass(obj) and obj.__module__ == modulo.__name__
+        )
+    return encontradas
+
+
+def test_todo_tipo_de_estado_tem_codec():
+    """Classe nova sem codec sumiria do save e voltaria com o default."""
+    sem_codec = _dataclasses_com_estado() - set(CODECS)
+    assert not sem_codec, (
+        f"sem codec em serde.py: {sorted(c.__name__ for c in sem_codec)}. "
+        "Tipo novo entra com codec e com entrada aqui, no mesmo commit."
+    )
+
+
+def test_o_registro_nao_tem_classe_fantasma():
+    """O inverso: codec de classe que nao existe mais e codigo morto."""
+    fantasmas = set(CODECS) - _dataclasses_com_estado()
+    assert not fantasmas, f"codec sem classe: {sorted(c.__name__ for c in fantasmas)}"
+
+
+@pytest.mark.parametrize("cls", list(CODECS), ids=IDS)
+def test_chaves_emitidas_batem_com_os_campos_declarados(cls: type):
+    dump, _, exemplo = CODECS[cls]
+    declarados = {f.name for f in dataclasses.fields(cls)}  # type: ignore[arg-type]
+    emitidos = set(dump(exemplo))
+    assert emitidos == declarados, (
+        f"{cls.__name__}: o codec emite {sorted(emitidos)} e a dataclass declara "
+        f"{sorted(declarados)}"
+    )
+
+
+@pytest.mark.parametrize("cls", list(CODECS), ids=IDS)
+def test_round_trip_passando_por_json_de_verdade(cls: type):
+    """Ida e volta pelo texto, e nao so pelo dict.
+
+    E o texto que pega tupla virando lista, enum virando string e inteiro de 64
+    bits perdendo precisao -- justamente o que um round-trip so de dicionario
+    deixaria passar.
+    """
+    dump, load, exemplo = CODECS[cls]
+    texto = json.dumps(dump(exemplo))
+    assert load(json.loads(texto)) == exemplo
