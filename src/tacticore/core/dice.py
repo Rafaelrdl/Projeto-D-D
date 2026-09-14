@@ -32,6 +32,7 @@ import re
 from dataclasses import dataclass
 
 from tacticore.core.errors import DiceSyntaxError
+from tacticore.core.rng import RngState, roll_dice
 
 MIN_COUNT = 1
 MAX_COUNT = 100
@@ -135,3 +136,98 @@ def parse_dice(text: str) -> DamageExpr:
         pos = _pular_espaco(text, pos + 1)
         if pos == fim:
             raise _erro(text, f"a expressao termina em {operador!r}, sem termo depois")
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class DieRoll:
+    """Um dado fisico rolado, com de onde ele veio.
+
+    Dado a dado e nao so a soma: o teste de critico vira uma asercao sobre a
+    lista (`quantos dados sairam, quais vieram do critico`) em vez de aritmetica
+    invertida sobre o total, que passaria por acidente com o numero certo pelo
+    motivo errado.
+    """
+
+    term_index: int
+    """Indice do termo na expressao **original**, para o log mapear no que o
+    autor escreveu mesmo depois da expansao do critico."""
+
+    faces: int
+    value: int
+    from_crit: bool
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class DamageRoll:
+    """O resultado de uma rolagem de dano, com a conta aberta."""
+
+    dice: tuple[DieRoll, ...]
+    flat: int
+    ability_bonus: int
+    critical: bool
+    total: int
+    """Soma **crua**: `sum(dice) + flat + ability_bonus`, podendo dar negativo.
+
+    O piso em zero mora num lugar so, `apply_damage`. Pisar aqui quebraria a
+    identidade acima em qualquer `1d4-3`, e a conta decomposta do log deixaria
+    de fechar exatamente nos casos em que alguem for conferir.
+    """
+
+
+def expand_crit(expr: DamageExpr) -> DamageExpr:
+    """Dobra a **contagem** de cada termo que dobra no critico.
+
+    Dobrar a contagem (`1d8` -> `2d8`) nao e o mesmo que dobrar o resultado
+    (`1d8 * 2`): as distribuicoes sao diferentes, e a SRD pede a primeira. O
+    fixo nao e tocado -- ele entra uma vez so.
+    """
+    return DamageExpr(
+        terms=tuple(
+            DiceTerm(count=t.count * 2, faces=t.faces, doubles_on_crit=t.doubles_on_crit)
+            if t.doubles_on_crit
+            else t
+            for t in expr.terms
+        ),
+        flat=expr.flat,
+    )
+
+
+def roll_damage(
+    rng: RngState,
+    expr: DamageExpr,
+    *,
+    ability_bonus: int,
+    critical: bool,
+) -> tuple[DamageRoll, RngState]:
+    """Rola o dano, um dado fisico por posicao do stream, da esquerda para a direita.
+
+    No critico os dados extras de um termo saem **logo depois** dos originais
+    daquele termo, e nao no fim da expressao: `1d8+1d6` critico consome d8, d8,
+    d6, d6. E a mesma ordem que `expand_crit` descreve, e ela e contrato --
+    trocar a ordem desloca todo o resto do combate.
+    """
+    efetiva = expand_crit(expr) if critical else expr
+
+    dice: list[DieRoll] = []
+    current = rng
+    for indice, (original, termo) in enumerate(zip(expr.terms, efetiva.terms, strict=True)):
+        valores, current = roll_dice(current, termo.count, termo.faces)
+        dice.extend(
+            DieRoll(
+                term_index=indice,
+                faces=termo.faces,
+                value=valor,
+                from_crit=posicao >= original.count,
+            )
+            for posicao, valor in enumerate(valores)
+        )
+
+    total = sum(d.value for d in dice) + expr.flat + ability_bonus
+    roll = DamageRoll(
+        dice=tuple(dice),
+        flat=expr.flat,
+        ability_bonus=ability_bonus,
+        critical=critical,
+        total=total,
+    )
+    return roll, current
