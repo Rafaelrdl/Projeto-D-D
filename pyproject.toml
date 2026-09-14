@@ -34,6 +34,10 @@ select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "ANN", "PT", "TID", "C4", "PL"
 # core e regra sem nome. Em teste, numero magico E o valor esperado.
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["PLR2004", "ANN201"]
+# PLR0913 conta argumento nomeado tambem. Um builder kw-only que espelha uma
+# dataclass de oito campos tem oito kwargs por definicao, e nenhum deles e
+# posicional -- a complexidade que a regra persegue nao existe aqui.
+"src/tacticore/core/testing.py" = ["PLR0913"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
