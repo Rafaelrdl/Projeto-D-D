@@ -174,3 +174,28 @@ class CombatState:
     """O RNG **e** estado. Sem isto, salvar e recarregar no meio de uma rodada
     mudaria o futuro do combate, e a promessa de determinismo valeria so para
     combates rodados de uma sentada."""
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CombatOutcome:
+    """Como o combate terminou.
+
+    Mora em `model.py`, e nao em `results.py`, por um motivo estrutural:
+    `events.CombatEnded` precisa dele e `results` precisa de `events`. Em
+    `results`, as dependencias fechariam um ciclo -- e referencia adiante em
+    string nao salvaria o `serde`, que precisa do simbolo em tempo de execucao.
+
+    Nunca e guardado no `CombatState`: quem quer saber chama
+    `engine.combat_result(state)`. Guardar criaria um segundo lugar onde a
+    verdade pode ficar velha, e ele se perderia no round-trip do save.
+    """
+
+    winning_team: str | None
+    """`None` quer dizer **aniquilacao mutua**, e nao "ainda rolando".
+
+    Combate em andamento e `combat_result(state) is None`, que e outra coisa.
+    Misturar os dois foi um bug real numa das propostas de arquitetura: com
+    `str | None` sozinho, o combate nunca fechava em empate.
+    """
+
+    last_round: int

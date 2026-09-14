@@ -41,6 +41,11 @@ select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "ANN", "PT", "TID", "C4", "PL"
 # dataclass de oito campos tem oito kwargs por definicao, e nenhum deles e
 # posicional -- a complexidade que a regra persegue nao existe aqui.
 "src/tacticore/core/testing.py" = ["PLR0913"]
+# serde.py e um arquivo de codec: o despacho por tipo de evento tem um ramo
+# e um return por membro da uniao, por construcao. Contar ramos ali mede o
+# tamanho do dominio, nao a complexidade da funcao -- e um `noqa` na linha
+# vive sendo removido pelo RUF100 sempre que a contagem cai abaixo do limite.
+"src/tacticore/core/serde.py" = ["PLR0911", "PLR0912"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"

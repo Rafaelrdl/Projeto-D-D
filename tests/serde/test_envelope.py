@@ -12,15 +12,17 @@ import json
 import pytest
 
 from tacticore.core.errors import InvalidSaveError, UnsupportedSchemaVersion
-from tacticore.core.model import CombatState
+from tacticore.core.model import CombatOutcome, CombatState
 from tacticore.core.rng import ALGORITHM, SplitMix64
 from tacticore.core.serde import (
     RULES_VERSION,
     SCHEMA_VERSION,
     canonical_json,
     dump,
+    dump_combat_outcome,
     fingerprint,
     load,
+    load_combat_outcome,
 )
 from tacticore.core.testing import make_combatant, make_statblock, make_state
 
@@ -236,3 +238,16 @@ def test_ordem_de_iniciativa_com_valor_nao_textual_e_recusada():
     envelope["state"]["turn_order"]["order"] = [1, 2]
     with pytest.raises(InvalidSaveError, match=r"order\[0\]: esperava texto"):
         load(envelope)
+
+
+def test_vencedor_nulo_sobrevive_ao_json():
+    """Aniquilacao mutua e `winning_team: null`, e null tem que voltar como
+    `None` e nao como a string "None"."""
+    vazio = CombatOutcome(winning_team=None, last_round=3)
+    ida = json.loads(json.dumps(dump_combat_outcome(vazio)))
+    assert load_combat_outcome(ida, "t") == vazio
+
+
+def test_vencedor_com_tipo_errado_e_recusado():
+    with pytest.raises(InvalidSaveError, match="esperava texto ou nulo"):
+        load_combat_outcome({"winning_team": 7, "last_round": 1}, "t")

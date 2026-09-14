@@ -17,6 +17,7 @@ from tacticore.core.enums import Ability, AttackOutcome, RejectionReason, SkipRe
 from tacticore.core.errors import CorruptStateError, InvalidEncounterError
 from tacticore.core.events import (
     AttackRolled,
+    CombatEnded,
     CreatureDowned,
     DamageRolled,
     Event,
@@ -32,6 +33,7 @@ from tacticore.core.events import (
 from tacticore.core.ids import CreatureId, StatblockId
 from tacticore.core.model import (
     Combatant,
+    CombatOutcome,
     CombatState,
     HitPoints,
     Statblock,
@@ -43,6 +45,7 @@ from tacticore.core.queries import (
     combatant_of,
     derive_advantage_sources,
     is_standing,
+    standing_teams,
     statblock_of,
 )
 from tacticore.core.results import ActionResult, Applied, Rejected
@@ -268,16 +271,16 @@ def _validar_movimento(
     return None
 
 
-def validate(state: CombatState, action: Action) -> Rejected | None:
-    """Confere a legalidade da acao. `None` quer dizer "pode".
+def _validar_contexto(state: CombatState, action: Action) -> Rejected | Combatant:
+    """As checagens que valem para qualquer acao, na ordem em que importam.
 
-    Roda **inteira antes de qualquer toque no RNG**. Se uma validacao viesse
-    depois de uma rolagem, uma acao recusada teria consumido entropia, e dois
-    combates com a mesma seed divergiriam so porque um deles tentou uma jogada
-    ilegal pelo caminho.
-
-    As tres primeiras checagens valem para qualquer acao; o resto e por tipo.
+    Devolve o combatente quando passa, e a rejeicao quando nao. A uniao evita
+    a dupla `(ator, rejeicao)` com um dos dois sempre `None`, que mypy nao teria
+    como estreitar e que abriria espaco para usar o ator de uma acao recusada.
     """
+    if combat_result(state) is not None:
+        return _rejeitar(state, RejectionReason.COMBAT_OVER, "o combate ja acabou")
+
     ator = combatant_of(state, action.actor)
     if ator is None:
         return _rejeitar(
@@ -292,11 +295,26 @@ def validate(state: CombatState, action: Action) -> Rejected | None:
     if not is_standing(ator):
         return _rejeitar(state, RejectionReason.ACTOR_IS_DOWN, f"{ator.id!r} esta caido")
 
+    return ator
+
+
+def validate(state: CombatState, action: Action) -> Rejected | None:
+    """Confere a legalidade da acao. `None` quer dizer "pode".
+
+    Roda **inteira antes de qualquer toque no RNG**. Se uma validacao viesse
+    depois de uma rolagem, uma acao recusada teria consumido entropia, e dois
+    combates com a mesma seed divergiriam so porque um deles tentou uma jogada
+    ilegal pelo caminho.
+    """
+    contexto = _validar_contexto(state, action)
+    if isinstance(contexto, Rejected):
+        return contexto
+
     match action:
         case AttackAction():
-            return _validar_ataque(state, ator, action)
+            return _validar_ataque(state, contexto, action)
         case MoveAction():
-            return _validar_movimento(state, ator, action)
+            return _validar_movimento(state, contexto, action)
         case EndTurnAction():
             return None
         case _:  # pragma: no cover - inalcancavel: mypy fecha a uniao
@@ -354,7 +372,29 @@ def advance_turn(state: CombatState) -> tuple[CombatState, tuple[Event, ...]]:
 
 
 def apply(state: CombatState, action: Action) -> ActionResult:
-    """O ponto de entrada unico: estado + acao, estado novo + o que aconteceu."""
+    """O ponto de entrada unico: estado + acao, estado novo + o que aconteceu.
+
+    Alem de aplicar a acao, esta funcao e o unico lugar que observa a
+    **transicao** para combate encerrado e emite `CombatEnded`. O resultado do
+    combate e derivado, entao ninguem "muda" ele e nao ha outro momento natural
+    para o evento sair; sem esta regra, ou ele nunca apareceria, ou apareceria
+    de novo a cada acao posterior -- e o golden congelaria o acidente.
+    """
+    resultado = _aplicar(state, action)
+    if not isinstance(resultado, Applied):
+        return resultado
+
+    # So chegamos aqui quando a acao foi aplicada, e `validate` recusa
+    # qualquer acao com o combate ja encerrado. Logo o combate estava em
+    # andamento antes, e basta olhar o depois -- conferir o antes de novo seria
+    # um ramo que nenhum teste consegue alcançar.
+    desfecho = combat_result(resultado.state)
+    if desfecho is not None:
+        return replace(resultado, events=(*resultado.events, CombatEnded(outcome=desfecho)))
+    return resultado
+
+
+def _aplicar(state: CombatState, action: Action) -> ActionResult:
     rejeicao = validate(state, action)
     if rejeicao is not None:
         return rejeicao
@@ -482,3 +522,63 @@ def _atacar(state: CombatState, action: AttackAction) -> Applied:
         rng=rng,
     )
     return Applied(state=novo, events=tuple(eventos))
+
+
+def combat_result(state: CombatState) -> CombatOutcome | None:
+    """`None` enquanto ha dois lados de pe; o desfecho quando nao ha mais.
+
+    **Derivado, nunca armazenado.** Guardado no estado, seria um segundo lugar
+    onde a verdade pode ficar velha -- e some no round-trip do save se alguem
+    esquecer do campo. Derivar custa uma varredura de combatentes e resolve as
+    duas coisas de uma vez.
+    """
+    de_pe = standing_teams(state)
+    if len(de_pe) >= MINIMO_DE_TIMES:
+        return None
+    return CombatOutcome(
+        winning_team=de_pe[0] if de_pe else None,
+        last_round=state.turn_order.round_number,
+    )
+
+
+def legal_actions(state: CombatState) -> tuple[Action, ...]:
+    """Um conjunto **canonico e finito** de acoes legais, nao o espaco inteiro.
+
+    A diferenca importa em `MoveAction`, cuja distancia e um inteiro: oferecer
+    todas as distancias legais daria um conjunto grande e inutil, entao sai
+    exatamente uma, gastando o movimento restante. Ataques saem um por par
+    (ataque x inimigo **de pe**), sem fontes de vantagem declaradas.
+
+    Ha uma assimetria deliberada: `apply` aceita **mais** do que isto oferece
+    -- atacar quem ja caiu, andar meia distancia, declarar fontes de vantagem.
+    Isto aqui e o menu que uma interface ou uma IA usaria, e nao a definicao de
+    legalidade, que mora em `validate`.
+
+    A ordem e deterministica: ataques na ordem da ficha, alvos em ordem
+    lexicografica de id.
+    """
+    if combat_result(state) is not None:
+        return ()
+
+    ator = state.combatants[state.turn_order.current]
+    if not is_standing(ator):
+        return ()
+
+    acoes: list[Action] = []
+
+    if ator.budget.action_available:
+        inimigos = sorted(
+            (c.id for c in state.combatants.values() if c.team != ator.team and is_standing(c)),
+            key=str,
+        )
+        acoes.extend(
+            AttackAction(actor=ator.id, target=alvo, attack_id=perfil.id)
+            for perfil in statblock_of(state, ator.id).attacks
+            for alvo in inimigos
+        )
+
+    if ator.budget.movement_remaining_ft > 0:
+        acoes.append(MoveAction(actor=ator.id, distance_ft=ator.budget.movement_remaining_ft))
+
+    acoes.append(EndTurnAction(actor=ator.id))
+    return tuple(acoes)

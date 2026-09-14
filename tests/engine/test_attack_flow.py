@@ -16,6 +16,7 @@ from tacticore.core.engine import apply
 from tacticore.core.enums import AdvantageState, AttackOutcome
 from tacticore.core.events import (
     AttackRolled,
+    CombatEnded,
     CreatureDowned,
     DamageRolled,
     HpChanged,
@@ -216,12 +217,14 @@ def test_o_par_inteiro_vai_no_log_mesmo_em_normal():
 
 
 def test_zerar_a_vida_derruba_e_anuncia():
+    """Com `b` sendo o unico vilao, derruba-lo tambem encerra o combate."""
     resultado = atacar(arena(hp_alvo=5, fita=(15, 1, 6)))
     assert [type(e) for e in resultado.events] == [
         AttackRolled,
         DamageRolled,
         HpChanged,
         CreatureDowned,
+        CombatEnded,
     ]
     assert resultado.state.combatants["b"].hp.current == 0
 
@@ -235,13 +238,18 @@ def test_o_excedente_vai_no_evento_e_nao_no_hp():
 
 
 def test_bater_em_quem_ja_caiu_e_legal_e_fica_registrado():
-    """Fidelidade a SRD, e a porta para o golpe de misericordia."""
+    """Fidelidade a SRD, e a porta para o golpe de misericordia.
+
+    Precisa de um terceiro de pe no time do alvo: com o unico vilao caido, o
+    combate ja teria acabado e a acao seria recusada com COMBAT_OVER.
+    """
     estado = arena(hp_alvo=10, fita=(15, 1, 4))
     caido = make_state(
         statblocks=tuple(estado.statblocks.values()),
         combatants=(
             estado.combatants["a"],
             make_combatant(id="b", statblock_id="defensor", team="viloes", hp=0, max_hp=10),
+            make_combatant(id="c", statblock_id="defensor", team="viloes", max_hp=10),
         ),
         current="a",
         rng=estado.rng,

@@ -40,6 +40,19 @@ def duelo(*, current: str = "a", hp_a: int = 10, budget_a: TurnBudget | None = N
     )
 
 
+def trio(*, hp_a: int = 10) -> CombatState:
+    """Como `duelo`, mas com um terceiro de pe para o combate nao acabar."""
+    return make_state(
+        statblocks=(make_statblock(id="ficha", speed_ft=30, attacks=(make_attack(id="espada"),)),),
+        combatants=(
+            make_combatant(id="a", team="herois", hp=hp_a),
+            make_combatant(id="b", team="viloes"),
+            make_combatant(id="c", team="herois"),
+        ),
+        current="a",
+    )
+
+
 def recusado(estado: CombatState, acao: Action) -> Rejected:
     resultado = apply(estado, acao)
     assert isinstance(resultado, Rejected), f"esperava rejeicao, veio {resultado}"
@@ -64,7 +77,13 @@ CASOS: dict[RejectionReason, tuple[CombatState, Action]] = {
         duelo(current="a"),
         EndTurnAction(actor=CreatureId("b")),
     ),
+    # `a` caido, mas o combate segue porque `c` esta de pe no time dele. Num
+    # duelo, um caido ja seria COMBAT_OVER e este motivo nunca apareceria.
     RejectionReason.ACTOR_IS_DOWN: (
+        trio(hp_a=0),
+        EndTurnAction(actor=CreatureId("a")),
+    ),
+    RejectionReason.COMBAT_OVER: (
         duelo(hp_a=0),
         EndTurnAction(actor=CreatureId("a")),
     ),

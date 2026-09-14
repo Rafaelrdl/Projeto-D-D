@@ -29,6 +29,7 @@ from tacticore.core.enums import (
 )
 from tacticore.core.events import (
     AttackRolled,
+    CombatEnded,
     CreatureDowned,
     DamageRolled,
     HpChanged,
@@ -45,6 +46,7 @@ from tacticore.core.model import (
     Abilities,
     AttackProfile,
     Combatant,
+    CombatOutcome,
     CombatState,
     HitPoints,
     Statblock,
@@ -145,6 +147,11 @@ CODECS: Mapping[
         _exemplo_state().turn_order,
     ),
     CombatState: (serde.dump_state, serde.load_state, _exemplo_state()),  # type: ignore[dict-item]
+    CombatOutcome: (  # type: ignore[dict-item]
+        serde.dump_combat_outcome,
+        lambda raw: serde.load_combat_outcome(raw, "t"),
+        CombatOutcome(winning_team="herois", last_round=4),
+    ),
 }
 
 # Eventos so tem ida: saem para o log, para a interface e para o golden, e
@@ -234,6 +241,10 @@ EVENT_CODECS: Mapping[type, tuple[Callable[[object], dict[str, JsonValue]], obje
     CreatureDowned: (  # type: ignore[dict-item]
         serde.dump_creature_downed,
         CreatureDowned(creature=CreatureId("vilao")),
+    ),
+    CombatEnded: (  # type: ignore[dict-item]
+        serde.dump_combat_ended,
+        CombatEnded(outcome=CombatOutcome(winning_team=None, last_round=7)),
     ),
 }
 

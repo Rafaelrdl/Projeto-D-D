@@ -75,6 +75,7 @@ class RejectionReason(StrEnum):
     NO_SUCH_TARGET = "NO_SUCH_TARGET"
     NO_SUCH_ATTACK = "NO_SUCH_ATTACK"
     SELF_TARGET_NOT_ALLOWED = "SELF_TARGET_NOT_ALLOWED"
+    COMBAT_OVER = "COMBAT_OVER"
 
 
 class SkipReason(StrEnum):

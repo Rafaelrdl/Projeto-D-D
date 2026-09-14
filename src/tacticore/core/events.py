@@ -29,7 +29,7 @@ from typing import Literal
 from tacticore.core.dice import DamageRoll
 from tacticore.core.enums import Ability, AdvantageState, AttackOutcome, SkipReason
 from tacticore.core.ids import AttackId, CreatureId
-from tacticore.core.model import HitPoints, TurnBudget
+from tacticore.core.model import CombatOutcome, HitPoints, TurnBudget
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -173,6 +173,19 @@ class CreatureDowned:
     creature: CreatureId
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CombatEnded:
+    """Sai **exatamente na transicao**, uma vez no log inteiro.
+
+    Sem a regra explicita, ou o evento nunca apareceria (porque o resultado e
+    derivado e ninguem o "muda") ou sairia a cada acao depois do fim -- e o
+    golden congelaria um comportamento acidental.
+    """
+
+    kind: Literal["combat_ended"] = "combat_ended"
+    outcome: CombatOutcome
+
+
 type Event = (
     InitiativeRolled
     | TurnOrderSet
@@ -185,4 +198,5 @@ type Event = (
     | DamageRolled
     | HpChanged
     | CreatureDowned
+    | CombatEnded
 )

@@ -40,6 +40,7 @@ from tacticore.core.enums import Ability
 from tacticore.core.errors import InvalidSaveError, UnsupportedSchemaVersion
 from tacticore.core.events import (
     AttackRolled,
+    CombatEnded,
     CreatureDowned,
     DamageRolled,
     Event,
@@ -57,6 +58,7 @@ from tacticore.core.model import (
     Abilities,
     AttackProfile,
     Combatant,
+    CombatOutcome,
     CombatState,
     HitPoints,
     Statblock,
@@ -589,6 +591,25 @@ def dump_movement_spent(event: MovementSpent) -> dict[str, JsonValue]:
     }
 
 
+def dump_combat_outcome(outcome: CombatOutcome) -> dict[str, JsonValue]:
+    return {"winning_team": outcome.winning_team, "last_round": outcome.last_round}
+
+
+def load_combat_outcome(raw: Mapping[str, JsonValue], caminho: str) -> CombatOutcome:
+    vencedor = _campo(raw, "winning_team", caminho)
+    if vencedor is not None and not isinstance(vencedor, str):
+        msg = f"{caminho}.winning_team: esperava texto ou nulo"
+        raise InvalidSaveError(msg)
+    return CombatOutcome(
+        winning_team=vencedor,
+        last_round=_inteiro(raw, "last_round", caminho),
+    )
+
+
+def dump_combat_ended(event: CombatEnded) -> dict[str, JsonValue]:
+    return {"kind": event.kind, "outcome": dump_combat_outcome(event.outcome)}
+
+
 def dump_attack_rolled(event: AttackRolled) -> dict[str, JsonValue]:
     return {
         "kind": event.kind,
@@ -640,12 +661,7 @@ def dump_creature_downed(event: CreatureDowned) -> dict[str, JsonValue]:
     return {"kind": event.kind, "creature": str(event.creature)}
 
 
-# PLR0911 e silenciado na linha, e nao no arquivo: num despacho total sobre
-# uma uniao fechada o numero de returns E o numero de eventos, por construcao.
-# PLR0912 pelo mesmo motivo: cada ramo e um tipo de evento, nao uma decisao.
-# Desligar a regra no arquivo inteiro deixaria passar uma funcao ramificada de
-# verdade escondida aqui dentro.
-def event_to_dict(event: Event) -> dict[str, JsonValue]:  # noqa: PLR0911
+def event_to_dict(event: Event) -> dict[str, JsonValue]:
     """Um evento em forma serializavel, escolhido pelo `kind`."""
     match event:
         case InitiativeRolled():
@@ -670,6 +686,8 @@ def event_to_dict(event: Event) -> dict[str, JsonValue]:  # noqa: PLR0911
             return dump_hp_changed(event)
         case CreatureDowned():
             return dump_creature_downed(event)
+        case CombatEnded():
+            return dump_combat_ended(event)
         case _:  # pragma: no cover - inalcancavel: mypy fecha a uniao
             assert_never(event)
 

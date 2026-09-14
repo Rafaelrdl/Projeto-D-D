@@ -13,18 +13,36 @@ from tacticore.core.events import (
     TurnStarted,
 )
 from tacticore.core.ids import CreatureId
-from tacticore.core.model import CombatState
+from tacticore.core.model import CombatState, TurnBudget
 from tacticore.core.results import ActionResult, Applied
 from tacticore.core.testing import make_budget, make_combatant, make_statblock, make_state
 
 
-def duelo(*, current: str = "a", hp_b: int = 10) -> CombatState:
+def duelo(*, current: str = "a") -> CombatState:
     """Dois combatentes na ordem a, b, com deslocamento de 30 pes."""
     return make_state(
         statblocks=(make_statblock(id="ficha", speed_ft=30),),
         combatants=(
             make_combatant(id="a", team="herois"),
-            make_combatant(id="b", team="viloes", hp=hp_b),
+            make_combatant(id="b", team="viloes"),
+        ),
+        current=current,
+    )
+
+
+def trio_com_um_caido(*, current: str = "a", budget_b: TurnBudget | None = None) -> CombatState:
+    """`b` caido, mas o combate segue porque `c` esta de pe no time dele.
+
+    Um duelo nao serve para testar turno pulado: com um dos dois caido, o
+    combate ja acabou, e a proxima acao seria recusada com COMBAT_OVER antes de
+    chegar no avanco de turno.
+    """
+    return make_state(
+        statblocks=(make_statblock(id="ficha", speed_ft=30),),
+        combatants=(
+            make_combatant(id="a", team="herois"),
+            make_combatant(id="b", team="viloes", hp=0, budget=budget_b),
+            make_combatant(id="c", team="viloes"),
         ),
         current=current,
     )
@@ -151,37 +169,28 @@ def test_duas_rodadas_inteiras():
 
 
 def test_quem_esta_caido_tem_o_turno_pulado():
-    estado = duelo(hp_b=0)
+    estado = trio_com_um_caido()
     resultado = aplicado(apply(estado, EndTurnAction(actor=CreatureId("a"))))
 
     pulados = [e for e in resultado.events if isinstance(e, TurnSkipped)]
     assert len(pulados) == 1
     assert pulados[0].creature == "b"
     assert pulados[0].reason is SkipReason.ACTOR_IS_DOWN
-    assert resultado.state.turn_order.current == "a"
+    assert resultado.state.turn_order.current == "c"
 
 
 def test_o_pulo_sai_antes_de_qualquer_turno_comecar():
     """A ordem dos eventos e o que o golden vai congelar."""
-    estado = duelo(hp_b=0)
+    estado = trio_com_um_caido()
     resultado = aplicado(apply(estado, EndTurnAction(actor=CreatureId("a"))))
     tipos = [type(e) for e in resultado.events]
-    assert tipos == [TurnEnded, TurnSkipped, RoundStarted, TurnStarted]
+    assert tipos == [TurnEnded, TurnSkipped, TurnStarted]
 
 
 def test_quem_esta_caido_nao_ganha_orcamento():
     """Nao se ganha um turno para depois nao usar."""
-    estado = make_state(
-        statblocks=(make_statblock(id="ficha", speed_ft=30),),
-        combatants=(
-            make_combatant(id="a", team="herois"),
-            make_combatant(
-                id="b",
-                team="viloes",
-                hp=0,
-                budget=make_budget(action_available=False, movement_remaining_ft=0),
-            ),
-        ),
+    estado = trio_com_um_caido(
+        budget_b=make_budget(action_available=False, movement_remaining_ft=0)
     )
     resultado = aplicado(apply(estado, EndTurnAction(actor=CreatureId("a"))))
     caido = resultado.state.combatants["b"]
@@ -191,9 +200,9 @@ def test_quem_esta_caido_nao_ganha_orcamento():
 
 def test_quem_caiu_continua_na_ordem_de_iniciativa():
     """Sair da ordem mudaria a posicao de todo mundo no meio da rodada."""
-    estado = duelo(hp_b=0)
+    estado = trio_com_um_caido()
     resultado = aplicado(apply(estado, EndTurnAction(actor=CreatureId("a"))))
-    assert resultado.state.turn_order.order == ("a", "b")
+    assert resultado.state.turn_order.order == ("a", "b", "c")
 
 
 def test_ninguem_de_pe_encerra_a_volta_sem_abrir_turno():
