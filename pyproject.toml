@@ -49,6 +49,8 @@ strict_equality = true
 # -------------------------------------------------------------- pytest -----
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib --strict-markers"
+# Warning acumulado em silencio e divida que vence no upgrade seguinte.
+filterwarnings = ["error"]
 testpaths = ["tests"]
 markers = [
     "slow: teste lento (estatistico); fora do loop de desenvolvimento",
