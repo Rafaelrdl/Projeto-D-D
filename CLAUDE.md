@@ -48,8 +48,11 @@ justificativa.
   `assert_never`), nunca um campo opcional de erro. Eventos saem no **retorno**,
   nunca acumulam dentro do estado.
 - **Camadas com dependência só para baixo:**
-  `ids/enums/errors -> rng/dice -> model -> actions/events -> results -> rules
-  -> queries -> engine`. Funções de `rules.py` **nunca recebem `CombatState`**.
+  `ids/enums/errors -> rng -> dice -> model -> actions/events -> results ->
+  rules -> queries -> engine`. Funções de `rules.py` **nunca recebem
+  `CombatState`** — um teste de arquitetura reprova pela assinatura.
+  `serde.py` fica preso abaixo de `rules` (não pode aplicar regra ao
+  carregar); `testing.py` fica acima de tudo (é consumidora, como os testes).
 - **Nada de `float`, `set`, `list` ou `dict` mutável em campo de estado.**
   Toda regra do SRD é inteira; ordem de iteração de `set` varia com
   `PYTHONHASHSEED` e quebra determinismo de forma intermitente.
@@ -68,6 +71,12 @@ justificativa.
   guardião **no mesmo commit**.
 - `docs/srd-atribuicao.md` registra a atribuição CC-BY-4.0 da SRD 5.1 e todo
   desvio consciente das regras originais.
+- **Todo diff de golden precisa de uma frase no commit** dizendo qual regra
+  mudou e por quê. Sem isso, `--update-golden` vira um botão de fazer o teste
+  calar. Ver `tests/golden/README.md`.
+- **Toda mudança no contrato de consumo do RNG incrementa
+  `serde.RULES_VERSION`.** O contrato está no docstring de `tacticore.core`
+  e o porquê em `docs/adr/0001`.
 
 ## Fora de escopo nesta etapa
 
