@@ -1,0 +1,4 @@
+# Windows + CI em matriz + golden JSON comparado byte a byte:
+# CRLF quebraria fingerprint por motivo nenhum.
+* text=auto eol=lf
+*.json text eol=lf
