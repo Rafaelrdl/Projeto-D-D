@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from typing import Literal, assert_never
 
 from tacticore.core.enums import Ability, AdvantageState, AttackOutcome
-from tacticore.core.model import Abilities, AttackProfile
+from tacticore.core.model import Abilities, AttackProfile, HitPoints
 from tacticore.core.rng import RngState, roll_dice
 
 D20_FACES = 20
@@ -195,3 +195,45 @@ def classify_attack(check: D20CheckResult) -> AttackOutcome:
     if check.natural == NATURAL_FUMBLE:
         return AttackOutcome.CRITICAL_MISS
     return AttackOutcome.HIT if check.success else AttackOutcome.MISS
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class DamageApplied:
+    """O que o dano de fato causou, separado do que ele valia no papel."""
+
+    dealt: int
+    """Pontos de vida realmente removidos. Nunca negativo."""
+
+    overkill: int
+    """O que sobrou depois de zerar a vida.
+
+    Vai aqui e **nunca** no HP, que satura em zero. E a unica peca cara de
+    recuperar depois: e dela que sai a morte instantanea da SRD (dano restante
+    maior ou igual ao maximo de vida), e sem guarda-la agora a regra so
+    poderia ser reconstruida refazendo a conta de tras para frente.
+    """
+
+    dropped_to_zero: bool
+    """Se **este** golpe derrubou. Bater em quem ja estava caido nao derruba de
+    novo, e sem a distincao o evento de queda sairia uma vez por golpe."""
+
+
+def apply_damage(hp: HitPoints, amount: int) -> tuple[HitPoints, DamageApplied]:
+    """Tira vida, com piso em zero nas duas pontas.
+
+    Dano negativo vira zero antes de aplicar: ataque nao cura. Cura vai ser uma
+    funcao propria, com regra propria (limite no maximo, efeito em quem esta a
+    zero) -- deixar um numero negativo passar por aqui seria ganhar uma cura
+    sem regra nenhuma, de graca e por engano.
+    """
+    efetivo = max(0, amount)
+    dealt = min(efetivo, hp.current)
+
+    return (
+        HitPoints(current=hp.current - dealt, maximum=hp.maximum),
+        DamageApplied(
+            dealt=dealt,
+            overkill=efetivo - dealt,
+            dropped_to_zero=hp.current > 0 and dealt == hp.current,
+        ),
+    )
