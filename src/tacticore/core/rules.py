@@ -17,12 +17,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, assert_never
 
-from tacticore.core.enums import Ability, AdvantageState
-from tacticore.core.model import Abilities
+from tacticore.core.enums import Ability, AdvantageState, AttackOutcome
+from tacticore.core.model import Abilities, AttackProfile
 from tacticore.core.rng import RngState, roll_dice
 
 D20_FACES = 20
 """O dado. Constante nomeada porque `20` aparece em contexto demais aqui."""
+
+NATURAL_CRIT = 20
+NATURAL_FUMBLE = 1
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -159,3 +162,36 @@ def d20_check(roll: D20Roll, *, bonus: int, dc: int) -> D20CheckResult:
         dc=dc,
         success=total >= dc,
     )
+
+
+def attack_bonus(
+    profile: AttackProfile,
+    abilities: Abilities,
+    proficiency_bonus: int,
+) -> int:
+    """Modificador do atributo do ataque, mais proficiencia se houver."""
+    modificador = ability_modifier(ability_score(abilities, profile.ability))
+    return modificador + (proficiency_bonus if profile.proficient else 0)
+
+
+def damage_bonus(profile: AttackProfile, abilities: Abilities) -> int:
+    """Modificador do **mesmo** atributo que fez o acerto.
+
+    Proficiencia nao entra aqui. E o erro de porte de regra mais comum de 5e, e
+    e silencioso: o dano fica alto demais o combate inteiro sem nada quebrar.
+    """
+    return ability_modifier(ability_score(abilities, profile.ability))
+
+
+def classify_attack(check: D20CheckResult) -> AttackOutcome:
+    """Aplica os automatismos de 20 e 1 naturais, que sao regra de **ataque**.
+
+    O 20 natural acerta qualquer CA e e critico; o 1 natural erra com qualquer
+    bonus. O `natural` de onde isso sai e o do dado escolhido pela vantagem,
+    nunca o descartado -- `roll_d20` ja garante isso.
+    """
+    if check.natural == NATURAL_CRIT:
+        return AttackOutcome.CRITICAL_HIT
+    if check.natural == NATURAL_FUMBLE:
+        return AttackOutcome.CRITICAL_MISS
+    return AttackOutcome.HIT if check.success else AttackOutcome.MISS

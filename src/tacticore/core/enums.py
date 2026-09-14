@@ -40,3 +40,19 @@ class AdvantageState(StrEnum):
     NORMAL = "NORMAL"
     ADVANTAGE = "ADVANTAGE"
     DISADVANTAGE = "DISADVANTAGE"
+
+
+class AttackOutcome(StrEnum):
+    """Como um ataque terminou.
+
+    `CRITICAL_MISS` fica separado de `MISS` mesmo sendo hoje identico a ele.
+    Custa um membro de enum agora; sem ele, a primeira mecanica de falha
+    critica (uma mesa que faz o 1 natural ter efeito) obrigaria a recalcular o
+    que era um 1 natural a partir do log, e o teste dela mexeria em todos os
+    testes que hoje afirmam `MISS`.
+    """
+
+    CRITICAL_HIT = "CRITICAL_HIT"
+    HIT = "HIT"
+    MISS = "MISS"
+    CRITICAL_MISS = "CRITICAL_MISS"
