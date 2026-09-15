@@ -114,7 +114,23 @@ BANNED = {
     "logging": "log e apresentacao; o motor devolve eventos",
     "subprocess": "nada disso no core",
     "threading": "nada disso no core",
+    # Sem isto, `from builtins import print as p` sai pela porta dos fundos da
+    # varredura de chamada abaixo, que so enxerga o nome escrito na chamada.
+    "builtins": "importar builtins e a saida de emergencia do guardiao de print",
 }
+
+# A outra metade da proibicao de I/O, e a que faltava: `print` e `input` sao
+# BUILTINS, entao nao aparecem em import nenhum e `BANNED` nunca os viu. O ruff
+# tambem nao -- `select` nao inclui `T20`. Ate aqui, um `print` em qualquer
+# modulo de `src/tacticore` passava na suite, no lint e no mypy strict, e a
+# restricao mais citada do CLAUDE.md era falsa em silencio.
+#
+# ALCANCE, escrito porque trava cujo alcance nao esta escrito envelhece mal:
+# a varredura pega `ast.Call` cujo `func` e um `ast.Name` deste conjunto. NAO
+# pega `sys.stdout.write` (cai em `BANNED["sys"]`), nao pega
+# `getattr(builtins, "print")` e nao pega `from builtins import print as p`
+# (cai em `BANNED["builtins"]`, acrescentado acima no mesmo commit).
+CHAMADAS_DE_IO = frozenset({"print", "input"})
 
 
 def _module_name(path: Path) -> str:
@@ -140,6 +156,18 @@ def _imports(path: Path) -> list[tuple[str, int, int]]:
         elif isinstance(node, ast.ImportFrom):
             found.append((node.module or "", node.level, node.lineno))
     return found
+
+
+def _chamadas_de_io(path: Path) -> list[tuple[str, int]]:
+    """(nome chamado, linha) para cada chamada a `print` ou `input`."""
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    return [
+        (node.func.id, node.lineno)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id in CHAMADAS_DE_IO
+    ]
 
 
 def _top(module: str) -> str:
@@ -195,6 +223,25 @@ def test_nenhum_modulo_importa_io_rede_nem_aleatoriedade(path: Path):
             continue
         motivo = BANNED.get(_top(module))
         assert motivo is None, f"{path.name}:{lineno} importa {module!r}: {motivo}"
+
+
+@pytest.mark.parametrize("path", TODOS, ids=IDS_TODOS)
+def test_nenhum_modulo_chama_print_nem_input(path: Path):
+    """A metade builtin da proibicao de I/O, que o guardiao de import nao ve.
+
+    Mesma lista de excecoes do teste de import, e de proposito: "existe
+    exatamente um lugar que faz I/O" e uma frase so, e duas travas que
+    discordassem sobre quem e esse lugar seriam piores que uma.
+    """
+    if path.name in EXCECOES_DE_IO:
+        pytest.skip(f"{path.name}: {EXCECOES_DE_IO[path.name]}")
+
+    for nome, lineno in _chamadas_de_io(path):
+        pytest.fail(
+            f"{path.name}:{lineno} chama {nome!r}. I/O mora em "
+            f"{', '.join(sorted(EXCECOES_DE_IO))}, e acrescentar o segundo lugar "
+            "exige editar EXCECOES_DE_IO -- ou seja, exige alguem defender a escolha."
+        )
 
 
 def test_so_existe_uma_excecao_de_io():
