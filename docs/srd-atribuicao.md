@@ -61,7 +61,11 @@ motor simplifica acrescenta uma linha aqui no mesmo commit que a simplifica**
 
 ---
 
-Onze linhas, e nenhuma delas tinha sido anotada durante a etapa 1 — a tabela
-ficou vazia do commit 1 ao commit 20 enquanto o `CLAUDE.md` a declarava
-obrigatória. Foi preenchida retroativamente, e é por isso que o ADR 0002 torna a
-manutenção dela uma obrigação de commit.
+A tabela nasceu com **onze** linhas, todas retroativas: ficou vazia do commit 1
+ao commit 20 enquanto o `CLAUDE.md` a declarava obrigatória, e nenhum dos
+desvios da etapa 1 tinha sido anotado no momento em que foi feito.
+
+É por isso que o ADR 0002 torna a manutenção dela obrigação de commit, e não de
+revisão. Desde então ela cresce junto com o código — a fatia 2 acrescentou as
+quatro linhas de grade e movimento e a de corpo a corpo contra à distância, no
+mesmo commit em que cada simplificação entrou.

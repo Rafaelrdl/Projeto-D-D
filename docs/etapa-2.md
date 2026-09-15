@@ -1,6 +1,10 @@
 # Etapa 2 — plano
 
-**Status:** proposto, aguardando decisão sobre os itens da seção 3.
+**Status:** fatias 1 e 2 implementadas; fatia 3 pendente.
+
+As decisões da seção 2 foram todas aceitas e executadas. Onde a implementação
+contrariou o plano, o plano está corrigido abaixo com a nota de por quê — vale
+mais como registro do que como profecia acertada.
 
 Três fatias, 14 passos. Se o fôlego acabar, corte a fatia 3 e feche a etapa com
 nove — narrador e grid sozinhos já mudam o que o projeto é. Acima de quinze
@@ -25,9 +29,17 @@ custaram caro por isso:
 
 | # | Fatia | Passos | O que ela torna mais barato |
 |---|---|---|---|
-| 1 | Narrador de texto e higiene | 4 | Todas. Diff de golden vira legível, e as decisões da fatia 2 passam a ser tomadas **olhando** um combate em vez de inferindo dele |
-| 2 | Grid, movimento e alcance | 5 | Paga a migração de save v1→v2 **uma vez para todas as fatias seguintes**, com a mecânica que não rola um dado sequer. E faz Caído nascer com a regra inteira da SRD |
+| 1 ✅ | Narrador de texto e higiene | 4 | Todas. Diff de golden vira legível, e as decisões da fatia 2 passam a ser tomadas **olhando** um combate em vez de inferindo dele |
+| 2 ✅ | Grid, movimento e alcance | 5 | Paga a migração de save v1→v2 **uma vez para todas as fatias seguintes**, com a mecânica que não rola um dado sequer. E faz Caído nascer com a regra inteira da SRD |
 | 3 | Condições: Caído e Cego | 5 | — |
+
+> **Como a fatia 2 saiu na prática, contra o previsto.** Os cinco passos
+> viraram cinco, mas `SCHEMA_VERSION` subiu **duas** vezes (posição e
+> alcance) em vez de uma, e `RULES_VERSION` **três** (movimento, alcance,
+> desvantagem derivada) — o que obrigou a corrigir a cláusula de
+> agrupamento do ADR 0002, que proibia justamente isso. Entrou também um
+> golden não previsto, `tiro_colado`, porque a regra do passo 8 não
+> aparecia em nenhum dos cinco existentes.
 
 ### Por que o narrador vem primeiro, e por que ele não estava na lista
 

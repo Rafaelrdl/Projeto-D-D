@@ -1,8 +1,14 @@
 # Tacticore — motor de regras de combate tático
 
 RPG tático por turnos inspirado em Baldur's Gate 3, em escala muito menor.
-Nesta fase **não existe engine, gráfico nem interface**: só um motor de regras
-puro em Python, exercitado inteiramente por testes.
+
+**Não existe engine de jogo nem interface gráfica.** O que existe é um motor de
+regras puro, exercitado por testes, mais uma camada fina de texto para que um
+combate possa ser **lido**:
+
+```bash
+uv run python -m tacticore        # roda um duelo e narra o log
+```
 
 ## Restrições inegociáveis
 
@@ -24,16 +30,30 @@ Python 3.12+ gerenciado com `uv`, pytest + pytest-cov, ruff (lint e format),
 mypy strict apontado para `src/`.
 
 ```bash
-uv sync                  # ambiente
-uv run pytest            # testes
-uv run ruff check .      # lint
-uv run ruff format .     # formatação
-uv run mypy              # tipagem (só src/)
+uv sync                          # ambiente
+uv run pytest                    # testes
+uv run pytest --cov              # testes com o gate de cobertura
+uv run ruff check . && uv run ruff format .
+uv run mypy
 ```
+
+## Os quatro pacotes
+
+```
+src/tacticore/
+├─ core/       o motor de regras. Puro.
+├─ render/     transforma o log em texto. Puro, não imprime.
+├─ content/    fichas e encontros: dado de jogo. Puro.
+└─ __main__.py o ÚNICO lugar do projeto que faz I/O.
+```
+
+Cada pacote tem uma política declarada em `POLITICAS`, no guardião de imports.
+**Pacote sem política declarada reprova** — um pacote novo nascia com trava zero
+antes disso, e `import random` lá dentro passava em tudo.
 
 ## Decisões de arquitetura já tomadas
 
-Estas saíram de uma análise de design aprovada e não devem ser revistas de
+Estas saíram de análises de design aprovadas e não devem ser revistas de
 improviso. Se alguma precisar mudar, a mudança é um commit próprio com
 justificativa.
 
@@ -51,7 +71,7 @@ justificativa.
   `ids/enums/errors -> rng -> dice -> model -> actions/events -> results ->
   rules -> queries -> engine`. Funções de `rules.py` **nunca recebem
   `CombatState`** — um teste de arquitetura reprova pela assinatura.
-  `serde.py` fica preso abaixo de `rules` (não pode aplicar regra ao
+  `serde.py` fica presa **abaixo de `rules`** (não pode aplicar regra ao
   carregar); `testing.py` fica acima de tudo (é consumidora, como os testes).
 - **Nada de `float`, `set`, `list` ou `dict` mutável em campo de estado.**
   Toda regra do SRD é inteira; ordem de iteração de `set` varia com
@@ -60,14 +80,18 @@ justificativa.
 - **Identidade por slug legível** (`CreatureId`, `AttackId` como `NewType` sobre
   `str`), nunca índice posicional, nunca `uuid4()` (lê entropia do SO).
 - **Campos derivados nunca são armazenados.** `combat_result(state)` é função.
+- **A grade é de casas, e a unidade mora com ela.** `Position` é dataclass e
+  nunca `tuple[int, int]`; `PES_POR_CASA` mora em `model` ao lado dela, e não em
+  `rules`, porque `serde` precisa dela tanto quanto quem calcula distância.
+  Diagonal custa o mesmo que reta (regra de grade da SRD), e é essa aproximação
+  que mantém toda a geometria inteira, sem um `float` em lugar nenhum.
 - **Eventos carregam dados crus, jamais frase formatada.** Formatar é
   apresentação, e apresentação dentro do core é I/O disfarçado. Quem monta a
   frase é `tacticore.render`, fora do core.
 - **Existe exatamente um lugar no projeto que faz I/O:** `tacticore.__main__`.
-  `core`, `render` e `content` são puros — não imprimem, não abrem arquivo, não
-  leem relógio. A exceção está registrada e travada em
-  `tests/architecture/test_import_boundaries.py`, e um segundo lugar que
-  imprima é decisão de arquitetura, não conveniência.
+  A exceção está registrada em `EXCECOES_DE_IO` e travada por dois testes — ela
+  vale **enquanto for uma**. Um segundo lugar que imprima é decisão de
+  arquitetura, e vem para cá antes de virar código.
 - **Golden de regra e golden de apresentação vivem em pastas separadas.**
   `tests/golden/data/` exige uma frase no commit dizendo qual regra mudou;
   `tests/render/data/` se regrava sem cerimônia. Misturados, ou se justifica
@@ -77,18 +101,33 @@ justificativa.
 
 - **Um passo por vez.** Rode os testes antes de seguir para o próximo.
 - **Commits pequenos, mensagem em português** (conventional commits).
-- Todo tipo novo de estado entra com codec de serialização e na lista do
-  guardião **no mesmo commit**.
-- `docs/srd-atribuicao.md` registra a atribuição CC-BY-4.0 da SRD 5.1 e todo
-  desvio consciente das regras originais.
-- **Todo diff de golden precisa de uma frase no commit** dizendo qual regra
-  mudou e por quê. Sem isso, `--update-golden` vira um botão de fazer o teste
-  calar. Ver `tests/golden/README.md`.
-- **`serde.RULES_VERSION` sobe quando o motor passa a calcular outro
-  resultado**, e não só quando o stream se desloca — e as subidas são agrupadas
-  num único commit de virada por fatia, nunca espalhadas por vários que
-  regravam os mesmos goldens (ADR 0002). O contrato do RNG está no docstring de
-  `tacticore.core` e o porquê em `docs/adr/0001`.
+
+### As duas que mais se pagaram
+
+- **Todo passo declara QUEM CONSOME o que ele entrega.** Na etapa 1,
+  `rules.attack_bonus` e `rules.damage_bonus` ficaram nove commits escritas,
+  testadas e nunca chamadas pelo motor, que recalculava a mesma conta inline —
+  com 100% de cobertura o tempo todo, porque os testes cobriam a função, os
+  testes cobriam o motor, e ninguém cobria a ponte.
+- **Toda trava nova entra com a VIOLAÇÃO que prova que ela dispara.** Trava que
+  nunca falhou é decoração. Foi assim que se descobriu que o guardião de imports
+  cobria metade do que prometia, e que um critério de desempate que eu tinha
+  acabado de escrever não desempatava nada.
+
+### Corolário: corte o que não tem consumidor
+
+Gancho sem quem o use, parâmetro que outra função sempre sobrescreve, ramo que
+nenhum teste alcança — tudo isso sai, e o commit diz por quê. A cobertura e as
+sondas apontam; a tentação é sempre marcar com `pragma` e seguir.
+
+A exceção é o gancho **nomeado e datado**: `derive_advantage_sources` nasceu
+vazio na etapa 1 e pagou na fatia 2 da etapa 2, porque desde o começo estava
+escrito qual regra ia consumi-lo.
+
+### Serialização e versões
+
+- Todo tipo novo de estado entra com codec e na lista do guardião **no mesmo
+  commit**.
 - **Campo novo no estado entra com quatro coisas no mesmo commit:** invariante
   em `serde.check_invariants`, teste em `test_invariants.py` adulterando o save
   de verdade, exemplo com valor **não-default** no registro `CODECS`, e o campo
@@ -98,19 +137,43 @@ justificativa.
   vazia, string vazia ou membro de enum. O guardião de lista branca rejeita
   `None` em runtime, mas o estático não barra a anotação `| None`.
 - **Um save antigo não carrega só porque o campo novo tem default.**
-  `serde._campo` levanta na chave ausente; compatibilidade exige acessor com
-  default e uma função de migração por salto de `SCHEMA_VERSION`.
+  `serde._campo` levanta na chave ausente. Compatibilidade exige uma função de
+  migração por salto em `_MIGRACOES`, e a versão nova em
+  `SCHEMA_VERSIONS_ACEITAS`. Os saltos são aplicados **em cadeia**: o
+  `save_legado.json` está em v1 e hoje atravessa dois.
+- **`serde.RULES_VERSION` sobe quando o motor passa a calcular outro
+  resultado**, e não só quando o stream se desloca. Uma subida por mudança de
+  resultado — o contador é monotônico, não é escasso. O que não pode é fatiar
+  **uma** mudança em vários commits que sobem várias vezes. Ver ADR 0002.
+
+### Goldens e documentação
+
+- **Todo diff de golden precisa de uma frase no commit** dizendo qual regra
+  mudou e por quê. Ver `tests/golden/README.md`, que também traz a tabela do que
+  cada sonda injetada realmente quebrou — e do que os goldens **não** cobrem.
+- **Golden que exercita um caso específico entra com um teste que cobra isso**,
+  e não só com o arquivo congelado. Sem ele, o golden vira mais um combate comum
+  em silêncio e a lacuna que ele tapava volta sozinha.
 - **Toda regra da SRD que o motor simplifica ganha uma linha em
-  `docs/srd-atribuicao.md` no mesmo commit.** Nenhum guardião cobra isso.
+  `docs/srd-atribuicao.md` no mesmo commit.** Nenhum guardião cobra isso. A
+  tabela ficou vazia a etapa 1 inteira, e quando foi preenchida tinha onze
+  desvios que ninguém tinha anotado. Hoje são dezoito.
 
 ## Etapas
 
-A etapa 1 (motor de regras) está completa. O plano da etapa 2 — narrador de
-texto, grid e condições — está em [docs/etapa-2.md](docs/etapa-2.md), com o que
-ficou de fora e por quê.
+- **Etapa 1 — motor de regras: completa.** RNG determinístico, dados, ataque,
+  dano, iniciativa, turno, times e fim de combate.
+- **Etapa 2 — [docs/etapa-2.md](docs/etapa-2.md):**
+  - Fatia 1 (narrador de texto, conteúdo, higiene): **completa**
+  - Fatia 2 (grid, movimento e alcance): **completa**
+  - Fatia 3 (condições Caído e Cego): pendente, com as decisões em aberto
+    listadas no plano
 
-## Fora de escopo nesta etapa
+## Fora de escopo até a etapa 3
 
-Magias, condições, grid, movimento posicional, IA, itens e classes.
-O desenho deixa porta aberta para eles (campos com default, hooks triviais),
-mas nada disso é implementado agora.
+Magias e salvaguardas, IA de inimigo, itens e classes, ataque de oportunidade,
+ação bônus e reação, multiataque, HP temporário, tipo de dano e resistência.
+
+O desenho deixa porta aberta para eles — campos com default, ganchos com
+consumidor nomeado —, mas nada disso é implementado agora. `docs/etapa-2.md`
+explica o que ficou de fora e por quê, um a um.
