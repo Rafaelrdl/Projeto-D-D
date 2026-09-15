@@ -15,10 +15,11 @@ quem le o teste teria que caçar qual dos vinte valores e o relevante.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import replace
 from typing import assert_never
 
+from tacticore.core.actions import Action
 from tacticore.core.dice import DamageExpr, parse_dice
 from tacticore.core.engine import (
     Participant,
@@ -311,16 +312,50 @@ def tape_from_events(events: Sequence[Event]) -> tuple[int, ...]:
     return tuple(dados)
 
 
+type Politica = Callable[[CombatState, tuple[Action, ...]], Action]
+"""Quem escolhe, dado o estado e o menu do momento.
+
+Recebe o **estado** alem do menu porque uma politica que so enxerga a lista de
+acoes nunca passa de um seletor de indice: `AttackAction` carrega o id do alvo
+e nao a vida dele, entao "bater em quem esta quase caindo" e indecidivel sem o
+estado. `primeira_legal` ignora o parametro, e esta certo que ignore -- e a
+unica politica que pode.
+
+A politica **nao pode** consultar `state.rng`: `apply` e oraculo, e ler a
+posicao do stream do estado recebido e prever o proximo dado. Nao ha trava para
+isso hoje; ela entra junto com a primeira politica que teria motivo para
+trapacear.
+"""
+
+
+def primeira_legal(state: CombatState, acoes: tuple[Action, ...]) -> Action:
+    """A primeira acao do menu, sempre.
+
+    Nao e uma IA e nao tenta ser: e um piloto automatico deterministico, que e
+    o que um teste de determinismo e um golden precisam. Quem decide de fato e
+    a **ordem** de `legal_actions`, que e contrato declarado no ADR 0002 sec. 1
+    justamente porque esta funcao obedece a ela sem pensar.
+    """
+    return acoes[0]
+
+
+def _nome(politica: Politica) -> str:
+    """O nome da politica para a mensagem de erro. Nem toda callable tem um."""
+    return str(getattr(politica, "__name__", politica))
+
+
 def play_out(
     state: CombatState,
     *,
+    politica: Politica = primeira_legal,
     max_actions: int = 500,
 ) -> tuple[CombatState, tuple[Event, ...]]:
-    """Joga o combate ate o fim escolhendo sempre a **primeira** acao legal.
+    """Joga o combate ate o fim, deixando `politica` escolher cada acao.
 
-    Nao e uma IA e nao tenta ser: e um piloto automatico deterministico, que e
-    o que um teste de determinismo e um golden precisam. A primeira acao legal
-    e sempre atacar o primeiro inimigo de pe, entao o combate termina.
+    O default e `primeira_legal`, que e o comportamento que esta funcao sempre
+    teve -- e por isso a troca nao regrava golden nenhum. O parametro existe
+    porque `acoes[0]` era uma **politica** embutida numa linha, sem nome e sem
+    docstring, e sem nome nao da para comparar duas.
 
     O limite de acoes existe para que um bug de regra vire uma falha de teste
     legivel em vez de um processo travado.
@@ -337,14 +372,23 @@ def play_out(
             msg = f"sem acao legal para {atual.turn_order.current!r} e o combate nao acabou"
             raise CorruptStateError(msg)
 
-        resultado = apply(atual, acoes[0])
-        if not isinstance(resultado, Applied):  # pragma: no cover
-            # Inalcancavel enquanto valer a propriedade central de
-            # `legal_actions`, que tem teste proprio em test_combat_end.py.
-            # Fica aqui assim mesmo: no dia em que a propriedade quebrar, o
-            # piloto automatico para com o motivo na mao em vez de seguir
-            # produzindo um log errado que o golden depois congela.
-            msg = f"legal_actions ofereceu {acoes[0]}, recusada com {resultado.reason}"
+        escolhida = politica(atual, acoes)
+        resultado = apply(atual, escolhida)
+        if not isinstance(resultado, Applied):
+            # Com `primeira_legal` isto e inalcancavel enquanto valer a
+            # propriedade central de `legal_actions`, que tem teste proprio em
+            # test_combat_end.py. Deixou de ser inalcancavel em geral no dia em
+            # que a politica virou parametro: uma politica de fora pode
+            # devolver acao que o menu nao ofereceu, e a assimetria deliberada
+            # entre `legal_actions` e `validate` nao a barra necessariamente.
+            #
+            # A mensagem culpava `legal_actions` por uma escolha que nunca foi
+            # dela. Agora nomeia quem escolheu, porque sao duas falhas
+            # diferentes: menu errado e escolha errada.
+            msg = (
+                f"a politica {_nome(politica)} escolheu {escolhida}, "
+                f"recusada com {resultado.reason}"
+            )
             raise CorruptStateError(msg)
 
         atual = resultado.state
