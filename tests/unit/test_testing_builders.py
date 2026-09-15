@@ -7,8 +7,12 @@ mentirem ao mesmo tempo, entao ele tambem tem teste.
 
 from __future__ import annotations
 
+import itertools
+
+import pytest
+
 from tacticore.core.dice import DiceTerm, parse_dice
-from tacticore.core.enums import Ability, Condition
+from tacticore.core.enums import Ability, Condition, canonical_conditions
 from tacticore.core.model import HitPoints
 from tacticore.core.rng import ScriptedRng, SplitMix64
 from tacticore.core.testing import (
@@ -139,3 +143,21 @@ def test_arma_sem_alcance_longo_proprio_nao_tem_longe():
 
 def test_alcance_longo_informado_passa_direto():
     assert make_attack(range_ft=20, long_range_ft=60).long_range_ft == 60
+
+
+@pytest.mark.parametrize("permutacao", list(itertools.permutations(Condition)))
+def test_a_ordem_canonica_independe_da_ordem_de_entrada(permutacao: tuple[Condition, ...]):
+    """Um teste que hoje e fraco e que fica forte sozinho.
+
+    Com UM membro em `Condition`, ha uma permutacao so e a afirmacao e trivial:
+    "ordenar pelo valor" e "tirar repeticao preservando a ordem" dao o mesmo
+    resultado, e uma sonda confirmou que trocar uma pela outra nao quebra teste
+    nenhum. Nao da para consertar sem inventar um membro de enum sem mecanica,
+    que e o que o docstring de `enums.py` proibe.
+
+    O que da para fazer e escrever a propriedade de forma que ela passe a valer
+    no instante em que o segundo membro entrar -- e ai sao duas permutacoes, e
+    a diferenca entre as duas implementacoes aparece. E o mesmo padrao dos
+    testes de exaustividade sobre `RejectionReason` e `Event`.
+    """
+    assert canonical_conditions(permutacao) == canonical_conditions(sorted(Condition, key=str))
