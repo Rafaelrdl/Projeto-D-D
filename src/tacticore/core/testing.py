@@ -15,8 +15,8 @@ quem le o teste teria que caçar qual dos vinte valores e o relevante.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import replace
+from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
+from dataclasses import dataclass, replace
 from typing import assert_never
 
 from tacticore.core.actions import Action
@@ -344,35 +344,63 @@ def _nome(politica: Politica) -> str:
     return str(getattr(politica, "__name__", politica))
 
 
-def play_out(
+@dataclass(frozen=True, slots=True, kw_only=True)
+class Passo:
+    """Um ponto de escolha: o retrato, o que aconteceu ate aqui, e o menu.
+
+    **Nao e estado de combate** e nao vai para save nenhum: e o que o laco
+    entrega a quem conduz, entre duas acoes. Por isso nao tem codec em `serde`
+    nem entrada no guardiao de tipos -- e por isso, tambem, pode carregar a
+    tupla de eventos, que dentro do estado seria proibida.
+    """
+
+    state: CombatState
+    """O combate **antes** da escolha deste passo."""
+
+    events: tuple[Event, ...]
+    """O que aconteceu desde o passo anterior. Vazio no primeiro."""
+
+    actions: tuple[Action, ...]
+    """O menu. **Vazio significa fim**: o ultimo passo cedido e o retrato
+    final, e quem conduz para ai sem enviar mais nada."""
+
+
+def conduzir(
     state: CombatState,
     *,
-    politica: Politica = primeira_legal,
     max_actions: int = 500,
-) -> tuple[CombatState, tuple[Event, ...]]:
-    """Joga o combate ate o fim, deixando `politica` escolher cada acao.
+    origem: str = "quem conduz",
+) -> Generator[Passo, Action, None]:
+    """O laco de combate, com um ponto de suspensao onde a escolha entra.
 
-    O default e `primeira_legal`, que e o comportamento que esta funcao sempre
-    teve -- e por isso a troca nao regrava golden nenhum. O parametro existe
-    porque `acoes[0]` era uma **politica** embutida numa linha, sem nome e sem
-    docstring, e sem nome nao da para comparar duas.
+    Cede um `Passo` e recebe a `Action` escolhida, ate ceder um passo de menu
+    vazio -- o fim.
 
-    O limite de acoes existe para que um bug de regra vire uma falha de teste
-    legivel em vez de um processo travado.
+    Existe para que continue havendo **um** laco de combate no projeto. O
+    docstring de `tacticore.__main__` recusa por escrito um segundo laco so
+    para o CLI, e recusa com razao: seriam dois motores de decisao para manter
+    em sincronia. Mas o CLI precisa de duas coisas que `play_out` nao da --
+    narrar turno a turno e parar para ler a escolha -- e a diferenca entre as
+    duas funcoes e exatamente essa: `play_out` resolve o ponto de suspensao com
+    uma `Politica`, e o comando o resolve com uma pessoa.
+
+    `origem` so aparece em mensagem de erro, e serve para dizer **quem**
+    mandou a acao recusada: de dentro daqui nao da para saber.
     """
     atual = state
-    log: list[Event] = []
+    desde_o_ultimo: tuple[Event, ...] = ()
 
     for _ in range(max_actions):
         if combat_result(atual) is not None:
-            return atual, tuple(log)
+            yield Passo(state=atual, events=desde_o_ultimo, actions=())
+            return
 
         acoes = legal_actions(atual)
         if not acoes:
             msg = f"sem acao legal para {atual.turn_order.current!r} e o combate nao acabou"
             raise CorruptStateError(msg)
 
-        escolhida = politica(atual, acoes)
+        escolhida = yield Passo(state=atual, events=desde_o_ultimo, actions=acoes)
         resultado = apply(atual, escolhida)
         if not isinstance(resultado, Applied):
             # Com `primeira_legal` isto e inalcancavel enquanto valer a
@@ -385,14 +413,39 @@ def play_out(
             # A mensagem culpava `legal_actions` por uma escolha que nunca foi
             # dela. Agora nomeia quem escolheu, porque sao duas falhas
             # diferentes: menu errado e escolha errada.
-            msg = (
-                f"a politica {_nome(politica)} escolheu {escolhida}, "
-                f"recusada com {resultado.reason}"
-            )
+            msg = f"{origem} escolheu {escolhida}, recusada com {resultado.reason}"
             raise CorruptStateError(msg)
 
         atual = resultado.state
-        log.extend(resultado.events)
+        desde_o_ultimo = resultado.events
 
     msg = f"o combate nao terminou em {max_actions} acoes"
     raise CorruptStateError(msg)
+
+
+def play_out(
+    state: CombatState,
+    *,
+    politica: Politica = primeira_legal,
+    max_actions: int = 500,
+) -> tuple[CombatState, tuple[Event, ...]]:
+    """Joga o combate ate o fim, resolvendo cada escolha com `politica`.
+
+    E `conduzir` com o ponto de suspensao tapado por uma funcao. O default e
+    `primeira_legal`, que e o comportamento que esta funcao sempre teve -- e
+    por isso a troca nao regrava golden nenhum. O parametro existe porque
+    `acoes[0]` era uma **politica** embutida numa linha, sem nome e sem
+    docstring, e sem nome nao da para comparar duas.
+
+    O limite de acoes existe para que um bug de regra vire uma falha de teste
+    legivel em vez de um processo travado.
+    """
+    conducao = conduzir(state, max_actions=max_actions, origem=f"a politica {_nome(politica)}")
+    log: list[Event] = []
+    passo = next(conducao)
+
+    while True:
+        log.extend(passo.events)
+        if not passo.actions:
+            return passo.state, tuple(log)
+        passo = conducao.send(politica(passo.state, passo.actions))

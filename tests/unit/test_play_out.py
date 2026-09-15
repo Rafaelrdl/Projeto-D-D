@@ -17,10 +17,12 @@ import pytest
 from tacticore.core.actions import Action, AttackAction
 from tacticore.core.engine import combat_result, legal_actions, start_combat
 from tacticore.core.errors import CorruptStateError
+from tacticore.core.events import CombatEnded, Event
 from tacticore.core.ids import AttackId, CreatureId
 from tacticore.core.model import CombatState, Statblock
 from tacticore.core.rng import SplitMix64
 from tacticore.core.testing import (
+    conduzir,
     make_attack,
     make_combatant,
     make_duelo,
@@ -151,3 +153,87 @@ def test_a_politica_que_escolhe_fora_do_menu_e_nomeada_no_erro():
     `legal_actions`, passou a nomear quem de fato escolheu."""
     with pytest.raises(CorruptStateError, match=r"a politica fora_do_menu escolheu"):
         play_out(duelo_aberto(), politica=fora_do_menu)
+
+
+# ------------------------------------------------------- o condutor --------
+#
+# `conduzir` existe para que continue havendo UM laco de combate no projeto.
+# O docstring de `tacticore.__main__` recusa por escrito um segundo laco so
+# para o CLI, e o CLI precisa de duas coisas que `play_out` nao da: narrar
+# turno a turno e parar para ler a escolha.
+
+
+def a_mao(state: CombatState) -> tuple[CombatState, tuple[Event, ...]]:
+    """Conduz o combate a mao, como o comando faz, e devolve o mesmo par."""
+    conducao = conduzir(state, origem="o teste")
+    log: list[Event] = []
+    passo = next(conducao)
+    while True:
+        log.extend(passo.events)
+        if not passo.actions:
+            return passo.state, tuple(log)
+        passo = conducao.send(primeira_legal(passo.state, passo.actions))
+
+
+def test_conduzir_a_mao_da_o_mesmo_que_play_out():
+    """A trava central: sao o mesmo laco, e nao dois que se parecem.
+
+    Se divergissem, o combate do comando interativo seria outro motor -- que e
+    exatamente o que o docstring de `__main__` recusa."""
+    estado = duelo_aberto()
+    assert a_mao(estado) == play_out(estado)
+
+
+def test_o_primeiro_passo_nao_tem_evento_e_tem_menu():
+    passo = next(conduzir(duelo_aberto()))
+    assert passo.events == ()
+    assert passo.actions
+
+
+def test_o_ultimo_passo_tem_menu_vazio_e_o_estado_final():
+    """Menu vazio e o sinal de fim, e nao `StopIteration`: quem conduz para
+    olhando o passo que recebeu, sem precisar de `try`."""
+    estado = duelo_aberto()
+    final, _ = a_mao(estado)
+    assert combat_result(final) is not None
+
+
+def test_os_eventos_dos_passos_somam_o_log_inteiro():
+    """Cada passo carrega o que aconteceu desde o anterior. Se um passo
+    perdesse os seus, o comando narraria menos que o golden."""
+    estado = duelo_aberto()
+    _, por_passo = a_mao(estado)
+    _, de_uma_vez = play_out(estado)
+    assert por_passo == de_uma_vez
+
+
+def test_o_ultimo_passo_carrega_os_eventos_da_acao_final():
+    """Sem isto, o fim do combate -- CombatEnded inclusive -- sumiria do log
+    de quem conduz a mao, porque ele acontece na ultima acao."""
+    conducao = conduzir(duelo_aberto())
+    passo = next(conducao)
+    while passo.actions:
+        passo = conducao.send(primeira_legal(passo.state, passo.actions))
+    assert any(isinstance(e, CombatEnded) for e in passo.events)
+
+
+def test_o_condutor_nomeia_quem_mandou_a_acao_recusada():
+    """De dentro do laco nao da para saber quem escolheu; `origem` e como
+    `play_out` diz "a politica X" e o comando diz "o jogador"."""
+    conducao = conduzir(duelo_aberto(), origem="o jogador")
+    passo = next(conducao)
+    intrusa = fora_do_menu(passo.state, passo.actions)
+    with pytest.raises(CorruptStateError, match="o jogador escolheu"):
+        conducao.send(intrusa)
+
+
+def _conduzir_ate(estado: CombatState, quantas: int) -> None:
+    conducao = conduzir(estado, max_actions=2)
+    passo = next(conducao)
+    for _ in range(quantas):
+        passo = conducao.send(primeira_legal(passo.state, passo.actions))
+
+
+def test_o_condutor_tambem_para_no_limite_de_acoes():
+    with pytest.raises(CorruptStateError, match="nao terminou em 2 acoes"):
+        _conduzir_ate(duelo_aberto(), 3)
