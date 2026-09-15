@@ -53,6 +53,7 @@ from tacticore.core.results import ActionResult, Applied, Rejected
 from tacticore.core.rng import RngState, position, roll_die
 from tacticore.core.rules import (
     D20_FACES,
+    PES_POR_CASA,
     InitiativeEntry,
     ability_modifier,
     ability_score,
@@ -60,6 +61,7 @@ from tacticore.core.rules import (
     attack_math,
     classify_attack,
     d20_check,
+    distance_ft,
     initiative_sort_key,
     resolve_advantage,
     roll_d20,
@@ -269,18 +271,35 @@ def _validar_movimento(
     ator: Combatant,
     action: MoveAction,
 ) -> Rejected | None:
-    if action.distance_ft < 0:
-        return _rejeitar(
-            state,
-            RejectionReason.INVALID_DISTANCE,
-            f"distancia negativa: {action.distance_ft}",
-        )
-    if action.distance_ft > ator.budget.movement_remaining_ft:
+    """Custo e ocupacao.
+
+    Nao ha mais distancia negativa a recusar: com destino em vez de distancia,
+    "andar -5 pes" deixou de ser representavel -- o tipo eliminou o motivo de
+    rejeicao, que e sempre melhor do que continuar checando.
+    """
+    custo = distance_ft(ator.position, action.to)
+    if custo > ator.budget.movement_remaining_ft:
         return _rejeitar(
             state,
             RejectionReason.NOT_ENOUGH_MOVEMENT,
-            f"{action.distance_ft} pes pedidos e {ator.budget.movement_remaining_ft} disponiveis",
+            f"{custo} pes ate ({action.to.x}, {action.to.y}) e "
+            f"{ator.budget.movement_remaining_ft} disponiveis",
         )
+
+    ocupante = _ocupante(state, action.to)
+    if ocupante is not None and ocupante.id != ator.id:
+        return _rejeitar(
+            state,
+            RejectionReason.SQUARE_OCCUPIED,
+            f"({action.to.x}, {action.to.y}) ja tem {ocupante.id!r}",
+        )
+    return None
+
+
+def _ocupante(state: CombatState, casa: Position) -> Combatant | None:
+    for c in state.combatants.values():
+        if c.position == casa:
+            return c
     return None
 
 
@@ -418,12 +437,23 @@ def _aplicar(state: CombatState, action: Action) -> ActionResult:
 
         case MoveAction():
             ator = state.combatants[action.actor]
-            restante = ator.budget.movement_remaining_ft - action.distance_ft
+            custo = distance_ft(ator.position, action.to)
+            restante = ator.budget.movement_remaining_ft - custo
             novo = _com_combatente(
                 state,
-                replace(ator, budget=replace(ator.budget, movement_remaining_ft=restante)),
+                replace(
+                    ator,
+                    position=action.to,
+                    budget=replace(ator.budget, movement_remaining_ft=restante),
+                ),
             )
-            evento = MovementSpent(creature=ator.id, feet=action.distance_ft, remaining_ft=restante)
+            evento = MovementSpent(
+                creature=ator.id,
+                origin=ator.position,
+                destination=action.to,
+                feet=custo,
+                remaining_ft=restante,
+            )
             return Applied(state=novo, events=(evento,))
 
         case EndTurnAction():
@@ -587,8 +617,67 @@ def legal_actions(state: CombatState) -> tuple[Action, ...]:
             for alvo in inimigos
         )
 
-    if ator.budget.movement_remaining_ft > 0:
-        acoes.append(MoveAction(actor=ator.id, distance_ft=ator.budget.movement_remaining_ft))
+    destino = _casa_canonica(state, ator)
+    if destino is not None:
+        acoes.append(MoveAction(actor=ator.id, to=destino))
 
     acoes.append(EndTurnAction(actor=ator.id))
     return tuple(acoes)
+
+
+def _casa_canonica(state: CombatState, ator: Combatant) -> Position | None:
+    """A UMA casa que o menu oferece, ou `None` quando nao vale andar.
+
+    Com destino em vez de distancia, "todas as casas alcancaveis" e um conjunto
+    grande e inutil -- com 30 pes sao 168 casas, e nenhuma interface mostraria
+    isso. `legal_actions` continua sendo um cardapio curado, e a regra de
+    curadoria e: **a casa alcancavel e livre que mais aproxima do inimigo de pe
+    mais perto**, desempatando por (x, y) para ser deterministica.
+
+    Isso e heuristica, e nao otimo -- exatamente como "ataque o primeiro inimigo
+    de pe" ja era. A diferenca e que sem ela o piloto automatico nunca fecha
+    distancia, e um encontro que comeca a 20 pes nunca vira combate.
+
+    Devolve `None` quando nao ha para onde ir que melhore: sem orcamento, sem
+    inimigo de pe, ou ja na melhor casa alcancavel.
+    """
+    alcance = ator.budget.movement_remaining_ft // PES_POR_CASA
+    if alcance < 1:
+        return None
+
+    # Pre-condicao, garantida por `legal_actions`: o ator esta de pe e o combate
+    # esta em andamento, logo existe ao menos um outro time de pe, logo existe
+    # inimigo. Uma guarda aqui seria ramo que nenhum teste alcanca -- e se um dia
+    # a pre-condicao quebrar, o `min` abaixo estoura no lugar exato do erro, que
+    # e o que se quer de uma invariante violada.
+    inimigos = [
+        c.position for c in state.combatants.values() if c.team != ator.team and is_standing(c)
+    ]
+
+    def chave(casa: Position) -> tuple[int, int, int, int, int]:
+        """Boa, barata, direta -- nessa ordem, e so entao arbitraria.
+
+        1. Distancia ao inimigo mais perto: e para isso que se anda.
+        2. Custo em pes: desempate que faz FICAR PARADO vencer quando andar nao
+           melhora nada. Sem ele, quem ja esta colado no inimigo da um passo
+           lateral inutil todo turno, porque a casa ao lado empata na distancia.
+        3. Desvio de Manhattan: a distancia de Chebyshev empata muitas casas
+           (ir reto e ir na diagonal custam o mesmo), e entre elas a menos
+           torta e a que alguem desenharia.
+        4. `x` e `y`: o que sobrar tem que ser deterministico.
+        """
+        custo = distance_ft(ator.position, casa)
+        desvio = abs(casa.x - ator.position.x) + abs(casa.y - ator.position.y)
+        perto = min(distance_ft(casa, alvo) for alvo in inimigos)
+        return (perto, custo, desvio, casa.x, casa.y)
+
+    ocupadas = {c.position for c in state.combatants.values() if c.id != ator.id}
+    candidatas = [
+        casa
+        for dx in range(-alcance, alcance + 1)
+        for dy in range(-alcance, alcance + 1)
+        if (casa := Position(x=ator.position.x + dx, y=ator.position.y + dy)) not in ocupadas
+    ]
+
+    melhor = min(candidatas, key=chave)
+    return None if melhor == ator.position else melhor

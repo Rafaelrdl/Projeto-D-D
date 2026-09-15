@@ -16,20 +16,26 @@ from dataclasses import dataclass
 from typing import Literal
 
 from tacticore.core.ids import AttackId, CreatureId
+from tacticore.core.model import Position
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class MoveAction:
-    """Gastar deslocamento.
+    """Ir para uma casa.
 
-    Sem posicao: nao ha grid nesta etapa. Debita o orcamento e mais nada, que
-    e o pedaco do movimento que **existe** hoje. Quando o grid entrar, esta
-    acao ganha um destino e a economia de turno continua a mesma.
+    Destino, e nao trajeto: o motor nao sabe por onde se passou, so onde se
+    chegou. Enquanto nao houver terreno dificil nem obstaculo, o trajeto nao
+    muda resposta nenhuma -- e guardar um caminho que ninguem consulta seria
+    guardar o que nao se usa.
+
+    O custo e a distancia de grade entre a casa atual e o destino, e sai do
+    mesmo orcamento em pes de `TurnBudget`. A economia de turno nao mudou: o
+    que mudou e que agora ela paga por algo.
     """
 
     kind: Literal["move"] = "move"
     actor: CreatureId
-    distance_ft: int
+    to: Position
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

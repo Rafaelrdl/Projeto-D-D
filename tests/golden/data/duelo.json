@@ -107,9 +107,17 @@
     },
     {
       "creature": "lamina",
-      "feet": 35,
+      "destination": {
+        "x": 1,
+        "y": 0
+      },
+      "feet": 15,
       "kind": "movement_spent",
-      "remaining_ft": 0
+      "origin": {
+        "x": 4,
+        "y": 0
+      },
+      "remaining_ft": 20
     },
     {
       "creature": "lamina",
@@ -201,9 +209,9 @@
       }
     }
   ],
-  "final_fingerprint": "f509da5ad149a69eea3e519e7395efea2403e2a243711a7fc81d2ebdec87a554",
+  "final_fingerprint": "7cc4f6395dcb564113c4ddadddf71db52d9288974f2c64e2f7b72cdc03d300a1",
   "rng_algo": "splitmix64-lemire/1",
-  "rules_version": 1,
+  "rules_version": 2,
   "schema_version": 2,
   "seed": "20250914"
 }

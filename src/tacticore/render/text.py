@@ -101,7 +101,12 @@ def narrate_event(event: Event) -> str:
             return f"{event.creature} encerra o turno"
 
         case MovementSpent():
-            return f"{event.creature} anda {event.feet} pes ({event.remaining_ft} restantes)"
+            return (
+                f"{event.creature} anda {event.feet} pes "
+                f"({event.origin.x},{event.origin.y}) -> "
+                f"({event.destination.x},{event.destination.y}), "
+                f"{event.remaining_ft} restantes"
+            )
 
         case AttackRolled():
             return (

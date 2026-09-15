@@ -129,9 +129,17 @@
     },
     {
       "creature": "lamina_2",
-      "feet": 35,
+      "destination": {
+        "x": 1,
+        "y": 1
+      },
+      "feet": 15,
       "kind": "movement_spent",
-      "remaining_ft": 0
+      "origin": {
+        "x": 4,
+        "y": 1
+      },
+      "remaining_ft": 20
     },
     {
       "creature": "lamina_2",
@@ -217,12 +225,6 @@
     },
     {
       "creature": "bruto_1",
-      "feet": 30,
-      "kind": "movement_spent",
-      "remaining_ft": 0
-    },
-    {
-      "creature": "bruto_1",
       "kind": "turn_ended"
     },
     {
@@ -301,12 +303,6 @@
     },
     {
       "creature": "lamina_1",
-      "feet": 35,
-      "kind": "movement_spent",
-      "remaining_ft": 0
-    },
-    {
-      "creature": "lamina_1",
       "kind": "turn_ended"
     },
     {
@@ -353,12 +349,6 @@
     },
     {
       "creature": "lamina_2",
-      "feet": 35,
-      "kind": "movement_spent",
-      "remaining_ft": 0
-    },
-    {
-      "creature": "lamina_2",
       "kind": "turn_ended"
     },
     {
@@ -396,12 +386,6 @@
     },
     {
       "creature": "bruto_1",
-      "feet": 30,
-      "kind": "movement_spent",
-      "remaining_ft": 0
-    },
-    {
-      "creature": "bruto_1",
       "kind": "turn_ended"
     },
     {
@@ -436,12 +420,6 @@
       "target_ac": 15,
       "target_was_down": false,
       "total": 11
-    },
-    {
-      "creature": "lamina_1",
-      "feet": 35,
-      "kind": "movement_spent",
-      "remaining_ft": 0
     },
     {
       "creature": "lamina_1",
@@ -533,12 +511,6 @@
     {
       "creature": "bruto_1",
       "kind": "creature_downed"
-    },
-    {
-      "creature": "lamina_2",
-      "feet": 35,
-      "kind": "movement_spent",
-      "remaining_ft": 0
     },
     {
       "creature": "lamina_2",
@@ -635,9 +607,9 @@
       }
     }
   ],
-  "final_fingerprint": "5cba132ffb51faa93037da07aca9761db26f1060bb8e93dbb33704aa131a6690",
+  "final_fingerprint": "e30e06844e2d818b1dba8f87924d5041aff4a3d1d67336f1e789bdb69f00c3a8",
   "rng_algo": "splitmix64-lemire/1",
-  "rules_version": 1,
+  "rules_version": 2,
   "schema_version": 2,
   "seed": "31337"
 }

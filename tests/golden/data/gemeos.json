@@ -107,9 +107,17 @@
     },
     {
       "creature": "gemeo_a",
-      "feet": 35,
+      "destination": {
+        "x": 3,
+        "y": 0
+      },
+      "feet": 15,
       "kind": "movement_spent",
-      "remaining_ft": 0
+      "origin": {
+        "x": 0,
+        "y": 0
+      },
+      "remaining_ft": 20
     },
     {
       "creature": "gemeo_a",
@@ -147,12 +155,6 @@
       "target_ac": 15,
       "target_was_down": false,
       "total": 13
-    },
-    {
-      "creature": "gemeo_b",
-      "feet": 35,
-      "kind": "movement_spent",
-      "remaining_ft": 0
     },
     {
       "creature": "gemeo_b",
@@ -197,12 +199,6 @@
     },
     {
       "creature": "gemeo_a",
-      "feet": 35,
-      "kind": "movement_spent",
-      "remaining_ft": 0
-    },
-    {
-      "creature": "gemeo_a",
       "kind": "turn_ended"
     },
     {
@@ -237,12 +233,6 @@
       "target_ac": 15,
       "target_was_down": false,
       "total": 6
-    },
-    {
-      "creature": "gemeo_b",
-      "feet": 35,
-      "kind": "movement_spent",
-      "remaining_ft": 0
     },
     {
       "creature": "gemeo_b",
@@ -338,9 +328,9 @@
       }
     }
   ],
-  "final_fingerprint": "4b011ac4290afbe3e737fb28694570262e41987f1394e21fd2553b82732bace5",
+  "final_fingerprint": "8ab1a39dee45e9458add7f32936e6834d901006d8e515cdff40de8991e8cc6e6",
   "rng_algo": "splitmix64-lemire/1",
-  "rules_version": 1,
+  "rules_version": 2,
   "schema_version": 2,
   "seed": "7"
 }

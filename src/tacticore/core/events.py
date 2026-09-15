@@ -29,7 +29,7 @@ from typing import Literal
 from tacticore.core.dice import DamageRoll
 from tacticore.core.enums import Ability, AdvantageState, AttackOutcome, SkipReason
 from tacticore.core.ids import AttackId, CreatureId
-from tacticore.core.model import CombatOutcome, HitPoints, TurnBudget
+from tacticore.core.model import CombatOutcome, HitPoints, Position, TurnBudget
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -95,6 +95,8 @@ class TurnSkipped:
 class MovementSpent:
     kind: Literal["movement_spent"] = "movement_spent"
     creature: CreatureId
+    origin: Position
+    destination: Position
     feet: int
     remaining_ft: int
 

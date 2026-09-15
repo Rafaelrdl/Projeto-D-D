@@ -7,7 +7,7 @@ from tacticore.core.engine import apply, combat_result, legal_actions
 from tacticore.core.enums import RejectionReason
 from tacticore.core.events import CombatEnded
 from tacticore.core.ids import AttackId, CreatureId
-from tacticore.core.model import CombatState
+from tacticore.core.model import CombatState, Position
 from tacticore.core.results import Applied, Rejected
 from tacticore.core.rng import ScriptedRng
 from tacticore.core.serde import dump, load
@@ -28,6 +28,7 @@ def arena(
     extras: tuple[tuple[str, str, int], ...] = (),
     fita: tuple[int, ...] = (),
     budget_a: object = None,
+    posicoes: dict[str, tuple[int, int]] | None = None,
 ) -> CombatState:
     """`a` (herois) contra `b` (viloes), mais quem `extras` pedir."""
     ficha = make_statblock(
@@ -47,6 +48,7 @@ def arena(
         combatants=tuple(lutadores),
         current="a",
         rng=ScriptedRng(script=fita),
+        posicoes=posicoes,
     )
 
 
@@ -167,7 +169,7 @@ def test_depois_do_fim_tudo_e_recusado():
 
     for acao in (
         EndTurnAction(actor=CreatureId("a")),
-        MoveAction(actor=CreatureId("a"), distance_ft=5),
+        MoveAction(actor=CreatureId("a"), to=Position(x=0, y=1)),
         AttackAction(actor=CreatureId("a"), target=CreatureId("b"), attack_id=ESPADA),
     ):
         recusa = apply(acabado, acao)
@@ -187,25 +189,37 @@ def test_o_fim_nao_e_anunciado_duas_vezes():
 # ------------------------------------------------------ legal_actions ------
 
 
-def test_o_menu_de_um_turno_inteiro():
+def test_o_menu_de_quem_ja_esta_colado_no_inimigo():
+    """`make_state` enfileira, entao `a` e `b` nascem adjacentes.
+
+    Sem movimento que melhore a posicao, o menu nao oferece andar -- e isso e o
+    comportamento certo, nao uma lacuna."""
     acoes = legal_actions(arena())
     assert acoes == (
         AttackAction(actor=CreatureId("a"), target=CreatureId("b"), attack_id=ESPADA),
-        MoveAction(actor=CreatureId("a"), distance_ft=30),
         EndTurnAction(actor=CreatureId("a")),
     )
 
 
-def test_o_menu_oferece_um_movimento_so_e_nao_todas_as_distancias():
-    """Conjunto canonico e finito: com a distancia sendo um inteiro, oferecer
-    todas as legais daria um menu grande e inutil."""
-    movimentos = [a for a in legal_actions(arena()) if isinstance(a, MoveAction)]
+def test_o_menu_oferece_uma_casa_so_e_nao_todas_as_alcancaveis():
+    """Conjunto canonico e finito: com 30 pes sao 168 casas alcancaveis, e
+    nenhuma interface mostraria isso. A curadoria e "a que mais aproxima"."""
+    estado = arena(posicoes={"a": (0, 0), "b": (8, 0)})
+    movimentos = [a for a in legal_actions(estado) if isinstance(a, MoveAction)]
     assert len(movimentos) == 1
-    assert movimentos[0].distance_ft == 30
+    assert movimentos[0].to == Position(x=6, y=0)
+
+
+def test_a_casa_canonica_aproxima_do_inimigo_mais_perto():
+    estado = arena(posicoes={"a": (0, 0), "b": (20, 0), "c": (0, 9)}, extras=(("c", "viloes", 10),))
+    movimentos = [a for a in legal_actions(estado) if isinstance(a, MoveAction)]
+    assert movimentos[0].to == Position(x=0, y=6), "anda na direcao de c, nao de b"
 
 
 def test_sem_movimento_restante_o_menu_nao_oferece_andar():
-    estado = arena(budget_a=make_budget(movement_remaining_ft=0))
+    estado = arena(
+        posicoes={"a": (0, 0), "b": (8, 0)}, budget_a=make_budget(movement_remaining_ft=0)
+    )
     assert not any(isinstance(a, MoveAction) for a in legal_actions(estado))
 
 

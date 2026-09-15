@@ -194,7 +194,13 @@ EVENT_CODECS: Mapping[type, tuple[Callable[[object], dict[str, JsonValue]], obje
     TurnEnded: (serde.dump_turn_ended, TurnEnded(creature=CreatureId("heroi"))),  # type: ignore[dict-item]
     MovementSpent: (  # type: ignore[dict-item]
         serde.dump_movement_spent,
-        MovementSpent(creature=CreatureId("heroi"), feet=15, remaining_ft=15),
+        MovementSpent(
+            creature=CreatureId("heroi"),
+            origin=Position(x=1, y=-2),
+            destination=Position(x=4, y=-2),
+            feet=15,
+            remaining_ft=15,
+        ),
     ),
     AttackRolled: (  # type: ignore[dict-item]
         serde.dump_attack_rolled,

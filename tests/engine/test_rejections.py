@@ -16,7 +16,7 @@ from tacticore.core.actions import Action, AttackAction, EndTurnAction, MoveActi
 from tacticore.core.engine import apply, validate
 from tacticore.core.enums import RejectionReason
 from tacticore.core.ids import AttackId, CreatureId
-from tacticore.core.model import CombatState, TurnBudget
+from tacticore.core.model import CombatState, Position, TurnBudget
 from tacticore.core.results import Applied, Rejected
 from tacticore.core.rng import SplitMix64, position
 from tacticore.core.testing import (
@@ -89,13 +89,12 @@ CASOS: dict[RejectionReason, tuple[CombatState, Action]] = {
     ),
     RejectionReason.NOT_ENOUGH_MOVEMENT: (
         duelo(),
-        MoveAction(actor=CreatureId("a"), distance_ft=31),
+        # 30 pes de orcamento, 7 casas de distancia: 35 pes.
+        MoveAction(actor=CreatureId("a"), to=Position(x=7, y=0)),
     ),
-    # Motivo proprio e nao "orcamento insuficiente": andar -5 pes DEVOLVERIA
-    # movimento, e a mensagem certa e a que diz o que esta realmente errado.
-    RejectionReason.INVALID_DISTANCE: (
+    RejectionReason.SQUARE_OCCUPIED: (
         duelo(),
-        MoveAction(actor=CreatureId("a"), distance_ft=-5),
+        MoveAction(actor=CreatureId("a"), to=Position(x=1, y=0)),
     ),
     RejectionReason.ACTION_ALREADY_USED: (
         duelo(budget_a=make_budget(action_available=False)),
@@ -131,7 +130,7 @@ def test_cada_motivo_de_rejeicao(reason: RejectionReason):
 def test_movimento_alem_do_que_sobrou():
     """A checagem e contra o que RESTA, e nao contra o deslocamento da ficha."""
     estado = duelo(budget_a=make_budget(movement_remaining_ft=10))
-    resultado = recusado(estado, MoveAction(actor=CreatureId("a"), distance_ft=15))
+    resultado = recusado(estado, MoveAction(actor=CreatureId("a"), to=Position(x=3, y=0)))
     assert resultado.reason is RejectionReason.NOT_ENOUGH_MOVEMENT
 
 
@@ -144,7 +143,7 @@ def test_validate_e_apply_concordam():
     for acao in (
         EndTurnAction(actor=CreatureId("fantasma")),
         EndTurnAction(actor=CreatureId("b")),
-        MoveAction(actor=CreatureId("a"), distance_ft=99),
+        MoveAction(actor=CreatureId("a"), to=Position(x=99, y=0)),
     ):
         rejeicao = validate(estado, acao)
         assert rejeicao is not None

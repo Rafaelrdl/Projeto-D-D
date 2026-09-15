@@ -36,7 +36,7 @@ from tacticore.core.events import (
     TurnStarted,
 )
 from tacticore.core.ids import AttackId, CreatureId
-from tacticore.core.model import CombatOutcome, HitPoints
+from tacticore.core.model import CombatOutcome, HitPoints, Position
 from tacticore.core.testing import make_budget
 from tacticore.render import narrate, narrate_event
 
@@ -126,8 +126,14 @@ CASOS: list[tuple[str, Event, str]] = [
     ("turn_ended", TurnEnded(creature=HEROI), "heroi encerra o turno"),
     (
         "movement_spent",
-        MovementSpent(creature=HEROI, feet=15, remaining_ft=20),
-        "heroi anda 15 pes (20 restantes)",
+        MovementSpent(
+            creature=HEROI,
+            origin=Position(x=0, y=0),
+            destination=Position(x=3, y=0),
+            feet=15,
+            remaining_ft=20,
+        ),
+        "heroi anda 15 pes (0,0) -> (3,0), 20 restantes",
     ),
     (
         "attack_rolled",

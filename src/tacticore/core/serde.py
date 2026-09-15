@@ -79,7 +79,7 @@ SCHEMA_VERSIONS_ACEITAS: Final[tuple[int, ...]] = (1, 2)
 Uma versao so entra aqui junto com a funcao de migracao que a traz ate a atual.
 Sem isso, a lista viraria uma lista de boas intencoes."""
 
-RULES_VERSION: Final[int] = 1
+RULES_VERSION: Final[int] = 2
 """Muda quando o RESULTADO muda: ordem de consumo do RNG ou qualquer regra.
 
 Incrementar isto e obrigacao de todo commit que altere o que o motor calcula.
@@ -651,6 +651,8 @@ def dump_movement_spent(event: MovementSpent) -> dict[str, JsonValue]:
     return {
         "kind": event.kind,
         "creature": str(event.creature),
+        "origin": dump_position(event.origin),
+        "destination": dump_position(event.destination),
         "feet": event.feet,
         "remaining_ft": event.remaining_ft,
     }

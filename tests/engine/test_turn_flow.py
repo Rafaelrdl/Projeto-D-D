@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from tacticore.core.actions import EndTurnAction, MoveAction
 from tacticore.core.engine import advance_turn, apply
-from tacticore.core.enums import SkipReason
+from tacticore.core.enums import RejectionReason, SkipReason
 from tacticore.core.events import (
     MovementSpent,
     RoundStarted,
@@ -13,13 +13,20 @@ from tacticore.core.events import (
     TurnStarted,
 )
 from tacticore.core.ids import CreatureId
-from tacticore.core.model import CombatState, TurnBudget
-from tacticore.core.results import ActionResult, Applied
+from tacticore.core.model import CombatState, Position, TurnBudget
+from tacticore.core.results import ActionResult, Applied, Rejected
 from tacticore.core.testing import make_budget, make_combatant, make_statblock, make_state
 
 
+def casa(x: int, y: int) -> Position:
+    return Position(x=x, y=y)
+
+
 def duelo(*, current: str = "a") -> CombatState:
-    """Dois combatentes na ordem a, b, com deslocamento de 30 pes."""
+    """Dois combatentes na ordem a, b, com deslocamento de 30 pes.
+
+    `make_state` enfileira: `a` em (0,0) e `b` em (1,0). Os testes de
+    movimento andam no eixo y para nao esbarrar em `b`."""
     return make_state(
         statblocks=(make_statblock(id="ficha", speed_ft=30),),
         combatants=(
@@ -58,42 +65,47 @@ def aplicado(resultado: ActionResult) -> Applied:
 
 def test_movimento_debita_o_orcamento():
     estado = duelo()
-    resultado = aplicado(apply(estado, MoveAction(actor=CreatureId("a"), distance_ft=15)))
+    resultado = aplicado(apply(estado, MoveAction(actor=CreatureId("a"), to=casa(0, 3))))
     assert resultado.state.combatants["a"].budget.movement_remaining_ft == 15
+    assert resultado.state.combatants["a"].position == casa(0, 3)
 
 
 def test_movimento_emite_o_evento_com_o_que_sobrou():
     estado = duelo()
-    resultado = aplicado(apply(estado, MoveAction(actor=CreatureId("a"), distance_ft=20)))
+    resultado = aplicado(apply(estado, MoveAction(actor=CreatureId("a"), to=casa(0, 4))))
     evento = resultado.events[0]
     assert isinstance(evento, MovementSpent)
     assert (evento.feet, evento.remaining_ft) == (20, 10)
+    assert (evento.origin, evento.destination) == (casa(0, 0), casa(0, 4))
 
 
 def test_movimento_pode_ser_gasto_em_pedacos():
     estado = duelo()
-    depois = aplicado(apply(estado, MoveAction(actor=CreatureId("a"), distance_ft=10))).state
-    depois = aplicado(apply(depois, MoveAction(actor=CreatureId("a"), distance_ft=10))).state
+    depois = aplicado(apply(estado, MoveAction(actor=CreatureId("a"), to=casa(0, 2)))).state
+    depois = aplicado(apply(depois, MoveAction(actor=CreatureId("a"), to=casa(0, 4)))).state
     assert depois.combatants["a"].budget.movement_remaining_ft == 10
+    assert depois.combatants["a"].position == casa(0, 4)
 
 
 def test_movimento_nao_gasta_a_acao():
     """Uma acao e um movimento sao orcamentos separados."""
     estado = duelo()
-    resultado = aplicado(apply(estado, MoveAction(actor=CreatureId("a"), distance_ft=30)))
+    resultado = aplicado(apply(estado, MoveAction(actor=CreatureId("a"), to=casa(0, 6))))
     assert resultado.state.combatants["a"].budget.action_available is True
 
 
 def test_mover_zero_e_legal_e_nao_muda_nada():
     estado = duelo()
-    resultado = aplicado(apply(estado, MoveAction(actor=CreatureId("a"), distance_ft=0)))
+    resultado = aplicado(apply(estado, MoveAction(actor=CreatureId("a"), to=casa(0, 0))))
     assert resultado.state.combatants["a"].budget == estado.combatants["a"].budget
+    assert resultado.state.combatants["a"].position == casa(0, 0)
 
 
 def test_o_estado_original_nao_e_tocado():
     estado = duelo()
-    apply(estado, MoveAction(actor=CreatureId("a"), distance_ft=30))
+    apply(estado, MoveAction(actor=CreatureId("a"), to=casa(0, 6)))
     assert estado.combatants["a"].budget.movement_remaining_ft == 30
+    assert estado.combatants["a"].position == casa(0, 0)
 
 
 # ------------------------------------------------------------- turno -------
@@ -113,7 +125,7 @@ def test_encerrar_turno_emite_fim_e_comeco():
 
 def test_o_orcamento_e_resetado_no_comeco_do_turno():
     estado = duelo()
-    gasto = aplicado(apply(estado, MoveAction(actor=CreatureId("a"), distance_ft=30))).state
+    gasto = aplicado(apply(estado, MoveAction(actor=CreatureId("a"), to=casa(0, 6)))).state
     volta = aplicado(apply(gasto, EndTurnAction(actor=CreatureId("a")))).state
     volta = aplicado(apply(volta, EndTurnAction(actor=CreatureId("b")))).state
 
@@ -218,3 +230,50 @@ def test_ninguem_de_pe_encerra_a_volta_sem_abrir_turno():
     assert novo.turn_order.round_number == 2
     assert not any(isinstance(e, TurnStarted) for e in eventos)
     assert sum(isinstance(e, TurnSkipped) for e in eventos) == 2
+
+
+# ----------------------------------------------------------- grade ---------
+
+
+def test_o_custo_e_a_distancia_de_grade_e_nao_o_numero_de_casas():
+    """Diagonal custa 5 pes como a reta: tres casas na diagonal sao 15 pes."""
+    estado = duelo()
+    resultado = aplicado(apply(estado, MoveAction(actor=CreatureId("a"), to=casa(3, 3))))
+    evento = resultado.events[0]
+    assert isinstance(evento, MovementSpent)
+    assert evento.feet == 15
+
+
+def test_nao_da_para_terminar_na_casa_de_outro():
+    """`b` esta em (1,0) por causa do enfileiramento de `make_state`."""
+    estado = duelo()
+    resultado = apply(estado, MoveAction(actor=CreatureId("a"), to=casa(1, 0)))
+    assert isinstance(resultado, Rejected)
+    assert resultado.reason is RejectionReason.SQUARE_OCCUPIED
+
+
+def test_ficar_na_propria_casa_e_legal_e_de_graca():
+    """Custo zero, e nao "casa ocupada": o ocupante e o proprio ator."""
+    estado = duelo()
+    resultado = aplicado(apply(estado, MoveAction(actor=CreatureId("a"), to=casa(0, 0))))
+    evento = resultado.events[0]
+    assert isinstance(evento, MovementSpent)
+    assert evento.feet == 0
+    assert evento.remaining_ft == 30
+
+
+def test_a_casa_liberada_por_quem_andou_pode_ser_ocupada():
+    """Sem isto, duas criaturas nunca trocariam de lugar em dois turnos."""
+    estado = duelo()
+    depois = aplicado(apply(estado, MoveAction(actor=CreatureId("a"), to=casa(0, 2)))).state
+    depois = aplicado(apply(depois, EndTurnAction(actor=CreatureId("a")))).state
+    resultado = aplicado(apply(depois, MoveAction(actor=CreatureId("b"), to=casa(0, 0))))
+    assert resultado.state.combatants["b"].position == casa(0, 0)
+
+
+def test_andar_para_longe_tambem_e_legal():
+    """O motor nao tem opiniao tatica: fugir e uma jogada, nao um erro."""
+    estado = duelo()
+    resultado = aplicado(apply(estado, MoveAction(actor=CreatureId("a"), to=casa(-6, 0))))
+    assert resultado.state.combatants["a"].position == casa(-6, 0)
+    assert resultado.state.combatants["a"].budget.movement_remaining_ft == 0
