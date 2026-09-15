@@ -48,6 +48,7 @@ from tacticore.core.events import (
     InitiativeRolled,
     MovementSpent,
     RoundStarted,
+    StoodUp,
     TurnEnded,
     TurnOrderSet,
     TurnSkipped,
@@ -80,7 +81,7 @@ SCHEMA_VERSIONS_ACEITAS: Final[tuple[int, ...]] = (1, 2, 3, 4)
 Uma versao so entra aqui junto com a funcao de migracao que a traz ate a atual.
 Sem isso, a lista viraria uma lista de boas intencoes."""
 
-RULES_VERSION: Final[int] = 6
+RULES_VERSION: Final[int] = 7
 """Muda quando o RESULTADO muda: ordem de consumo do RNG ou qualquer regra.
 
 Incrementar isto e obrigacao de todo commit que altere o que o motor calcula.
@@ -824,6 +825,15 @@ def dump_creature_downed(event: CreatureDowned) -> dict[str, JsonValue]:
     return {"kind": event.kind, "creature": str(event.creature)}
 
 
+def dump_stood_up(event: StoodUp) -> dict[str, JsonValue]:
+    return {
+        "kind": event.kind,
+        "creature": str(event.creature),
+        "feet": event.feet,
+        "remaining_ft": event.remaining_ft,
+    }
+
+
 def event_to_dict(event: Event) -> dict[str, JsonValue]:
     """Um evento em forma serializavel, escolhido pelo `kind`."""
     match event:
@@ -851,6 +861,8 @@ def event_to_dict(event: Event) -> dict[str, JsonValue]:
             return dump_creature_downed(event)
         case CombatEnded():
             return dump_combat_ended(event)
+        case StoodUp():
+            return dump_stood_up(event)
         case _:  # pragma: no cover - inalcancavel: mypy fecha a uniao
             assert_never(event)
 

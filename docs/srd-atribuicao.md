@@ -43,7 +43,9 @@ motor simplifica acrescenta uma linha aqui no mesmo commit que a simplifica**
 | Empate de iniciativa é decidido pelo mestre | Desempate por valor de Destreza e, persistindo, por id | Não há mestre. Empate resolvido pela ordem de montagem mataria o determinismo em silêncio |
 | Ação bônus e reação | `TurnBudget` só tem ação e movimento | Entram junto com a primeira mecânica que as consuma |
 | Ataque de oportunidade | Não existe | Faz o movimento consumir RNG pela primeira vez |
-| Levantar-se de Caído custa metade do deslocamento | A condição Caído não existe ainda | Fatia 3 da etapa 2 |
+| Caído: o caído só pode **rastejar**, e rastejar custa o dobro | Ele anda normalmente | Custo de terreno não existe; a grade é vazia e sem terreno difícil |
+| Caído vem de **Empurrar** (opção da ação de Ataque) ou de magia | A única fonte é o encontro: `Participant.conditions` | Empurrar é teste de atributo oposto — d20 contra d20 — e com o quadro fixo de dois d20 são quatro dados por empurrão. Seria a primeira mecânica a consumir RNG fora de ataque, e o ADR 0002 manda que ela entre sozinha |
+| **Cego**, e as outras condições da SRD | Só Caído existe | As três fontes de Cego — magia, salvaguarda e iluminação — estão fora de escopo por decisão escrita, e nada removeria a condição. Um cego nasceria cego e morreria cego |
 
 ### Grade e movimento
 

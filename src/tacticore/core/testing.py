@@ -38,6 +38,7 @@ from tacticore.core.events import (
     InitiativeRolled,
     MovementSpent,
     RoundStarted,
+    StoodUp,
     TurnEnded,
     TurnOrderSet,
     TurnSkipped,
@@ -302,6 +303,7 @@ def tape_from_events(events: Sequence[Event]) -> tuple[int, ...]:
                 | HpChanged()
                 | CreatureDowned()
                 | CombatEnded()
+                | StoodUp()
             ):
                 continue
             case _:  # pragma: no cover - inalcancavel: mypy fecha a uniao

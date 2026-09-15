@@ -30,6 +30,7 @@ from tacticore.core.events import (
     InitiativeRolled,
     MovementSpent,
     RoundStarted,
+    StoodUp,
     TurnEnded,
     TurnOrderSet,
     TurnSkipped,
@@ -207,6 +208,11 @@ CASOS: list[tuple[str, Event, str]] = [
             overkill=7,
         ),
         "  vilao: 3 -> 0 hp (3 de dano, 7 desperdicados)",
+    ),
+    (
+        "stood_up",
+        StoodUp(creature=HEROI, feet=15, remaining_ft=20),
+        "heroi levanta (15 pes, 20 restantes)",
     ),
     ("creature_downed", CreatureDowned(creature=VILAO), "  vilao cai"),
     (

@@ -11,7 +11,13 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, replace
 from typing import assert_never
 
-from tacticore.core.actions import Action, AttackAction, EndTurnAction, MoveAction
+from tacticore.core.actions import (
+    Action,
+    AttackAction,
+    EndTurnAction,
+    MoveAction,
+    StandUpAction,
+)
 from tacticore.core.dice import roll_damage
 from tacticore.core.enums import (
     Ability,
@@ -32,6 +38,7 @@ from tacticore.core.events import (
     InitiativeRolled,
     MovementSpent,
     RoundStarted,
+    StoodUp,
     TurnEnded,
     TurnOrderSet,
     TurnSkipped,
@@ -72,6 +79,7 @@ from tacticore.core.rules import (
     initiative_sort_key,
     resolve_advantage,
     roll_d20,
+    stand_up_cost_ft,
 )
 
 PRIMEIRA_RODADA = 1
@@ -341,6 +349,20 @@ def _ocupante(state: CombatState, casa: Position) -> Combatant | None:
     return None
 
 
+def _validar_levantar(state: CombatState, ator: Combatant) -> Rejected | None:
+    if Condition.CAIDO not in ator.conditions:
+        return _rejeitar(state, RejectionReason.NOT_PRONE, f"{ator.id!r} nao esta caido")
+
+    custo = stand_up_cost_ft(statblock_of(state, ator.id).speed_ft)
+    if custo > ator.budget.movement_remaining_ft:
+        return _rejeitar(
+            state,
+            RejectionReason.NOT_ENOUGH_MOVEMENT,
+            f"levantar custa {custo} pes e {ator.id!r} tem {ator.budget.movement_remaining_ft}",
+        )
+    return None
+
+
 def _validar_contexto(state: CombatState, action: Action) -> Rejected | Combatant:
     """As checagens que valem para qualquer acao, na ordem em que importam.
 
@@ -385,6 +407,8 @@ def validate(state: CombatState, action: Action) -> Rejected | None:
             return _validar_ataque(state, contexto, action)
         case MoveAction():
             return _validar_movimento(state, contexto, action)
+        case StandUpAction():
+            return _validar_levantar(state, contexto)
         case EndTurnAction():
             return None
         case _:  # pragma: no cover - inalcancavel: mypy fecha a uniao
@@ -493,6 +517,25 @@ def _aplicar(state: CombatState, action: Action) -> ActionResult:
                 remaining_ft=restante,
             )
             return Applied(state=novo, events=(evento,))
+
+        case StandUpAction():
+            ator = state.combatants[action.actor]
+            custo = stand_up_cost_ft(statblock_of(state, ator.id).speed_ft)
+            restante = ator.budget.movement_remaining_ft - custo
+            novo = _com_combatente(
+                state,
+                replace(
+                    ator,
+                    conditions=canonical_conditions(
+                        c for c in ator.conditions if c is not Condition.CAIDO
+                    ),
+                    budget=replace(ator.budget, movement_remaining_ft=restante),
+                ),
+            )
+            return Applied(
+                state=novo,
+                events=(StoodUp(creature=ator.id, feet=custo, remaining_ft=restante),),
+            )
 
         case EndTurnAction():
             novo, eventos = advance_turn(state)
@@ -657,6 +700,15 @@ def legal_actions(state: CombatState) -> tuple[Action, ...]:
             for alvo in inimigos
             if distance_ft(ator.position, alvo.position) <= perfil.long_range_ft
         )
+
+    # Levantar entra no degrau do MOVIMENTO, porque e movimento que ele gasta --
+    # e antes de andar, porque um caido que anda continua caido e volta a atacar
+    # com desvantagem. So e oferecido com orcamento para pagar, como todo item
+    # do menu.
+    if Condition.CAIDO in ator.conditions and ator.budget.movement_remaining_ft >= (
+        stand_up_cost_ft(statblock_of(state, ator.id).speed_ft)
+    ):
+        acoes.append(StandUpAction(actor=ator.id))
 
     destino = _casa_canonica(state, ator)
     if destino is not None:

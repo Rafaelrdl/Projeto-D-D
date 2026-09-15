@@ -188,8 +188,25 @@ class CombatEnded:
     outcome: CombatOutcome
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StoodUp:
+    """Alguem se levantou, e quanto custou.
+
+    Evento proprio e nao `MovementSpent`: quem levanta gasta movimento sem sair
+    da casa, e um `MovementSpent` com origem igual ao destino leria como bug. E
+    nao e um `ConditionRemoved` generico porque ha exatamente um produtor -- o
+    generico entra quando a segunda condicao ganhar remocao.
+    """
+
+    kind: Literal["stood_up"] = "stood_up"
+    creature: CreatureId
+    feet: int
+    remaining_ft: int
+
+
 type Event = (
-    InitiativeRolled
+    StoodUp
+    | InitiativeRolled
     | TurnOrderSet
     | RoundStarted
     | TurnStarted

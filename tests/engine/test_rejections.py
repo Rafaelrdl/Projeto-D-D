@@ -12,7 +12,13 @@ from __future__ import annotations
 
 import pytest
 
-from tacticore.core.actions import Action, AttackAction, EndTurnAction, MoveAction
+from tacticore.core.actions import (
+    Action,
+    AttackAction,
+    EndTurnAction,
+    MoveAction,
+    StandUpAction,
+)
 from tacticore.core.engine import apply, validate
 from tacticore.core.enums import RejectionReason
 from tacticore.core.ids import AttackId, CreatureId
@@ -127,6 +133,8 @@ CASOS: dict[RejectionReason, tuple[CombatState, Action]] = {
         duelo(),
         AttackAction(actor=CreatureId("a"), target=CreatureId("a"), attack_id=AttackId("espada")),
     ),
+    # Levantar sem estar caido.
+    RejectionReason.NOT_PRONE: (duelo(), StandUpAction(actor=CreatureId("a"))),
     # A espada alcanca 5 pes; `b` esta a 20.
     RejectionReason.OUT_OF_RANGE: (
         longe(),

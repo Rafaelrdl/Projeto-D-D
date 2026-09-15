@@ -78,4 +78,17 @@ class AttackAction:
     disadvantage_sources: tuple[str, ...] = ()
 
 
-type Action = AttackAction | MoveAction | EndTurnAction
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StandUpAction:
+    """Levantar-se de Caido.
+
+    Nao gasta a acao do turno: custa metade do deslocamento, como manda a SRD.
+    Hoje e a UNICA transicao de condicao que o motor sabe fazer -- a aplicacao
+    vem do encontro, e a fonte de verdade (Empurrar, magia) chega na etapa 3.
+    """
+
+    kind: Literal["stand_up"] = "stand_up"
+    actor: CreatureId
+
+
+type Action = AttackAction | MoveAction | EndTurnAction | StandUpAction

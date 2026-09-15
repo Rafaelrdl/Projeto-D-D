@@ -32,6 +32,7 @@ from tacticore.core.events import (
     InitiativeRolled,
     MovementSpent,
     RoundStarted,
+    StoodUp,
     TurnEnded,
     TurnOrderSet,
     TurnSkipped,
@@ -130,6 +131,9 @@ def narrate_event(event: Event) -> str:
                 f"{RECUO}{event.creature}: {event.before.current} -> "
                 f"{event.after.current} hp ({event.dealt} de dano{perdido})"
             )
+
+        case StoodUp():
+            return f"{event.creature} levanta ({event.feet} pes, {event.remaining_ft} restantes)"
 
         case CreatureDowned():
             return f"{RECUO}{event.creature} cai"

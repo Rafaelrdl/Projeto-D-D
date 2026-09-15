@@ -323,3 +323,17 @@ def is_adjacent(origem: Position, destino: Position) -> bool:
     mim?" -- nunca deveria responder sim por causa do proprio ator.
     """
     return origem != destino and distance_ft(origem, destino) == PES_POR_CASA
+
+
+def stand_up_cost_ft(speed_ft: int) -> int:
+    """Metade do deslocamento, arredondando para baixo.
+
+    Levantar-se **nao e uma acao** na SRD: custa metade do movimento. Isso cabe
+    sem inventar nada porque `TurnBudget` ja guarda movimento em pes e nao um
+    bool de "ja andou" -- a decisao esta no docstring dele desde a etapa 1, e
+    era exatamente este o caso que ela previa.
+
+    Arredonda para baixo pela mesma razao que `ability_modifier`: `//` em Python
+    arredonda para baixo, e toda conta do SRD neste motor e inteira.
+    """
+    return speed_ft // 2

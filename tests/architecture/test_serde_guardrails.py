@@ -37,6 +37,7 @@ from tacticore.core.events import (
     InitiativeRolled,
     MovementSpent,
     RoundStarted,
+    StoodUp,
     TurnEnded,
     TurnOrderSet,
     TurnSkipped,
@@ -258,6 +259,10 @@ EVENT_CODECS: Mapping[type, tuple[Callable[[object], dict[str, JsonValue]], obje
     CreatureDowned: (  # type: ignore[dict-item]
         serde.dump_creature_downed,
         CreatureDowned(creature=CreatureId("vilao")),
+    ),
+    StoodUp: (  # type: ignore[dict-item]
+        serde.dump_stood_up,
+        StoodUp(creature=CreatureId("heroi"), feet=15, remaining_ft=20),
     ),
     CombatEnded: (  # type: ignore[dict-item]
         serde.dump_combat_ended,
