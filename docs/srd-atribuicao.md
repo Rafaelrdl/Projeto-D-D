@@ -12,6 +12,47 @@ License, disponível em <https://creativecommons.org/licenses/by/4.0/legalcode>.
 Cada linha aqui é uma simplificação deliberada, não um esquecimento. Quando uma
 delas for implementada, a linha sai daqui e vira teste.
 
+Manter esta tabela é obrigação de commit, não de revisão: **toda regra que o
+motor simplifica acrescenta uma linha aqui no mesmo commit que a simplifica**
+(ADR 0002, decisão 5). Nenhum guardião automático cobra isso.
+
+### Vida, queda e morte
+
 | Regra da SRD | O que fazemos | Por quê |
 |---|---|---|
-| _(a preencher conforme as regras entram)_ | | |
+| Criatura a 0 HP fica **Inconsciente**, e ataques contra ela têm vantagem — crítico automático em corpo a corpo a 1,5 m | Criatura a 0 HP só "caiu". Nenhuma vantagem é concedida, e o evento marca `target_was_down` | Vantagem derivada do estado depende de condições existirem. Entra na fatia 3 |
+| Testes de resistência contra a morte, estabilização, morte instantânea por excedente ≥ máximo | Nada disso. O excedente é registrado em `HpChanged.overkill` e não faz nada | O excedente guardado agora é o que torna a morte instantânea barata depois |
+| Cura, HP temporário | Não existem. `apply_damage` recusa valor negativo em vez de curar | Cura tem regra própria (limite no máximo, efeito em quem está a zero) e merece função própria |
+
+### Ataque e dano
+
+| Regra da SRD | O que fazemos | Por quê |
+|---|---|---|
+| Alcance e distância: cada ataque tem alcance, e atacar fora dele é impossível | Qualquer alvo é atacável de qualquer lugar | Não há grid. Fatia 2 da etapa 2 |
+| Tipo de dano, resistência, vulnerabilidade, imunidade | Dano não tem tipo | Tipo sem resistência implementada é campo inerte no objeto mais serializado do projeto |
+| Multiataque | Uma ação, um ataque | Muda o contrato de consumo do RNG por ação |
+| Acuidade (usar DES com arma de acuidade) | `AttackProfile.ability` é um atributo só | Vira `tuple[Ability, ...]` quando entrar |
+| Atacar a si mesmo é mecanicamente legal | Recusado com `SELF_TARGET_NOT_ALLOWED` | Na prática é sempre bug de chamador ou de IA. A exceção volta como campo com default quando houver efeito em área |
+| Bônus de proficiência derivado de nível ou CR | Campo explícito na ficha | Tabela de proficiência é conteúdo; deixar o motor deduzi-la é pôr conteúdo dentro da regra |
+
+### Iniciativa e turno
+
+| Regra da SRD | O que fazemos | Por quê |
+|---|---|---|
+| Empate de iniciativa é decidido pelo mestre | Desempate por valor de Destreza e, persistindo, por id | Não há mestre. Empate resolvido pela ordem de montagem mataria o determinismo em silêncio |
+| Ação bônus e reação | `TurnBudget` só tem ação e movimento | Entram junto com a primeira mecânica que as consuma |
+| Ataque de oportunidade | Não existe | Faz o movimento consumir RNG pela primeira vez |
+| Levantar-se de Caído custa metade do deslocamento | A condição Caído não existe ainda | Fatia 3 da etapa 2 |
+
+### Notação de dados
+
+| Regra da SRD | O que fazemos | Por quê |
+|---|---|---|
+| — | `2d6-1d4` (termo de dados negativo) é recusado pela gramática | Não existe nas regras implementadas, e tornaria ambígua a pergunta "o que dobra no crítico?" |
+
+---
+
+Onze linhas, e nenhuma delas tinha sido anotada durante a etapa 1 — a tabela
+ficou vazia do commit 1 ao commit 20 enquanto o `CLAUDE.md` a declarava
+obrigatória. Foi preenchida retroativamente, e é por isso que o ADR 0002 torna a
+manutenção dela uma obrigação de commit.

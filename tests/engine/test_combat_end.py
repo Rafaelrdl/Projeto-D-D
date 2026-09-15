@@ -303,3 +303,51 @@ def test_menu_vazio_para_quem_esta_caido():
     )
     assert combat_result(estado) is None
     assert legal_actions(estado) == ()
+
+
+# --------------------------------------------- contrato do ADR 0002 (a2) ----
+
+
+def test_encerrar_o_turno_fecha_o_menu():
+    """Cláusula (a2) do ADR 0002, e a trava que a mantem honesta.
+
+    `play_out` escolhe `acoes[0]` e gera tres dos quatro goldens, entao a ordem
+    de `legal_actions` e contrato de facto. Enquanto ela for incondicional,
+    `EndTurnAction` fecha a lista e acao nova entra antes dele.
+
+    O enunciado ingenuo ("EndTurn e sempre o ultimo") seria falso: a lista e
+    vazia em dois casos legitimos. Dai o par de asercoes.
+    """
+    for estado in (
+        arena(),
+        arena(budget_a=make_budget(action_available=False)),
+        arena(budget_a=make_budget(movement_remaining_ft=0)),
+        arena(budget_a=make_budget(action_available=False, movement_remaining_ft=0)),
+        arena(extras=(("c", "viloes", 10), ("d", "viloes", 0))),
+    ):
+        acoes = legal_actions(estado)
+        assert acoes, "turno em andamento sempre tem ao menos EndTurn"
+        assert isinstance(acoes[-1], EndTurnAction)
+        assert sum(isinstance(a, EndTurnAction) for a in acoes) == 1
+
+
+def test_o_menu_so_e_vazio_em_dois_casos():
+    """A outra metade da cláusula: quando `legal_actions` devolve `()`.
+
+    Se um terceiro caso aparecer, `play_out` passa a levantar CorruptStateError
+    no meio de um combate legitimo -- e o golden que ele gera some junto.
+    """
+    acabado = arena(hp_b=0)
+    assert combat_result(acabado) is not None
+    assert legal_actions(acabado) == ()
+
+    ator_caido = make_state(
+        combatants=(
+            make_combatant(id="a", team="herois", hp=0),
+            make_combatant(id="b", team="viloes"),
+            make_combatant(id="c", team="herois"),
+        ),
+        current="a",
+    )
+    assert combat_result(ator_caido) is None
+    assert legal_actions(ator_caido) == ()

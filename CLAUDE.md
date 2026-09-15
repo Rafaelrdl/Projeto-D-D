@@ -61,7 +61,17 @@ justificativa.
   `str`), nunca índice posicional, nunca `uuid4()` (lê entropia do SO).
 - **Campos derivados nunca são armazenados.** `combat_result(state)` é função.
 - **Eventos carregam dados crus, jamais frase formatada.** Formatar é
-  apresentação, e apresentação dentro do core é I/O disfarçado.
+  apresentação, e apresentação dentro do core é I/O disfarçado. Quem monta a
+  frase é `tacticore.render`, fora do core.
+- **Existe exatamente um lugar no projeto que faz I/O:** `tacticore.__main__`.
+  `core`, `render` e `content` são puros — não imprimem, não abrem arquivo, não
+  leem relógio. A exceção está registrada e travada em
+  `tests/architecture/test_import_boundaries.py`, e um segundo lugar que
+  imprima é decisão de arquitetura, não conveniência.
+- **Golden de regra e golden de apresentação vivem em pastas separadas.**
+  `tests/golden/data/` exige uma frase no commit dizendo qual regra mudou;
+  `tests/render/data/` se regrava sem cerimônia. Misturados, ou se justifica
+  mudança de vírgula, ou se para de justificar mudança de regra.
 
 ## Regras de trabalho
 
@@ -74,9 +84,30 @@ justificativa.
 - **Todo diff de golden precisa de uma frase no commit** dizendo qual regra
   mudou e por quê. Sem isso, `--update-golden` vira um botão de fazer o teste
   calar. Ver `tests/golden/README.md`.
-- **Toda mudança no contrato de consumo do RNG incrementa
-  `serde.RULES_VERSION`.** O contrato está no docstring de `tacticore.core`
-  e o porquê em `docs/adr/0001`.
+- **`serde.RULES_VERSION` sobe quando o motor passa a calcular outro
+  resultado**, e não só quando o stream se desloca — e as subidas são agrupadas
+  num único commit de virada por fatia, nunca espalhadas por vários que
+  regravam os mesmos goldens (ADR 0002). O contrato do RNG está no docstring de
+  `tacticore.core` e o porquê em `docs/adr/0001`.
+- **Campo novo no estado entra com quatro coisas no mesmo commit:** invariante
+  em `serde.check_invariants`, teste em `test_invariants.py` adulterando o save
+  de verdade, exemplo com valor **não-default** no registro `CODECS`, e o campo
+  preenchido em `_estado_gordo()`. Sem o valor não-default, o round-trip não
+  prova nada — e ele é o único teste que exercita o `load`.
+- **Nenhum campo de estado pode ser `None`.** Ausência se modela como tupla
+  vazia, string vazia ou membro de enum. O guardião de lista branca rejeita
+  `None` em runtime, mas o estático não barra a anotação `| None`.
+- **Um save antigo não carrega só porque o campo novo tem default.**
+  `serde._campo` levanta na chave ausente; compatibilidade exige acessor com
+  default e uma função de migração por salto de `SCHEMA_VERSION`.
+- **Toda regra da SRD que o motor simplifica ganha uma linha em
+  `docs/srd-atribuicao.md` no mesmo commit.** Nenhum guardião cobra isso.
+
+## Etapas
+
+A etapa 1 (motor de regras) está completa. O plano da etapa 2 — narrador de
+texto, grid e condições — está em [docs/etapa-2.md](docs/etapa-2.md), com o que
+ficou de fora e por quê.
 
 ## Fora de escopo nesta etapa
 
