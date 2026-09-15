@@ -10,18 +10,21 @@ Ler `README.md` desta pasta antes de rodar com `--update-golden`.
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from tacticore.content.srd import CATALOGO
+from tacticore.content.arcanista import ARCANISTA, RAIO_DE_FOGO
+from tacticore.content.srd import BRUTAMONTES, CATALOGO
 from tacticore.core import RULES_VERSION, SCHEMA_VERSION
 from tacticore.core.actions import Action, AttackAction, EndTurnAction
 from tacticore.core.engine import Participant, apply, combat_result, start_combat
 from tacticore.core.enums import Condition
 from tacticore.core.events import Event
-from tacticore.core.ids import AttackId
+from tacticore.core.ids import AttackId, CreatureId, StatblockId
+from tacticore.core.model import PES_POR_CASA, CombatState, Statblock
 from tacticore.core.queries import is_conscious, statblock_of
 from tacticore.core.results import Applied
 from tacticore.core.rng import ALGORITHM, SplitMix64
@@ -32,7 +35,7 @@ from tacticore.core.serde import (
     fingerprint,
     load,
 )
-from tacticore.core.testing import make_participant, play_out
+from tacticore.core.testing import Politica, make_participant, play_out, primeira_legal
 
 DADOS = Path(__file__).parent / "data"
 
@@ -363,9 +366,135 @@ def test_o_golden_de_vantagem_exercita_os_dois_estados():
     assert estados == {"ADVANTAGE", "DISADVANTAGE"}
 
 
+# ------------------------------------------------------- o arcanista -------
+
+ARCANISTA_SEED = 4
+"""Escolhida para o encontro ACONTECER, como as duas acima.
+
+Quatro tiros, tres acertos e um erro -- o erro importa porque e ele que prova,
+dentro do arquivo, que errar nao rola dano. E o bruto fecha 24 -> 18 -> 12 -> 6
+sem nunca encostar.
+"""
+
+CATALOGO_DO_ARCANISTA: Mapping[StatblockId, Statblock] = {
+    ARCANISTA.id: ARCANISTA,
+    BRUTAMONTES.id: BRUTAMONTES,
+}
+"""Montado aqui, e nao no `CATALOGO` global.
+
+E o motivo inteiro de `content/arcanista.py` existir: a ficha dentro do
+catalogo global entraria no estado de TODO encontro, e os seis goldens acima
+mudariam de fingerprint sem nenhuma regra ter mudado. O molde e o mesmo de
+`rodar_com_vantagem`, que ja monta os proprios participantes -- aqui monta-se
+tambem o proprio catalogo.
+"""
+
+ALCANCE_DO_RAIO_EM_CASAS = RAIO_DE_FOGO.range_ft // PES_POR_CASA
+"""A borda exata do alcance: 24 casas, 120 pes. Derivado do campo, para o
+golden nascer na borda mesmo que o alcance mude um dia."""
+
+MAGO = CreatureId("mago")
+
+
+def so_atira(state: CombatState, acoes: tuple[Action, ...]) -> Action:
+    """Politica propria: o mago atira e fica parado; o bruto joga sozinho.
+
+    Nao e IA e nao tenta ser -- e o minimo que faz esta ficha aparecer. Com
+    `primeira_legal` dos dois lados o mago gasta o movimento fechando distancia
+    com o machado, porque `_casa_canonica` so oferece a casa que APROXIMA e
+    neste motor nao existe recuo. Medido nesta seed: o mago anda duas vezes e
+    o combate vira outro `tiro_colado`.
+
+    Congelar os DOIS lados seria pior: o bruto viraria estatua e o log deixaria
+    de ter adversario. So o mago tem politica.
+    """
+    if state.turn_order.current != MAGO:
+        return primeira_legal(state, acoes)
+    for acao in acoes:
+        if isinstance(acao, AttackAction):
+            return acao
+    return EndTurnAction(actor=MAGO)
+
+
+def rodar_arcanista(seed: int, *, politica: Politica = so_atira) -> tuple[str, tuple[Event, ...]]:
+    """Um combate a 120 pes: a primeira ficha de artilharia do projeto.
+
+    Sem laco a mao. `rodar_com_vantagem` e `rodar_com_tiro_colado` escrevem o
+    proprio `for` porque precisavam de acoes que `legal_actions` nao oferece;
+    aqui o tiro de 120 pes ESTA no menu, entao o molde certo e o da fatia A --
+    `play_out` com uma `Politica` nomeada -- e o laco unico continua unico.
+    """
+    participantes = (
+        make_participant(id="mago", statblock_id="arcanista", team="herois", position=(0, 0)),
+        make_participant(
+            id="bruto",
+            statblock_id="brutamontes",
+            team="viloes",
+            position=(ALCANCE_DO_RAIO_EM_CASAS, 0),
+        ),
+    )
+    abertura = start_combat(
+        statblocks=CATALOGO_DO_ARCANISTA,
+        participants=participantes,
+        rng=SplitMix64(seed=seed),
+    )
+    estado, resto = play_out(abertura.state, politica=politica)
+    return fingerprint(estado), (*abertura.events, *resto)
+
+
+def test_encontro_do_arcanista(update_golden: bool):
+    resumo, log = rodar_arcanista(ARCANISTA_SEED)
+    gravar_ou_comparar(
+        "arcanista", envelope_de(ARCANISTA_SEED, resumo, log), update_golden=update_golden
+    )
+
+
+def test_o_golden_do_arcanista_exercita_o_truque():
+    """As duas metades da regra do truque, lidas do arquivo congelado.
+
+    Sem isto o golden viraria mais um combate comum em silencio -- a mesma
+    lacuna que os goldens de vantagem e de tiro colado ja cobram.
+    """
+    gravado = json.loads((DADOS / "arcanista.json").read_text(encoding="utf-8"))
+
+    tiros = [e for e in gravado["events"] if e["kind"] == "attack_rolled" and e["actor"] == "mago"]
+    assert tiros, "o arcanista precisa ter atirado"
+    assert {e["attack_id"] for e in tiros} == {"raio_de_fogo"}
+    assert {e["ability_mod"] for e in tiros} == {3}, "INT entra no ACERTO"
+
+    danos = [e for e in gravado["events"] if e["kind"] == "damage_rolled" and e["actor"] == "mago"]
+    assert danos, "sem acerto nenhum o arquivo nao provaria o dano"
+    assert {e["roll"]["ability_bonus"] for e in danos} == {0}, "e nao entra no DANO"
+
+
+def test_o_golden_do_arcanista_e_artilharia_e_nao_outro_tiro_colado():
+    """O mago nao arreda pe e o bruto fecha distancia: e esse o combate.
+
+    A asercao que carrega o peso e a do movimento, e ela e sobre a POLITICA:
+    trocar `so_atira` por `primeira_legal` faz o mago andar (medido nesta seed:
+    duas vezes) e dois tercos do log passam a ser sobre `_casa_canonica`, com o
+    arquivo regravado e nenhum outro teste reclamando.
+    """
+    gravado = json.loads((DADOS / "arcanista.json").read_text(encoding="utf-8"))
+
+    andou = [e for e in gravado["events"] if e["kind"] == "movement_spent"]
+    assert not [e for e in andou if e["creature"] == "mago"], (
+        "o arcanista atira parado; se ele anda, o golden virou sobre _casa_canonica"
+    )
+    assert [e for e in andou if e["creature"] == "bruto"], "e o bruto fecha distancia"
+
+    fontes = {
+        f
+        for e in gravado["events"]
+        if e["kind"] == "attack_rolled" and e["actor"] == "mago"
+        for f in e["disadvantage_sources"]
+    }
+    assert fontes == set(), "nenhum tiro colado: isso e o que tiro_colado.json ja cobre"
+
+
 def test_os_goldens_nao_sao_todos_iguais():
     """Encontros que dessem o mesmo log nao provariam nada."""
-    nomes = [*IDS, "vantagem", "tiro_colado", "caido"]
+    nomes = [*IDS, "vantagem", "tiro_colado", "caido", "arcanista"]
     resumos = {
         json.loads((DADOS / f"{nome}.json").read_text(encoding="utf-8"))["final_fingerprint"]
         for nome in nomes

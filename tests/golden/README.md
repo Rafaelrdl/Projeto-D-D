@@ -45,6 +45,8 @@ Conferido na prática, na hora de escrevê-los:
 | Movimento que debita mas não move | 3 de 5 |
 | `legal_actions` ignorando alcance | os que usam o piloto automático |
 | Desvantagem derivada deixando de ser aplicada | só `tiro_colado` |
+| Truque somando modificador de atributo ao dano | só `arcanista` |
+| Ficha do arcanista entrando no `CATALOGO` | os **seis** que usam o catálogo global |
 
 A última linha é o ponto. Nos 20 ataques gravados, nenhum tirou os dois d20
 iguais — o ramo de empate simplesmente não aparece. Quem cobre isso é
@@ -59,8 +61,31 @@ oferece a arma corpo a corpo primeiro, e de perto ela é melhor — então sem
 `tiro_colado.json` a regra de "atirar com inimigo colado dá desvantagem" não
 apareceria em log nenhum.
 
-**Os dois têm um teste que cobra o que eles exercitam**, e não só o conteúdo
+O terceiro, `arcanista.json`, existe pelo mesmo motivo com outra forma: o piloto
+automático nunca fica parado atirando. `_casa_canonica` só oferece a casa que
+**aproxima**, então com `primeira_legal` o mago gasta o movimento andando para
+dentro do machado e o log vira mais um `tiro_colado`. Ele roda com uma
+`Politica` própria, `so_atira`, que congela **só o lado do mago** — o bruto
+continua no piloto, e é dele que vem a tensão do combate.
+
+Ele também é o único que monta o **próprio catálogo**. A ficha do arcanista mora
+fora do `CATALOGO` global de propósito: `start_combat` guarda o catálogo inteiro
+no estado, então pô-la lá mudaria o `final_fingerprint` dos outros seis sem
+nenhuma regra ter mudado — e o diagnóstico chamaria isso de "regressão até prova
+em contrário".
+
+**Os três têm um teste que cobra o que eles exercitam**, e não só o conteúdo
 congelado. Sem isso, um golden pode virar mais um combate comum em silêncio e a
 lacuna que ele tapava volta sozinha. Foi exatamente esse teste que reprovou a
 primeira seed do `tiro_colado`: ela matava a atiradora na rodada 1, antes de ela
 atirar.
+
+## A lista `nomes` é à mão, e isso é um buraco conhecido
+
+`test_os_goldens_nao_sao_todos_iguais` enumera os goldens numa lista literal em
+vez de varrer a pasta. Medido: com o arquivo em disco e o nome **fora** da
+lista, a suíte inteira passa — um golden que duplicasse outro não seria notado.
+
+Por isso acrescentar o nome à lista é edição obrigatória de todo commit que cria
+um golden, e nenhum guardião cobra. Trocar a lista por uma varredura da pasta
+fecha o buraco, e é outro commit.
