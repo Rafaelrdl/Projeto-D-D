@@ -80,6 +80,14 @@ justificativa.
 - **Identidade por slug legível** (`CreatureId`, `AttackId` como `NewType` sobre
   `str`), nunca índice posicional, nunca `uuid4()` (lê entropia do SO).
 - **Campos derivados nunca são armazenados.** `combat_result(state)` é função.
+- **Condição é `StrEnum` puro numa tupla ordenada.** Sem `ActiveCondition`
+  enquanto `source` for constante e duração estiver fora de escopo. A ordem
+  canônica (pelo **valor**, não pela ordem de declaração) e a ausência de
+  repetição são **invariantes conferidas na carga**, e não convenção:
+  `canonical_json` ordena chaves de objeto e não itens de lista, então
+  `("B","A")` e `("A","B")` têm fingerprint diferente e estado lógico igual.
+  O `load` deliberadamente **não** normaliza — consertar em silêncio faria
+  `check_invariants` nunca ver o problema.
 - **A grade é de casas, e a unidade mora com ela.** `Position` é dataclass e
   nunca `tuple[int, int]`; `PES_POR_CASA` mora em `model` ao lado dela, e não em
   `rules`, porque `serde` precisa dela tanto quanto quem calcula distância.
@@ -163,16 +171,22 @@ escrito qual regra ia consumi-lo.
 
 - **Etapa 1 — motor de regras: completa.** RNG determinístico, dados, ataque,
   dano, iniciativa, turno, times e fim de combate.
-- **Etapa 2 — [docs/etapa-2.md](docs/etapa-2.md):**
-  - Fatia 1 (narrador de texto, conteúdo, higiene): **completa**
-  - Fatia 2 (grid, movimento e alcance): **completa**
-  - Fatia 3 (condições Caído e Cego): pendente, com as decisões em aberto
-    listadas no plano
+- **Etapa 2 — [docs/etapa-2.md](docs/etapa-2.md): completa.** Narrador de texto
+  fora do core, grid com movimento e alcance, e a condição Caído inteira.
+  O recorte da fatia 3 mudou durante a execução — Cego saiu por não ter fonte
+  nem remoção possíveis, alcance longo entrou no lugar — e o plano registra o
+  porquê.
 
 ## Fora de escopo até a etapa 3
 
 Magias e salvaguardas, IA de inimigo, itens e classes, ataque de oportunidade,
 ação bônus e reação, multiataque, HP temporário, tipo de dano e resistência.
+
+E, o mais sentido de todos: **uma fonte de condição dentro do motor.** Hoje a
+única é `Participant.conditions` — o encontro nasce com ela. Empurrar, que é a
+fonte de Caído na SRD, é teste de atributo oposto: d20 contra d20, e com o
+quadro fixo são quatro dados por empurrão. Seria a primeira mecânica a consumir
+RNG fora de ataque, e o ADR 0002 manda que ela entre sozinha.
 
 O desenho deixa porta aberta para eles — campos com default, ganchos com
 consumidor nomeado —, mas nada disso é implementado agora. `docs/etapa-2.md`

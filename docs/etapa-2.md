@@ -1,6 +1,6 @@
 # Etapa 2 — plano
 
-**Status:** fatias 1 e 2 implementadas; fatia 3 pendente.
+**Status:** etapa 2 completa. As tres fatias estao implementadas.
 
 As decisões da seção 2 foram todas aceitas e executadas. Onde a implementação
 contrariou o plano, o plano está corrigido abaixo com a nota de por quê — vale
@@ -31,7 +31,7 @@ custaram caro por isso:
 |---|---|---|---|
 | 1 ✅ | Narrador de texto e higiene | 4 | Todas. Diff de golden vira legível, e as decisões da fatia 2 passam a ser tomadas **olhando** um combate em vez de inferindo dele |
 | 2 ✅ | Grid, movimento e alcance | 5 | Paga a migração de save v1→v2 **uma vez para todas as fatias seguintes**, com a mecânica que não rola um dado sequer. E faz Caído nascer com a regra inteira da SRD |
-| 3 | Condições: Caído e Cego | 5 | — |
+| 3 ✅ | Caído inteiro e alcance longo | 6 | — |
 
 > **Como a fatia 2 saiu na prática, contra o previsto.** Os cinco passos
 > viraram cinco, mas `SCHEMA_VERSION` subiu **duas** vezes (posição e
@@ -315,35 +315,53 @@ que o narrador vem antes.
 
 ---
 
-## 5. Fatia 3 — condições: Caído e Cego (5 passos)
+## 5. Fatia 3 — Caído inteiro e alcance longo (6 passos) ✅
 
-**Critério de corte, honesto:** entram as condições cujo efeito mecânico cabe
-**inteiro** em `advantage_sources` / `disadvantage_sources`. A metade que não
-cabe vira linha em `docs/srd-atribuicao.md`, e não desculpa para cortar a
-condição.
+> **O recorte mudou, e mudou por inteiro.** O plano original era "Caído e Cego".
+> Cego saiu. As três fontes dele na SRD — magia, salvaguarda e iluminação —
+> estão bloqueadas por decisão já escrita neste mesmo documento, e **nada em
+> `actions.py` removeria a condição**: um cego nasceria cego e morreria cego, o
+> que é aritmeticamente `−2` em `attack_math` com narração diferente.
+>
+> No lugar dele entrou `AttackProfile.long_range_ft` — a dívida que o próprio
+> repositório tinha assinado em dois lugares, um deles prometendo que o alcance
+> longo "chega no passo seguinte". O passo seguinte levou uma fatia inteira.
 
-> Pelo critério anterior ("desvantagem em teste de atributo não existe no
-> motor") **Cego também sairia** — ele também falha testes que exigem visão. O
-> critério estava se contradizendo.
+**O critério de corte também mudou.** O original — "entram as condições cujo
+efeito cabe **inteiro** em `advantage_sources`" — reprova Caído, porque metade
+das cláusulas da SRD dele é custo de movimento e não vantagem. O que vale:
+
+> Entra a regra cujo efeito cabe nos vocabulários que o motor **já tem** —
+> fontes de vantagem e orçamento de movimento em pés — e cuja **fonte existe
+> dentro do motor**.
+
+Caído passa nos dois testes: o efeito cabe (três cláusulas em `advantage_sources`,
+uma em pés de movimento) e a remoção existe (`StandUpAction`). Cego passa no
+primeiro e reprova no segundo.
 
 | # | Passo | Entrega | Impacto |
 |---|---|---|---|
-| 10 | `is_standing` partida em três | `is_alive` / `can_act` / `is_valid_target`, sem alias | Refatoração pura: goldens **intactos** |
-| 11 | O vocabulário de condição | `Condition` StrEnum, `ActiveCondition`, `Combatant.conditions`; invariante + exemplo não-default no `CODECS` + `_estado_gordo` | **Save: quebra.** `SCHEMA_VERSION` sobe |
-| 12 | Caído | `StandUpAction` debitando `speed_ft // 2` de movimento — **não** é ação; vantagem em corpo a corpo adjacente, desvantagem à distância | **RULES_VERSION sobe** |
-| 13 | Cego | Desvantagem nos próprios ataques, vantagem contra ele | **RULES_VERSION sobe** (agrupar com o 12) |
-| 14 | Goldens de condição e atribuição | Encontro canônico exercitando as duas; `srd-atribuicao.md` com o que ficou de fora de cada uma | Goldens regravam |
+| 10 | `is_standing` → `is_conscious` | **Uma** função, não três. `is_valid_target` não tem chamador possível e `can_act` nasceria idêntica | Renomeação pura: goldens intactos |
+| 11 | Vocabulário e alcance longo | `Condition` StrEnum com um membro, `Combatant.conditions`, `AttackProfile.long_range_ft`, migração v3→v4 | **Save: quebra.** `SCHEMA_VERSION` → 4 |
+| 12 | Caído afeta a rolagem | Três cláusulas, e as duas de alvo caído são **geometria** e não tipo de arma | `RULES_VERSION` → 5 |
+| 13 | Alcance longo | Desvantagem *entre* curto e longo; recusa além do longo | `RULES_VERSION` → 6 |
+| 14 | `StandUpAction` | Metade do deslocamento, **não** é ação. Evento `StoodUp` | `RULES_VERSION` → 7 |
+| 15 | Golden do caído e correção do ADR | Encontro produzido pelo **piloto automático** | Um golden novo |
 
-> **Erro de regra que o plano original tinha:** "condição é removida por ação
-> explícita" é falso para Caído. Levantar-se em 5e custa **metade do
-> deslocamento**, não uma ação — e a economia de turno já é em pés, então isso
-> cabe sem mudar nada.
+### O que a fatia ensinou
 
-**Nenhum passo desta fatia desloca um dado do stream.** `roll_d20` já consome
-dois d20 sempre, e `Combatant` não aparece em evento nenhum. O que muda é o
-`final_fingerprint` dos goldens — "com default" nunca significou "de graça".
-
----
+- **`is_standing` não precisava de três funções.** O plano pedia três; o código
+  mostrou que duas não teriam chamador. Ler os nove call sites custou menos que
+  escrever duas one-liners que ficariam para sempre idênticas.
+- **A regra de Caído é geometria.** A SRD condiciona a vantagem a o *atacante*
+  estar a 1,5 m, e não a arma ser corpo a corpo — e o motor tinha o campo
+  errado à mão, três linhas acima, para fazer a leitura errada.
+- **A primeira versão do alcance longo penalizava o impossível.** Marcava
+  desvantagem para qualquer distância além do curto, inclusive além do longo,
+  onde o ataque nem acontece.
+- **O piloto automático é o teste de "isto é uma mecânica ou uma vitrine?"**
+  Caído fecha a alça sozinho porque `StandUpAction` está no menu. Cego nunca
+  fecharia.
 
 ## 6. A armadilha de migração, medida
 
