@@ -28,6 +28,7 @@ PACKAGE = "tacticore.core"
 POLITICAS: dict[str, str] = {
     "": "raiz do pacote: so metadado, nao importa nada de tacticore",
     "core": "motor de regras: stdlib puro e ele mesmo",
+    "render": "apresentacao: le o core e monta texto; puro, nao imprime",
 }
 
 # Ordem das camadas: um modulo so pode importar modulos de camada ESTRITAMENTE
