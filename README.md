@@ -51,7 +51,7 @@ de salvar e recarregar no meio de uma rodada.
 ```bash
 uv run pytest                    # a suíte
 uv run pytest --cov              # com o gate de cobertura
-uv run pytest -m "not slow"      # sem o teste estatístico
+uv run pytest -m "not slow"      # sem o teste estatístico nem o torneio
 uv run ruff check . && uv run ruff format .
 uv run mypy
 ```
