@@ -36,6 +36,7 @@ from tacticore.core.model import (
     CombatOutcome,
     CombatState,
     HitPoints,
+    Position,
     Statblock,
     TurnBudget,
     TurnOrder,
@@ -82,6 +83,9 @@ class Participant:
     id: CreatureId
     statblock_id: StatblockId
     team: str
+    position: Position
+    """Onde ele comeca. Quem monta o encontro escolhe -- posicao inicial e
+    conteudo, nao regra, e o motor nao tem opiniao sobre formacao."""
 
 
 def _validar_encontro(
@@ -111,6 +115,13 @@ def _validar_encontro(
             problemas.append(f"{p.id!r} aponta para a ficha inexistente {p.statblock_id!r}")
         elif ficha.max_hp < 1:
             problemas.append(f"a ficha {p.statblock_id!r} tem vida maxima {ficha.max_hp}")
+
+    ocupadas: dict[tuple[int, int], list[str]] = {}
+    for p in participants:
+        ocupadas.setdefault((p.position.x, p.position.y), []).append(str(p.id))
+    for (x, y), quem in sorted(ocupadas.items()):
+        if len(quem) > 1:
+            problemas.append(f"a casa ({x}, {y}) tem mais de um combatente: {sorted(quem)}")
 
     times = {p.team for p in participants}
     if len(times) < MINIMO_DE_TIMES:
@@ -194,6 +205,7 @@ def start_combat(
             team=por_id[cid].team,
             hp=HitPoints(current=ficha.max_hp, maximum=ficha.max_hp),
             budget=_orcamento_inicial(ficha),
+            position=por_id[cid].position,
         )
 
     state = CombatState(

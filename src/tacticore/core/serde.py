@@ -32,7 +32,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import Final, assert_never
 
 from tacticore.core.dice import DamageExpr, DamageRoll, DiceTerm, DieRoll
@@ -61,6 +61,7 @@ from tacticore.core.model import (
     CombatOutcome,
     CombatState,
     HitPoints,
+    Position,
     Statblock,
     TurnBudget,
     TurnOrder,
@@ -69,8 +70,14 @@ from tacticore.core.rng import ALGORITHM, RngState, ScriptedRng, SplitMix64
 
 type JsonValue = str | int | bool | list[JsonValue] | dict[str, JsonValue] | None
 
-SCHEMA_VERSION: Final[int] = 1
+SCHEMA_VERSION: Final[int] = 2
 """Muda quando o FORMATO muda: campo novo, campo removido, campo renomeado."""
+
+SCHEMA_VERSIONS_ACEITAS: Final[tuple[int, ...]] = (1, 2)
+"""Os formatos que este motor sabe abrir, do mais antigo ao atual.
+
+Uma versao so entra aqui junto com a funcao de migracao que a traz ate a atual.
+Sem isso, a lista viraria uma lista de boas intencoes."""
 
 RULES_VERSION: Final[int] = 1
 """Muda quando o RESULTADO muda: ordem de consumo do RNG ou qualquer regra.
@@ -179,6 +186,14 @@ def load_rng(raw: Mapping[str, JsonValue], caminho: str = "rng") -> RngState:
 
     msg = f"{caminho}.kind: gerador desconhecido {kind!r}"
     raise InvalidSaveError(msg)
+
+
+def dump_position(position: Position) -> dict[str, JsonValue]:
+    return {"x": position.x, "y": position.y}
+
+
+def load_position(raw: Mapping[str, JsonValue], caminho: str) -> Position:
+    return Position(x=_inteiro(raw, "x", caminho), y=_inteiro(raw, "y", caminho))
 
 
 def dump_dice_term(term: DiceTerm) -> dict[str, JsonValue]:
@@ -362,6 +377,7 @@ def dump_combatant(c: Combatant) -> dict[str, JsonValue]:
         "team": c.team,
         "hp": dump_hit_points(c.hp),
         "budget": dump_turn_budget(c.budget),
+        "position": dump_position(c.position),
     }
 
 
@@ -372,6 +388,7 @@ def load_combatant(raw: Mapping[str, JsonValue], caminho: str) -> Combatant:
         team=_texto(raw, "team", caminho),
         hp=load_hit_points(_objeto(raw, "hp", caminho), f"{caminho}.hp"),
         budget=load_turn_budget(_objeto(raw, "budget", caminho), f"{caminho}.budget"),
+        position=load_position(_objeto(raw, "position", caminho), f"{caminho}.position"),
     )
 
 
@@ -440,6 +457,40 @@ def load_state(raw: Mapping[str, JsonValue], caminho: str = "state") -> CombatSt
 # ------------------------------------------------------------ envelope ------
 
 
+def _migrar_v1_para_v2(estado: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
+    """v1 nao tinha posicao. Enfileira os combatentes numa linha.
+
+    A escolha precisa ser **deterministica** e precisa respeitar a invariante
+    nova de uma criatura por casa, senao o save migrado nao passaria na propria
+    checagem de carga. Ordem lexicografica de id, uma casa por combatente ao
+    longo do eixo x -- a mesma ordem que `start_combat` usa para rolar
+    iniciativa, entao nao ha um segundo criterio para alguem ter que aprender.
+
+    A formacao resultante e arbitraria, e nao ha resposta certa: o save v1
+    simplesmente nao contem a informacao. O que a migracao promete e que o
+    combate volta a rodar, e nao que ele volte a rodar igual.
+    """
+    lutadores = _objeto(estado, "combatants", "v1.state")
+    migrados: dict[str, JsonValue] = {}
+    for indice, chave in enumerate(sorted(lutadores)):
+        combatente = dict(_sub(lutadores[chave], f"v1.combatants[{chave!r}]"))
+        combatente["position"] = {"x": indice, "y": 0}
+        migrados[chave] = combatente
+
+    return {**estado, "combatants": migrados}
+
+
+_MIGRACOES: Final[Mapping[int, Callable[[Mapping[str, JsonValue]], dict[str, JsonValue]]]] = {
+    1: _migrar_v1_para_v2,
+}
+"""Uma funcao por salto, indexada pela versao de ORIGEM.
+
+Saltos sao aplicados em cadeia: um save v1 num motor v4 passa por tres funcoes,
+cada uma cuidando de um degrau que ela entende. A alternativa -- uma funcao
+`v1_para_v4` por combinacao -- cresce ao quadrado e envelhece mal.
+"""
+
+
 def dump(state: CombatState) -> dict[str, JsonValue]:
     """Empacota o estado com tudo que e preciso para reabri-lo com seguranca."""
     return {
@@ -459,8 +510,11 @@ def load(payload: Mapping[str, JsonValue]) -> CombatState:
     `rules_version` do envelope antes de chamar.
     """
     versao = _inteiro(payload, "schema_version", "envelope")
-    if versao != SCHEMA_VERSION:
-        msg = f"save em schema_version {versao}; este motor le {SCHEMA_VERSION}"
+    if versao not in SCHEMA_VERSIONS_ACEITAS:
+        msg = (
+            f"save em schema_version {versao}; este motor le "
+            f"{', '.join(str(v) for v in SCHEMA_VERSIONS_ACEITAS)}"
+        )
         raise UnsupportedSchemaVersion(msg)
 
     algoritmo = _texto(payload, "rng_algo", "envelope")
@@ -468,7 +522,11 @@ def load(payload: Mapping[str, JsonValue]) -> CombatState:
         msg = f"save gerado com {algoritmo!r}; este motor usa {ALGORITHM!r}"
         raise UnsupportedSchemaVersion(msg)
 
-    return load_state(_objeto(payload, "state", "envelope"))
+    estado = _objeto(payload, "state", "envelope")
+    while versao < SCHEMA_VERSION:
+        estado = _MIGRACOES[versao](estado)
+        versao += 1
+    return load_state(estado)
 
 
 # --------------------------------------------------------- invariantes ------
@@ -495,6 +553,13 @@ def check_invariants(state: CombatState) -> tuple[str, ...]:
             problemas.append(f"{cid!r} tem hp {c.hp.current} fora de 0..{c.hp.maximum}")
         if c.budget.movement_remaining_ft < 0:
             problemas.append(f"{cid!r} tem movimento negativo")
+
+    casas: dict[tuple[int, int], list[str]] = {}
+    for cid, c in state.combatants.items():
+        casas.setdefault((c.position.x, c.position.y), []).append(str(cid))
+    for (x, y), quem in sorted(casas.items()):
+        if len(quem) > 1:
+            problemas.append(f"a casa ({x}, {y}) tem mais de um combatente: {sorted(quem)}")
 
     for sid, sb in state.statblocks.items():
         if sb.id != sid:

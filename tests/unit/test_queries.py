@@ -11,7 +11,7 @@ import pytest
 
 from tacticore.core.errors import CorruptStateError
 from tacticore.core.ids import CreatureId, StatblockId
-from tacticore.core.model import Combatant, HitPoints
+from tacticore.core.model import Combatant, HitPoints, Position
 from tacticore.core.queries import (
     combatant_of,
     is_standing,
@@ -64,6 +64,7 @@ def test_combatente_apontando_para_ficha_inexistente_e_bug_do_motor():
                 team="inimigos",
                 hp=HitPoints(current=1, maximum=1),
                 budget=make_combatant().budget,
+                position=Position(x=0, y=0),
             ),
         ),
     )

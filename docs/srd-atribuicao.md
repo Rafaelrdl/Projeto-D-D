@@ -28,7 +28,7 @@ motor simplifica acrescenta uma linha aqui no mesmo commit que a simplifica**
 
 | Regra da SRD | O que fazemos | Por quê |
 |---|---|---|
-| Alcance e distância: cada ataque tem alcance, e atacar fora dele é impossível | Qualquer alvo é atacável de qualquer lugar | Não há grid. Fatia 2 da etapa 2 |
+| Alcance e distância: cada ataque tem alcance, e atacar fora dele é impossível | Qualquer alvo é atacável de qualquer lugar | O grid existe desde a fatia 2, mas alcance é o passo seguinte |
 | Tipo de dano, resistência, vulnerabilidade, imunidade | Dano não tem tipo | Tipo sem resistência implementada é campo inerte no objeto mais serializado do projeto |
 | Multiataque | Uma ação, um ataque | Muda o contrato de consumo do RNG por ação |
 | Acuidade (usar DES com arma de acuidade) | `AttackProfile.ability` é um atributo só | Vira `tuple[Ability, ...]` quando entrar |
@@ -43,6 +43,14 @@ motor simplifica acrescenta uma linha aqui no mesmo commit que a simplifica**
 | Ação bônus e reação | `TurnBudget` só tem ação e movimento | Entram junto com a primeira mecânica que as consuma |
 | Ataque de oportunidade | Não existe | Faz o movimento consumir RNG pela primeira vez |
 | Levantar-se de Caído custa metade do deslocamento | A condição Caído não existe ainda | Fatia 3 da etapa 2 |
+
+### Grade e movimento
+
+| Regra da SRD | O que fazemos | Por quê |
+|---|---|---|
+| Variante opcional: cada segunda diagonal custa 10 pés em vez de 5 | Toda diagonal custa 5 pés (a regra de grade padrão) | A variante corrige a geometria e cobra por isso uma conta **com estado** — lembrar quantas diagonais já foram gastas no turno — dentro do que hoje é uma função pura de quatro inteiros |
+| Terreno difícil, obstáculos, cobertura | A grade é vazia e infinita | Nada disso tem consumidor ainda; terreno sem alcance e sem linha de visão seria campo inerte |
+| Mover-se através da casa de um aliado é permitido; terminar nela não é | Duas criaturas nunca ocupam a mesma casa, e o movimento não tem trajeto — só origem e destino | Sem trajeto, "atravessar" não é uma pergunta que o motor consiga fazer |
 
 ### Notação de dados
 

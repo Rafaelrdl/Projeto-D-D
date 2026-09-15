@@ -10,6 +10,7 @@ from tacticore.core.engine import Participant, start_combat
 from tacticore.core.errors import InvalidEncounterError
 from tacticore.core.events import InitiativeRolled, RoundStarted, TurnOrderSet, TurnStarted
 from tacticore.core.ids import CreatureId, StatblockId
+from tacticore.core.model import Position
 from tacticore.core.rng import ScriptedRng, SplitMix64, position
 from tacticore.core.serde import check_invariants, dump, events_to_list, load
 from tacticore.core.testing import (
@@ -215,7 +216,10 @@ def test_o_erro_junta_todos_os_problemas():
             statblocks={},
             participants=(
                 Participant(
-                    id=CreatureId("so_um"), statblock_id=StatblockId("nenhuma"), team="herois"
+                    id=CreatureId("so_um"),
+                    statblock_id=StatblockId("nenhuma"),
+                    team="herois",
+                    position=Position(x=0, y=0),
                 ),
             ),
             rng=ScriptedRng(script=()),
@@ -250,3 +254,28 @@ def test_o_log_da_abertura_e_serializavel():
         "round_started",
         "turn_started",
     ]
+
+
+def test_dois_participantes_na_mesma_casa_e_recusado():
+    catalogo, _ = make_duelo()
+    empilhados = (
+        make_participant(id="a", statblock_id="ficha_heroi", team="herois", position=(2, 2)),
+        make_participant(id="b", statblock_id="ficha_vilao", team="viloes", position=(2, 2)),
+    )
+    with pytest.raises(InvalidEncounterError, match=r"a casa \(2, 2\) tem mais de um combatente"):
+        start_combat(statblocks=catalogo, participants=empilhados, rng=ScriptedRng(script=(1, 2)))
+
+
+def test_a_posicao_inicial_vem_do_encontro():
+    """Formacao e conteudo, nao regra: o motor nao tem opiniao sobre onde
+    cada um comeca."""
+    catalogo, _ = make_duelo()
+    gente = (
+        make_participant(id="a", statblock_id="ficha_heroi", team="herois", position=(-1, 4)),
+        make_participant(id="b", statblock_id="ficha_vilao", team="viloes", position=(7, 0)),
+    )
+    resultado = start_combat(
+        statblocks=catalogo, participants=gente, rng=ScriptedRng(script=(1, 2))
+    )
+    casas = {str(c.id): (c.position.x, c.position.y) for c in resultado.state.combatants.values()}
+    assert casas == {"a": (-1, 4), "b": (7, 0)}

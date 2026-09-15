@@ -41,26 +41,37 @@ ENCONTROS: list[tuple[str, int, tuple[Participant, ...]]] = [
         "duelo",
         20250914,
         (
-            make_participant(id="bruto", statblock_id="brutamontes", team="herois"),
-            make_participant(id="lamina", statblock_id="duelista", team="viloes"),
+            make_participant(
+                id="bruto", statblock_id="brutamontes", team="herois", position=(0, 0)
+            ),
+            make_participant(id="lamina", statblock_id="duelista", team="viloes", position=(4, 0)),
         ),
     ),
     (
         "gemeos",
         7,
         (
-            make_participant(id="gemeo_a", statblock_id="duelista", team="herois"),
-            make_participant(id="gemeo_b", statblock_id="duelista", team="viloes"),
+            make_participant(id="gemeo_a", statblock_id="duelista", team="herois", position=(0, 0)),
+            make_participant(id="gemeo_b", statblock_id="duelista", team="viloes", position=(4, 0)),
         ),
     ),
     (
         "dois_contra_dois",
         31337,
         (
-            make_participant(id="bruto_1", statblock_id="brutamontes", team="herois"),
-            make_participant(id="lamina_1", statblock_id="duelista", team="herois"),
-            make_participant(id="bruto_2", statblock_id="brutamontes", team="viloes"),
-            make_participant(id="lamina_2", statblock_id="duelista", team="viloes"),
+            # Duas linhas de frente, uma de cada lado.
+            make_participant(
+                id="bruto_1", statblock_id="brutamontes", team="herois", position=(0, 0)
+            ),
+            make_participant(
+                id="lamina_1", statblock_id="duelista", team="herois", position=(0, 1)
+            ),
+            make_participant(
+                id="bruto_2", statblock_id="brutamontes", team="viloes", position=(4, 0)
+            ),
+            make_participant(
+                id="lamina_2", statblock_id="duelista", team="viloes", position=(4, 1)
+            ),
         ),
     ),
 ]
@@ -147,8 +158,8 @@ def rodar_com_vantagem(seed: int) -> tuple[str, tuple[Event, ...]]:
     desvantagem, de modo que os dois estados aparecem no mesmo log.
     """
     participantes = (
-        make_participant(id="atacante", statblock_id="brutamontes", team="herois"),
-        make_participant(id="defensor", statblock_id="duelista", team="viloes"),
+        make_participant(id="atacante", statblock_id="brutamontes", team="herois", position=(0, 0)),
+        make_participant(id="defensor", statblock_id="duelista", team="viloes", position=(4, 0)),
     )
     abertura = start_combat(
         statblocks=CATALOGO, participants=participantes, rng=SplitMix64(seed=seed)

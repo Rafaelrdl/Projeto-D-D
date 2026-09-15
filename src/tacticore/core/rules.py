@@ -19,11 +19,20 @@ from typing import Literal, assert_never
 
 from tacticore.core.enums import Ability, AdvantageState, AttackOutcome
 from tacticore.core.ids import CreatureId
-from tacticore.core.model import Abilities, AttackProfile, HitPoints
+from tacticore.core.model import Abilities, AttackProfile, HitPoints, Position
 from tacticore.core.rng import RngState, roll_dice
 
 D20_FACES = 20
 """O dado. Constante nomeada porque `20` aparece em contexto demais aqui."""
+
+PES_POR_CASA = 5
+"""Cada casa da grade vale 5 pes, na horizontal, na vertical e na diagonal.
+
+E a regra padrao de grade da SRD: mover na diagonal custa o mesmo que mover
+reto. A variante opcional que alterna 5 e 10 pes por diagonal esta registrada
+como desvio consciente em `docs/srd-atribuicao.md` -- ela existe para corrigir
+a geometria, e o preco dela e uma conta com estado (lembrar de quantas
+diagonais ja foram gastas no turno) dentro de uma funcao que hoje e pura."""
 
 NATURAL_CRIT = 20
 NATURAL_FUMBLE = 1
@@ -296,3 +305,24 @@ def initiative_sort_key(entry: InitiativeEntry) -> tuple[int, int, str]:
     exatamente igual, com um componente a mais para alguem ter que entender.
     """
     return (-entry.total, -entry.dex_score, str(entry.creature))
+
+
+def distance_ft(origem: Position, destino: Position) -> int:
+    """Distancia em pes entre duas casas, pela regra de grade da SRD.
+
+    Distancia de Chebyshev vezes 5: o numero de casas do maior eixo. Duas casas
+    na diagonal ficam a 5 pes uma da outra, e nao a 7,07 -- e essa aproximacao e
+    justamente o que permite toda a geometria do jogo ser inteira, sem um unico
+    `float` em lugar nenhum.
+    """
+    return max(abs(origem.x - destino.x), abs(origem.y - destino.y)) * PES_POR_CASA
+
+
+def is_adjacent(origem: Position, destino: Position) -> bool:
+    """Se duas casas se tocam, inclusive na diagonal.
+
+    A mesma casa **nao** conta como adjacente a si mesma: ninguem esta ao lado
+    de si proprio, e a unica pergunta que usa isto -- "ha inimigo colado em
+    mim?" -- nunca deveria responder sim por causa do proprio ator.
+    """
+    return origem != destino and distance_ft(origem, destino) == PES_POR_CASA

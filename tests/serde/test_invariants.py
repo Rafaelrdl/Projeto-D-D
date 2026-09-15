@@ -122,3 +122,28 @@ def test_o_erro_junta_todos_os_problemas_de_uma_vez():
         load(env)
     assert "nao esta na ordem" in str(capturado.value)
     assert "a primeira e 1" in str(capturado.value)
+
+
+def test_duas_criaturas_na_mesma_casa_e_recusado():
+    """Invariante nova da fatia 2. Sem ela, todo mundo empilha numa casa e
+    "adjacente" deixa de querer dizer qualquer coisa."""
+    env = envelope_valido()
+    env["state"]["combatants"]["goblin_2"]["position"] = env["state"]["combatants"]["goblin_1"][
+        "position"
+    ]
+    with pytest.raises(InvalidSaveError, match=r"a casa \(0, 0\) tem mais de um combatente"):
+        load(env)
+
+
+def test_posicao_com_tipo_errado_e_recusada():
+    env = envelope_valido()
+    env["state"]["combatants"]["goblin_1"]["position"] = {"x": "0", "y": 0}
+    with pytest.raises(InvalidSaveError, match="esperava inteiro"):
+        load(env)
+
+
+def test_posicao_negativa_e_valida():
+    """A grade nao tem borda: inventar uma seria inventar regra que a SRD nao tem."""
+    env = envelope_valido()
+    env["state"]["combatants"]["goblin_1"]["position"] = {"x": -40, "y": -9}
+    assert load(env).combatants["goblin_1"].position.x == -40

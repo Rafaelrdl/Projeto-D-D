@@ -53,6 +53,24 @@ class Abilities:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class Position:
+    """Uma casa do tabuleiro, em coordenadas de casa e nao de pes.
+
+    Dataclass e nao `tuple[int, int]` por tres motivos que so aparecem depois:
+    `p.x` nao troca de lugar com `p.y` num refactor, o serializador emite
+    `{"x": 3, "y": 0}` em vez de `[3, 0]` (que ninguem consegue ler no diff de
+    um golden), e o dia em que existir altura o campo entra aqui em vez de
+    quebrar toda desestruturacao de tupla do projeto.
+
+    A grade nao tem limite. Coordenada negativa e valida: o encontro escolhe a
+    origem, e inventar uma borda seria inventar uma regra que a SRD nao tem.
+    """
+
+    x: int
+    y: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class HitPoints:
     """Pontos de vida atuais e maximos.
 
@@ -141,6 +159,14 @@ class Combatant:
 
     hp: HitPoints
     budget: TurnBudget
+
+    position: Position
+    """Sem default, e isso e uma escolha.
+
+    Um default aqui pareceria manter os saves v1 carregando, e nao manteria --
+    `serde._campo` levanta na chave ausente, com ou sem default no Python. O que
+    faz save antigo carregar e a migracao, e deixar o campo obrigatorio impede
+    que alguem acredite no contrario."""
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

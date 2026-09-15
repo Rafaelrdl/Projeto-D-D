@@ -16,6 +16,7 @@ quem le o teste teria que caçar qual dos vinte valores e o relevante.
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import replace
 from typing import assert_never
 
 from tacticore.core.dice import DamageExpr, parse_dice
@@ -49,6 +50,7 @@ from tacticore.core.model import (
     Combatant,
     CombatState,
     HitPoints,
+    Position,
     Statblock,
     TurnBudget,
     TurnOrder,
@@ -136,7 +138,12 @@ def make_combatant(
     max_hp: int = 10,
     budget: TurnBudget | None = None,
 ) -> Combatant:
-    """`hp` aceita um int para o caso comum de "quero este com 1 de vida"."""
+    """`hp` aceita um int para o caso comum de "quero este com 1 de vida".
+
+    **Nao recebe posicao de proposito.** Quem coloca combatente no tabuleiro e
+    `make_state`, que enfileira ou aceita `posicoes`; um parametro aqui seria
+    sobrescrito por ela em todo uso real, e ficaria como enfeite que parece
+    funcionar."""
     if hp is None:
         pontos = HitPoints(current=max_hp, maximum=max_hp)
     elif isinstance(hp, int):
@@ -150,6 +157,8 @@ def make_combatant(
         team=team,
         hp=pontos,
         budget=make_budget() if budget is None else budget,
+        # A origem e provisoria: `make_state` reposiciona.
+        position=Position(x=0, y=0),
     )
 
 
@@ -161,6 +170,7 @@ def make_state(
     current: str | None = None,
     round_number: int = 1,
     rng: RngState | None = None,
+    posicoes: Mapping[str, tuple[int, int]] | None = None,
 ) -> CombatState:
     """Monta um estado consistente a partir do pouco que o teste informar.
 
@@ -169,9 +179,25 @@ def make_state(
     substitui `start_combat`: aqui nada e rolado e nada e validado, de
     proposito, para que um teste possa montar tambem o estado esquisito de que
     precisa.
+
+    **Os combatentes sao enfileirados** em `(0,0)`, `(1,0)`, `(2,0)`... na ordem
+    em que vieram, sobrescrevendo a posicao que cada um trouxe. E deliberado e
+    vale a surpresa: sem isso, todo teste que nao fala de posicao montaria dois
+    combatentes na mesma casa e quebraria numa invariante que ele nao esta
+    testando. Quem testa posicao passa `posicoes`, e ai nada e sobrescrito.
     """
     fichas = (make_statblock(),) if statblocks is None else tuple(statblocks)
     lutadores = (make_combatant(),) if combatants is None else tuple(combatants)
+
+    if posicoes is None:
+        lutadores = tuple(replace(c, position=Position(x=i, y=0)) for i, c in enumerate(lutadores))
+    else:
+        lutadores = tuple(
+            replace(c, position=Position(x=posicoes[str(c.id)][0], y=posicoes[str(c.id)][1]))
+            if str(c.id) in posicoes
+            else c
+            for c in lutadores
+        )
 
     ids = (
         tuple(CreatureId(c) for c in order) if order is not None else tuple(c.id for c in lutadores)
@@ -194,8 +220,15 @@ def make_participant(
     id: str = "heroi",
     statblock_id: str = "ficha",
     team: str = "herois",
+    position: Position | tuple[int, int] = (0, 0),
 ) -> Participant:
-    return Participant(id=CreatureId(id), statblock_id=StatblockId(statblock_id), team=team)
+    casa = Position(x=position[0], y=position[1]) if isinstance(position, tuple) else position
+    return Participant(
+        id=CreatureId(id),
+        statblock_id=StatblockId(statblock_id),
+        team=team,
+        position=casa,
+    )
 
 
 def make_duelo(
@@ -214,9 +247,11 @@ def make_duelo(
     segunda = make_statblock(id=f"ficha_{b}", name=b) if ficha_b is None else ficha_b
 
     catalogo = {primeira.id: primeira, segunda.id: segunda}
+    # Colados de proposito: a maioria dos testes de motor quer atacar sem
+    # precisar andar antes. Quem testa movimento passa as posicoes.
     participantes = (
-        make_participant(id=a, statblock_id=str(primeira.id), team="herois"),
-        make_participant(id=b, statblock_id=str(segunda.id), team="viloes"),
+        make_participant(id=a, statblock_id=str(primeira.id), team="herois", position=(0, 0)),
+        make_participant(id=b, statblock_id=str(segunda.id), team="viloes", position=(1, 0)),
     )
     return catalogo, participantes
 

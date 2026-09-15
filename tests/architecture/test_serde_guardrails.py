@@ -49,6 +49,7 @@ from tacticore.core.model import (
     CombatOutcome,
     CombatState,
     HitPoints,
+    Position,
     Statblock,
     TurnBudget,
     TurnOrder,
@@ -145,6 +146,13 @@ CODECS: Mapping[
         serde.dump_turn_order,
         lambda raw: serde.load_turn_order(raw, "t"),
         _exemplo_state().turn_order,
+    ),
+    Position: (  # type: ignore[dict-item]
+        serde.dump_position,
+        lambda raw: serde.load_position(raw, "t"),
+        # Valor nao-default em todo campo, e negativo de proposito: exemplo
+        # com zero em tudo faz o round-trip passar sem provar nada.
+        Position(x=-3, y=7),
     ),
     CombatState: (serde.dump_state, serde.load_state, _exemplo_state()),  # type: ignore[dict-item]
     CombatOutcome: (  # type: ignore[dict-item]

@@ -25,7 +25,7 @@ from tacticore.core.dice import parse_dice
 from tacticore.core.engine import Participant
 from tacticore.core.enums import Ability
 from tacticore.core.ids import AttackId, CreatureId, StatblockId
-from tacticore.core.model import Abilities, AttackProfile, Statblock
+from tacticore.core.model import Abilities, AttackProfile, Position, Statblock
 
 BRUTAMONTES: Final = Statblock(
     id=StatblockId("brutamontes"),
@@ -89,6 +89,15 @@ CATALOGO: Final[Mapping[StatblockId, Statblock]] = {
 }
 
 
+DISTANCIA_DE_ABERTURA = 4
+"""Quatro casas, ou seja 20 pes: fora do alcance de qualquer arma corpo a corpo.
+
+Comecar colado tornaria o movimento decorativo -- o combate inteiro caberia em
+ataques, e o grid nao apareceria no log. Comecar longe demais gastaria rodadas
+so andando. Quatro casas resolvem em um deslocamento e obrigam o primeiro turno
+a ser uma escolha."""
+
+
 def duelo(
     *,
     heroi: str = "bruto",
@@ -100,10 +109,12 @@ def duelo(
             id=CreatureId(heroi),
             statblock_id=BRUTAMONTES.id,
             team="herois",
+            position=Position(x=0, y=0),
         ),
         Participant(
             id=CreatureId(vilao),
             statblock_id=DUELISTA.id,
             team="viloes",
+            position=Position(x=DISTANCIA_DE_ABERTURA, y=0),
         ),
     )
