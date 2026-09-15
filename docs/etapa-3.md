@@ -1,6 +1,6 @@
 # Etapa 3 — o jogador, o arcanista e o empurrão
 
-**Status:** em andamento.
+**Status:** completa.
 
 ## A premissa que mudou o recorte
 
@@ -24,7 +24,7 @@ julga como jogo.
 |---|---|---|---|
 | A | **O jogador** — travas, política com nome, tabuleiro, menu, driver, torneio | 7 | Zero. Nem RNG, nem save, nem regra, nem golden de regra. **Completa** |
 | B | **O arcanista** — truque de ataque, a única magia que o motor já roda | 3 | `SCHEMA_VERSION` 4 para 5, uma migração. **Completa** |
-| C | **Empurrar** — a primeira fonte de condição dentro do motor | 5 | O primeiro d20 fora de ataque; item 6 no contrato do RNG |
+| C | **Empurrar** — a primeira fonte de condição dentro do motor | 5 | O primeiro d20 fora de ataque; item 6 no contrato do RNG. **Completa** |
 
 Quinze passos. É o teto que a etapa 2 estabeleceu na prática (quinze passos,
 vinte commits). Se o fôlego acabar, corta-se a fatia C e depois a B: a fatia A é
@@ -178,3 +178,48 @@ A primeira fonte de condição dentro do motor, e o primeiro d20 fora de ataque.
 significa que o alvo **resiste**. E não há ponto no motor onde o alvo decida, o
 que torna o defensor determinístico: melhor de FOR/DES, com FOR desempatando, e
 o evento grava qual atributo ele usou.
+
+### O que a execução desmentiu
+
+**A SRD 5.1 não tem a cláusula do sucesso automático.** A análise pedia uma
+terceira função, `shove_outcome`, para implementar *"You succeed automatically if
+the target is incapacitated"*. Conferido na fonte: o texto de Empurrar na SRD 5.1
+termina em *"If you win the contest, you either knock the target prone or push it
+5 feet away from you"*. A cláusula é do PHB. E, mesmo que estivesse lá, o ramo
+seria inalcançável por qualquer golden — `legal_actions` filtra por
+`is_conscious` e num duelo o alvo a zero já encerrou o combate. Regra que a SRD
+não tem, com consumidor que não existe: **cortada**.
+
+**`RULES_VERSION` sobe, e a decisão 2 acima estava errada.** Ela dizia que
+Empurrar não muda resultado de entrada existente, logo não sobe nada. O
+repositório já tinha respondido isso: `8b02343` (`StandUpAction`) é o caso
+estruturalmente idêntico — ação nova, evento novo, motivo de rejeição novo, item
+de menu novo, zero logs alterados — e subiu de 6 para 7, com diff de uma linha
+por golden e o fingerprint intacto. A frase que "ninguém escreve com honestidade"
+está escrita lá. **A régua correta não é "algum resultado antigo mudou", é "este
+motor calcula coisas que o seu não calculava"** — e por isso a fatia B, que só
+acrescentou um campo com migração neutra, subiu `SCHEMA_VERSION` e não esta.
+
+**São sete goldens regravados, não oito.** `save_legado.json` está em
+`rules_version: 1` e o `load` não confere esse campo.
+
+**O número da proficiência estava invertido.** A análise queria escrever que somar
+perícia "levaria o brutamontes contra o arcanista de 52,50% para 61,75%". Os
+61,75% são o caso com proficiência **só no atacante**, que é uma leitura errada
+da SRD — o teste do alvo também é perícia. Com proficiência dos dois lados a taxa
+fica **idêntica** (52,50%, os dois têm +2), e quem se move é o par contra o
+duelista: 47,50% para 42,75%.
+
+**Alcance não vai a 10 pés com arma de haste nem com criatura Grande.** A
+propriedade Reach da SRD 5.1 vale *"when you attack with it"*, e Empurrar é
+explicitamente *"instead of making an attack roll"*; e 5e não liga tamanho a
+alcance — isso é 3.5e. As duas frases saíram do plano antes de virarem commit.
+
+### O buraco que a fatia encontrou e não fechou
+
+`assert_never` obriga um `case`; ele **não** obriga o caso certo. Listar
+`ContestRolled` entre os eventos que não rolam dado em `tape_from_events`
+compila, passa no mypy strict e fica verde na suíte inteira — medido — até o
+primeiro combate com empurrão, quando a fita fica curta e estoura com
+`RngExhausted` três módulos longe da causa. Os testes de fita são a única coisa
+que separa as duas versões, e por isso entram no mesmo commit que o evento.

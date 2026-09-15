@@ -117,6 +117,18 @@ justificativa.
   menu: uma política que só vê a lista de ações nunca passa de um seletor de
   índice, porque `AttackAction` carrega o id do alvo e não a vida dele. Nenhuma
   política pode ler `state.rng` — `apply` é oráculo.
+- **O quadro de dados do RNG é fixo por TIPO de checagem**, e não por ação:
+  iniciativa 1 d20, ataque 2, teste oposto 2 por lado. Nenhum deles depende do
+  resultado de regra nenhuma. O que vem **depois** da checagem pode depender
+  dela — `expand_crit` dobra o dano porque o d20 saiu 20 —; o que vem antes,
+  não. Ver ADR 0001 §3, reescrito na etapa 3.
+- **`RULES_VERSION` sobe também quando o motor ganha uma mecânica nova**, e não
+  só quando um resultado antigo muda. O precedente é `8b02343` (`StandUpAction`):
+  ação nova, evento novo, zero logs alterados, versão subiu, diff de uma linha
+  por golden. A pergunta que a versão responde não é "os combates antigos
+  mudaram", é "este motor calcula coisas que o seu não calculava". Campo novo
+  com migração que preserva comportamento (fatia B) **não** sobe — esse sobe
+  `SCHEMA_VERSION`.
 - **Golden de regra e golden de apresentação vivem em pastas separadas.**
   `tests/golden/data/` exige uma frase no commit dizendo qual regra mudou;
   `tests/render/data/` se regrava sem cerimônia. Misturados, ou se justifica
@@ -184,8 +196,8 @@ escrito qual regra ia consumi-lo.
 - **Toda regra da SRD que o motor simplifica ganha uma linha em
   `docs/srd-atribuicao.md` no mesmo commit.** Nenhum guardião cobra isso. A
   tabela ficou vazia a etapa 1 inteira, e quando foi preenchida tinha onze
-  desvios que ninguém tinha anotado. Hoje são vinte e dois, mais uma linha que
-  já virou "implementado" (alcance longo) e ficou como registro.
+  desvios que ninguém tinha anotado. Hoje são vinte e seis, mais duas linhas que
+  já viraram "implementado" (alcance longo, Empurrar) e ficaram como registro.
 
 ## Etapas
 
@@ -196,17 +208,24 @@ escrito qual regra ia consumi-lo.
   O recorte da fatia 3 mudou durante a execução — Cego saiu por não ter fonte
   nem remoção possíveis, alcance longo entrou no lugar — e o plano registra o
   porquê.
-- **Etapa 3 — [docs/etapa-3.md](docs/etapa-3.md): em andamento.** O jogador
-  (fatias A e B completas), o arcanista e o empurrão. A premissa que mudou o
+- **Etapa 3 — [docs/etapa-3.md](docs/etapa-3.md): completa.** O jogador, o
+  arcanista e o empurrão. A premissa que mudou o
   recorte: em 37 commits ninguém nunca **escolheu** uma ação neste motor, e
   `legal_actions` nomeia no próprio docstring dois consumidores que não
   existiam. O que faltava não era mecânica, era um jogador.
 
-## Fora de escopo na etapa 3
+## Fora de escopo depois da etapa 3
 
 Salvaguarda, magia de área, espaço de magia, IA pontuadora, ataque de
 oportunidade, reação, ação bônus, multiataque, tipo de dano, resistência, HP
-temporário, morte separada de inconsciência, itens e classes.
+temporário, morte separada de inconsciência, itens, classes, Agarrar e duração
+de condição.
+
+**As três primeiras da lista de reação têm um consumidor nomeado agora.**
+Empurrar é jogada dominada no recorte de hoje — medido em 500 duelos: só bater
+ganha 370, empurrar uma vez ganha 276, empurrar sempre ganha zero — e o motivo
+não é a mecânica, é a ausência de multiataque, ação bônus e reação. São elas
+que transformam derrubar numa jogada.
 
 **Cada exclusão tem o motivo escrito em [docs/etapa-3.md](docs/etapa-3.md), e
 o motivo quase nunca é "é difícil" — é "não existe quem consuma".** Salvaguarda

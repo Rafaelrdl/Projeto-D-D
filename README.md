@@ -9,7 +9,8 @@ aconteceu. Uma camada fina por cima transforma esses eventos em texto.
 
 ```bash
 uv sync
-uv run python -m tacticore
+uv run python -m tacticore            # roda um duelo e narra o log
+uv run python -m tacticore --jogar    # você joga o lado dos heróis
 ```
 
 ```
@@ -29,6 +30,25 @@ lamina encerra o turno
 A conta sai aberta de propósito: a pergunta que se faz olhando um log de combate
 é quase sempre "de onde saiu esse número".
 
+Com `--jogar`, os turnos do seu lado param e perguntam — tabuleiro, menu
+numerado, e a escolha volta para o mesmo laço de combate que o piloto automático
+usa:
+
+```
+   -1  0  1  2
+-1  .  .  .  .
+ 0  .  2  1  .
+ 1  .  .  .  .
+
+1 lamina  viloes  11/11 hp
+2 bruto   herois  10/14 hp
+1 atacar lamina com machado
+2 empurrar lamina
+3 encerrar o turno
+> 2
+bruto empurra lamina: d20 5 +3 FOR = 8 vs d20 16 +3 DES = 19 -> resiste
+```
+
 ## O que o motor faz
 
 **Regras** — atributos e modificadores, d20 contra Classe de Armadura, vantagem
@@ -38,6 +58,14 @@ modificador), falha automática no 1, dano por notação de dados, queda em 0 HP
 **Combate** — iniciativa determinística com desempate total, economia de turno
 (uma ação, um movimento), times, fim de combate por aniquilação, e um menu de
 ações legais que uma interface ou uma IA podem consumir.
+
+**Empurrar** — teste de atributo oposto: d20 contra d20, dois por lado, e o
+empate faz o alvo resistir. É a primeira fonte de condição dentro do motor, e a
+primeira mecânica a rolar dados fora de um ataque.
+
+**Magia** — um truque de ataque (Raio de Fogo): acerto por d20 com o atributo de
+conjuração, 120 pés, e dano **sem** modificador de atributo, que é a regra que
+separa magia de arma.
 
 **Grade** — posição em casas de 5 pés, movimento que custa e move, alcance de
 ataque, e a primeira regra derivada do estado: atirar com um inimigo colado dá
