@@ -324,7 +324,7 @@ def test_menu_vazio_para_quem_esta_caido():
 
 
 def test_encerrar_o_turno_fecha_o_menu():
-    """Cláusula (a2) do ADR 0002, e a trava que a mantem honesta.
+    """Cláusula (a2) do ADR 0002, na versao reescrita pela fatia 2.
 
     `play_out` escolhe `acoes[0]` e gera tres dos quatro goldens, entao a ordem
     de `legal_actions` e contrato de facto. Enquanto ela for incondicional,
@@ -366,3 +366,39 @@ def test_o_menu_so_e_vazio_em_dois_casos():
     )
     assert combat_result(ator_caido) is None
     assert legal_actions(ator_caido) == ()
+
+
+def test_a_ordem_do_menu_e_acao_movimento_encerrar():
+    """A politica escrita no ADR 0002 (a2), como trava executavel.
+
+    Ordenado por quanto a escolha custa e quao irreversivel ela e: primeiro o
+    que gasta a acao, depois o que gasta movimento, por ultimo encerrar. E o
+    `play_out` obedece a esta ordem para gerar tres dos seis goldens, entao ela
+    e contrato e nao conveniencia.
+    """
+    # Precisa de arma a distancia para os tres aparecerem juntos: com arma de
+    # perto, estar ao alcance ja significa estar adjacente, e ai nenhum
+    # movimento melhora a distancia.
+    ficha = make_statblock(id="ficha", speed_ft=30, attacks=(make_attack(id="arco", range_ft=30),))
+    estado = make_state(
+        statblocks=(ficha,),
+        combatants=(
+            make_combatant(id="a", statblock_id="ficha", team="herois"),
+            make_combatant(id="b", statblock_id="ficha", team="viloes"),
+        ),
+        current="a",
+        posicoes={"a": (0, 0), "b": (5, 0)},
+    )
+    tipos = [type(a) for a in legal_actions(estado)]
+
+    assert tipos.index(AttackAction) < tipos.index(MoveAction)
+    assert tipos.index(MoveAction) < tipos.index(EndTurnAction)
+
+
+def test_sem_nada_ao_alcance_o_menu_comeca_pelo_movimento():
+    """A consequencia deliberada da politica: e assim que um combate que comeca
+    a 20 pes fecha distancia em vez de travar."""
+    estado = arena(posicoes={"a": (0, 0), "b": (8, 0)})
+    acoes = legal_actions(estado)
+    assert isinstance(acoes[0], MoveAction)
+    assert not any(isinstance(a, AttackAction) for a in acoes)

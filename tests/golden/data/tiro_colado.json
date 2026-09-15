@@ -1,0 +1,423 @@
+{
+  "events": [
+    {
+      "creature": "alvo",
+      "d20": 8,
+      "dex_mod": -1,
+      "dex_score": 8,
+      "kind": "initiative_rolled",
+      "rng_after": 1,
+      "rng_before": 0,
+      "total": 7
+    },
+    {
+      "creature": "atiradora",
+      "d20": 16,
+      "dex_mod": 3,
+      "dex_score": 17,
+      "kind": "initiative_rolled",
+      "rng_after": 2,
+      "rng_before": 1,
+      "total": 19
+    },
+    {
+      "kind": "turn_order_set",
+      "order": [
+        "atiradora",
+        "alvo"
+      ]
+    },
+    {
+      "kind": "round_started",
+      "round_number": 1
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "atiradora",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "DES",
+      "ability_mod": 3,
+      "actor": "atiradora",
+      "advantage": "DISADVANTAGE",
+      "advantage_sources": [],
+      "attack_id": "adaga",
+      "attack_name": "Adaga Arremessada",
+      "chosen_index": 1,
+      "disadvantage_sources": [
+        "inimigo adjacente"
+      ],
+      "kind": "attack_rolled",
+      "natural": 2,
+      "outcome": "MISS",
+      "pair": [
+        5,
+        2
+      ],
+      "proficiency": 3,
+      "rng_after": 4,
+      "rng_before": 2,
+      "target": "alvo",
+      "target_ac": 13,
+      "target_was_down": false,
+      "total": 8
+    },
+    {
+      "creature": "atiradora",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 30
+      },
+      "creature": "alvo",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 3,
+      "actor": "alvo",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "machado",
+      "attack_name": "Machado",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 4,
+      "outcome": "MISS",
+      "pair": [
+        4,
+        8
+      ],
+      "proficiency": 2,
+      "rng_after": 6,
+      "rng_before": 4,
+      "target": "atiradora",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 9
+    },
+    {
+      "creature": "alvo",
+      "kind": "turn_ended"
+    },
+    {
+      "kind": "round_started",
+      "round_number": 2
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "atiradora",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "DES",
+      "ability_mod": 3,
+      "actor": "atiradora",
+      "advantage": "DISADVANTAGE",
+      "advantage_sources": [],
+      "attack_id": "adaga",
+      "attack_name": "Adaga Arremessada",
+      "chosen_index": 1,
+      "disadvantage_sources": [
+        "inimigo adjacente"
+      ],
+      "kind": "attack_rolled",
+      "natural": 11,
+      "outcome": "HIT",
+      "pair": [
+        20,
+        11
+      ],
+      "proficiency": 3,
+      "rng_after": 8,
+      "rng_before": 6,
+      "target": "alvo",
+      "target_ac": 13,
+      "target_was_down": false,
+      "total": 17
+    },
+    {
+      "actor": "atiradora",
+      "kind": "damage_rolled",
+      "rng_after": 9,
+      "rng_before": 8,
+      "roll": {
+        "ability_bonus": 3,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 4,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 2
+          }
+        ],
+        "flat": 0,
+        "total": 5
+      },
+      "target": "alvo"
+    },
+    {
+      "after": {
+        "current": 9,
+        "maximum": 14
+      },
+      "before": {
+        "current": 14,
+        "maximum": 14
+      },
+      "creature": "alvo",
+      "dealt": 5,
+      "kind": "hp_changed",
+      "overkill": 0
+    },
+    {
+      "creature": "atiradora",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 30
+      },
+      "creature": "alvo",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 3,
+      "actor": "alvo",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "machado",
+      "attack_name": "Machado",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 13,
+      "outcome": "HIT",
+      "pair": [
+        13,
+        10
+      ],
+      "proficiency": 2,
+      "rng_after": 11,
+      "rng_before": 9,
+      "target": "atiradora",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 18
+    },
+    {
+      "actor": "alvo",
+      "kind": "damage_rolled",
+      "rng_after": 12,
+      "rng_before": 11,
+      "roll": {
+        "ability_bonus": 3,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 12,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 2
+          }
+        ],
+        "flat": 1,
+        "total": 6
+      },
+      "target": "atiradora"
+    },
+    {
+      "after": {
+        "current": 5,
+        "maximum": 11
+      },
+      "before": {
+        "current": 11,
+        "maximum": 11
+      },
+      "creature": "atiradora",
+      "dealt": 6,
+      "kind": "hp_changed",
+      "overkill": 0
+    },
+    {
+      "creature": "alvo",
+      "kind": "turn_ended"
+    },
+    {
+      "kind": "round_started",
+      "round_number": 3
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "atiradora",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "DES",
+      "ability_mod": 3,
+      "actor": "atiradora",
+      "advantage": "DISADVANTAGE",
+      "advantage_sources": [],
+      "attack_id": "adaga",
+      "attack_name": "Adaga Arremessada",
+      "chosen_index": 1,
+      "disadvantage_sources": [
+        "inimigo adjacente"
+      ],
+      "kind": "attack_rolled",
+      "natural": 10,
+      "outcome": "HIT",
+      "pair": [
+        18,
+        10
+      ],
+      "proficiency": 3,
+      "rng_after": 14,
+      "rng_before": 12,
+      "target": "alvo",
+      "target_ac": 13,
+      "target_was_down": false,
+      "total": 16
+    },
+    {
+      "actor": "atiradora",
+      "kind": "damage_rolled",
+      "rng_after": 15,
+      "rng_before": 14,
+      "roll": {
+        "ability_bonus": 3,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 4,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 4
+          }
+        ],
+        "flat": 0,
+        "total": 7
+      },
+      "target": "alvo"
+    },
+    {
+      "after": {
+        "current": 2,
+        "maximum": 14
+      },
+      "before": {
+        "current": 9,
+        "maximum": 14
+      },
+      "creature": "alvo",
+      "dealt": 7,
+      "kind": "hp_changed",
+      "overkill": 0
+    },
+    {
+      "creature": "atiradora",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 30
+      },
+      "creature": "alvo",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 3,
+      "actor": "alvo",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "machado",
+      "attack_name": "Machado",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 19,
+      "outcome": "HIT",
+      "pair": [
+        19,
+        17
+      ],
+      "proficiency": 2,
+      "rng_after": 17,
+      "rng_before": 15,
+      "target": "atiradora",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 24
+    },
+    {
+      "actor": "alvo",
+      "kind": "damage_rolled",
+      "rng_after": 18,
+      "rng_before": 17,
+      "roll": {
+        "ability_bonus": 3,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 12,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 6
+          }
+        ],
+        "flat": 1,
+        "total": 10
+      },
+      "target": "atiradora"
+    },
+    {
+      "after": {
+        "current": 0,
+        "maximum": 11
+      },
+      "before": {
+        "current": 5,
+        "maximum": 11
+      },
+      "creature": "atiradora",
+      "dealt": 5,
+      "kind": "hp_changed",
+      "overkill": 5
+    },
+    {
+      "creature": "atiradora",
+      "kind": "creature_downed"
+    },
+    {
+      "kind": "combat_ended",
+      "outcome": {
+        "last_round": 3,
+        "winning_team": "viloes"
+      }
+    }
+  ],
+  "final_fingerprint": "d7e73f6e2f821942e13c0633c035a1d71a079cdf7e272e46bc163646291b7fe3",
+  "rng_algo": "splitmix64-lemire/1",
+  "rules_version": 4,
+  "schema_version": 3,
+  "seed": "5"
+}

@@ -20,6 +20,7 @@ from tacticore.core import RULES_VERSION, SCHEMA_VERSION
 from tacticore.core.actions import Action, AttackAction, EndTurnAction
 from tacticore.core.engine import Participant, apply, combat_result, start_combat
 from tacticore.core.events import Event
+from tacticore.core.ids import AttackId
 from tacticore.core.queries import is_standing, statblock_of
 from tacticore.core.results import Applied
 from tacticore.core.rng import ALGORITHM, SplitMix64
@@ -78,6 +79,15 @@ ENCONTROS: list[tuple[str, int, tuple[Participant, ...]]] = [
 IDS = [nome for nome, _, _ in ENCONTROS]
 
 VANTAGEM_SEED = 991
+TIRO_COLADO_SEED = 5
+"""Escolhida para o encontro acontecer.
+
+A primeira que tentei matava a atiradora na rodada 1, antes de ela atirar --
+e o golden ficava verde sem exercitar nada. Foi o teste-guarda logo abaixo
+que cobrou. Escolher seed para o combate ACONTECER e legitimo; escolher seed
+ate um ramo raro de regra cair e que seria contorcer o golden para fazer o
+trabalho de um teste de unidade."""
+ADAGA = AttackId("adaga")
 
 
 def envelope_de(seed: int, resumo: str, log: tuple[Event, ...]) -> dict[str, Any]:
@@ -201,6 +211,51 @@ def rodar_com_vantagem(seed: int) -> tuple[str, tuple[Event, ...]]:
     return fingerprint(estado), tuple(log)
 
 
+def rodar_com_tiro_colado(seed: int) -> tuple[str, tuple[Event, ...]]:
+    """Um combate onde a atiradora insiste na adaga com o inimigo colado.
+
+    O piloto automatico nunca faz isso: `legal_actions` oferece o estoque
+    primeiro, e de perto ele e melhor. Este golden existe porque a regra de
+    "atirar colado da desvantagem" nao aparece em nenhum dos outros quatro --
+    e regra sem golden e regra que uma refatoracao de ordem de rolagem pode
+    deslocar sem ninguem ver.
+    """
+    participantes = (
+        make_participant(id="atiradora", statblock_id="duelista", team="herois", position=(0, 0)),
+        make_participant(id="alvo", statblock_id="brutamontes", team="viloes", position=(1, 0)),
+    )
+    abertura = start_combat(
+        statblocks=CATALOGO, participants=participantes, rng=SplitMix64(seed=seed)
+    )
+    estado = abertura.state
+    log: list[Event] = list(abertura.events)
+
+    for _ in range(200):
+        if combat_result(estado) is not None:
+            break
+
+        ator = estado.combatants[estado.turn_order.current]
+        inimigos = sorted(
+            (c.id for c in estado.combatants.values() if c.team != ator.team and is_standing(c)),
+            key=str,
+        )
+
+        acao: Action
+        if ator.budget.action_available and inimigos:
+            ficha = statblock_of(estado, ator.id)
+            arma = ADAGA if any(a.id == ADAGA for a in ficha.attacks) else ficha.attacks[0].id
+            acao = AttackAction(actor=ator.id, target=inimigos[0], attack_id=arma)
+        else:
+            acao = EndTurnAction(actor=ator.id)
+
+        resultado = apply(estado, acao)
+        assert isinstance(resultado, Applied), resultado
+        estado = resultado.state
+        log.extend(resultado.events)
+
+    return fingerprint(estado), tuple(log)
+
+
 @pytest.mark.parametrize(("nome", "seed", "participantes"), ENCONTROS, ids=IDS)
 def test_encontro_canonico(
     nome: str,
@@ -219,6 +274,29 @@ def test_encontro_com_vantagem(update_golden: bool):
     )
 
 
+def test_encontro_com_tiro_colado(update_golden: bool):
+    resumo, log = rodar_com_tiro_colado(TIRO_COLADO_SEED)
+    gravar_ou_comparar(
+        "tiro_colado",
+        envelope_de(TIRO_COLADO_SEED, resumo, log),
+        update_golden=update_golden,
+    )
+
+
+def test_o_golden_de_tiro_colado_exercita_a_desvantagem_derivada():
+    """Sem isto, o golden acima poderia virar mais um combate NORMAL em
+    silencio -- exatamente o que aconteceu com os tres primeiros antes de o
+    golden de vantagem existir."""
+    gravado = json.loads((DADOS / "tiro_colado.json").read_text(encoding="utf-8"))
+    derivadas = {
+        fonte
+        for e in gravado["events"]
+        if e["kind"] == "attack_rolled"
+        for fonte in e["disadvantage_sources"]
+    }
+    assert derivadas == {"inimigo adjacente"}
+
+
 def test_o_golden_de_vantagem_exercita_os_dois_estados():
     """Sem isto, o golden acima poderia virar mais um combate NORMAL em
     silencio, e a lacuna que ele existe para tapar voltaria sozinha."""
@@ -229,11 +307,12 @@ def test_o_golden_de_vantagem_exercita_os_dois_estados():
 
 def test_os_goldens_nao_sao_todos_iguais():
     """Encontros que dessem o mesmo log nao provariam nada."""
+    nomes = [*IDS, "vantagem", "tiro_colado"]
     resumos = {
         json.loads((DADOS / f"{nome}.json").read_text(encoding="utf-8"))["final_fingerprint"]
-        for nome in [*IDS, "vantagem"]
+        for nome in nomes
     }
-    assert len(resumos) == len(IDS) + 1
+    assert len(resumos) == len(nomes)
 
 
 def _save_legado() -> tuple[dict[str, Any], str]:

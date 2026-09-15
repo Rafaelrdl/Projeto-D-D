@@ -42,6 +42,9 @@ Conferido na prática, na hora de escrevê-los:
 | Limiar de crítico de 20 para 19 | 3 de 4 |
 | Vantagem escolhendo o menor dado | só `vantagem` |
 | Empate na vantagem pegando o 2º dado | **nenhum** |
+| Movimento que debita mas não move | 3 de 5 |
+| `legal_actions` ignorando alcance | os que usam o piloto automático |
+| Desvantagem derivada deixando de ser aplicada | só `tiro_colado` |
 
 A última linha é o ponto. Nos 20 ataques gravados, nenhum tirou os dois d20
 iguais — o ramo de empate simplesmente não aparece. Quem cobre isso é
@@ -49,6 +52,15 @@ iguais — o ramo de empate simplesmente não aparece. Quem cobre isso é
 deve ser coberto: forçar uma seed até o empate cair seria contorcer o golden
 para fazer o trabalho de um teste de unidade.
 
-A tabela também explica por que `vantagem.json` existe: o piloto automático
-nunca declara fonte de vantagem, então sem ele os goldens exercitavam
-exclusivamente `NORMAL`.
+A tabela também explica por que dois dos goldens existem. O piloto automático
+nunca declara fonte de vantagem, então sem `vantagem.json` os goldens
+exercitavam exclusivamente `NORMAL`. E ele nunca atira de perto — `legal_actions`
+oferece a arma corpo a corpo primeiro, e de perto ela é melhor — então sem
+`tiro_colado.json` a regra de "atirar com inimigo colado dá desvantagem" não
+apareceria em log nenhum.
+
+**Os dois têm um teste que cobra o que eles exercitam**, e não só o conteúdo
+congelado. Sem isso, um golden pode virar mais um combate comum em silêncio e a
+lacuna que ele tapava volta sozinha. Foi exatamente esse teste que reprovou a
+primeira seed do `tiro_colado`: ela matava a atiradora na rodada 1, antes de ela
+atirar.

@@ -21,20 +21,29 @@ ter sido decidida como contrato.
 **(a1)** A ordem de `legal_actions` **é contrato dos goldens** e só muda em
 commit isolado, com a frase de justificativa que `tests/golden/README.md` exige.
 
-**(a2)** Enquanto a ordem for **incondicional**, ação nova entra antes de
-`EndTurnAction`, que fecha a lista.
+**(a2) — reescrita na fatia 2, como estava previsto.** A versão original dizia
+"ação nova entra antes de `EndTurnAction`, que fecha a lista", e valia enquanto
+a ordem fosse incondicional. Ela deixou de ser: com alcance de ataque, um ataque
+fora de alcance **some da lista**, e `acoes[0]` deixa de ser um ataque para
+virar um `MoveAction`. A política que a substitui:
 
-> **Com data marcada para ser reescrita.** A fatia 2 torna a ordem *condicional
-> ao estado*: com alcance de ataque, um ataque fora de alcance some da lista, e
-> `acoes[0]` deixa de ser um ataque para virar um `MoveAction`. No commit em que
-> isso acontecer, a cláusula (a2) é substituída por uma política de ordenação
-> explícita — e o efeito sobre `play_out` é o ponto principal daquele commit,
-> não uma nota de rodapé.
+> O menu é ordenado por **quanto a escolha custa e quão irreversível ela é**,
+> do mais caro para o mais barato:
+>
+> 1. **Ataques ao alcance**, na ordem dos ataques na ficha × alvos por id.
+>    Gastam a ação, que é o recurso que não volta no turno.
+> 2. **A casa canônica**, quando existe uma que aproxima do inimigo mais perto.
+>    Gasta movimento, que é divisível e parcialmente recuperável na rodada
+>    seguinte.
+> 3. **`EndTurnAction`**, sempre por último, sempre presente.
+>
+> A consequência deliberada: quando nada está ao alcance, `acoes[0]` é o
+> movimento — e é assim que um combate que começa a 20 pés fecha distância em
+> vez de travar. O `play_out` não decide nada; ele obedece a esta ordem, e é
+> por isso que a ordem é contrato e não conveniência.
 
-A trava de (a2) é dupla, porque o enunciado ingênuo é falso: `legal_actions`
-devolve `()` em dois casos legítimos (combate encerrado, ator caído). O teste
-afirma *quando não é vazia, o último item é `EndTurnAction`* **e** *ela só é
-vazia nesses dois casos*.
+A trava continua sendo dupla, porque o enunciado ingênuo é falso: `legal_actions`
+devolve `()` em dois casos legítimos (combate encerrado, ator caído).
 
 ---
 
@@ -64,16 +73,27 @@ não descobrir isso com goldens já congelados em cima.
 
 As duas fontes do repositório discordavam: `serde.RULES_VERSION` dizia "qualquer
 regra" e o `CLAUDE.md` dizia "o contrato de consumo do RNG". A leitura ampla
-vence, e com uma cláusula de agrupamento:
+vence:
 
 > `RULES_VERSION` sobe quando o motor passa a **calcular outro resultado**, e
-> não só quando o stream se desloca. As subidas são agrupadas num **único commit
-> de virada por fatia**, nunca espalhadas por cinco commits que regravam os
-> mesmos quatro arquivos.
+> não só quando o stream se desloca.
 
-Sem o agrupamento, a fatia 3 regravaria os goldens três vezes, e a terceira
-frase de justificativa seria escrita por alguém que já parou de ler as outras
-duas.
+**A cláusula de agrupamento foi corrigida na fatia 2, e vale a pena dizer por
+quê.** A versão original mandava agrupar as subidas "num único commit de virada
+por fatia". A fatia 2 a desmentiu na prática: os passos 6, 7 e 8 mudaram o
+resultado três vezes, por três motivos diferentes — movimento que move, alcance
+que recusa, desvantagem que se aplica — e cada um tinha sua própria frase de
+justificativa para escrever.
+
+> O que a cláusula proíbe é fatiar **uma** mudança de resultado em vários
+> commits que sobem a versão várias vezes. Três mudanças de resultado distintas
+> sobem três vezes, e está certo: o contador é monotônico, não é escasso, e cada
+> subida carrega uma frase que alguém consegue escrever com honestidade.
+
+O sinal de que a regra está sendo seguida é o diagnóstico de golden conseguir
+classificar cada diff. Na fatia 2 ele pegou um erro real: classificou o passo 7
+como mudança de FORMATO "com as regras iguais", dizendo a verdade sobre o que eu
+tinha declarado — e o que estava errado era eu não ter subido a versão.
 
 ---
 
