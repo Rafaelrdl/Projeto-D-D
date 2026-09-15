@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import pytest
 
-from tacticore.core.actions import Action, AttackAction
+from tacticore.core.actions import Action, AttackAction, EndTurnAction
 from tacticore.core.engine import combat_result, legal_actions, start_combat
 from tacticore.core.errors import CorruptStateError
 from tacticore.core.events import CombatEnded, Event
@@ -237,3 +237,16 @@ def _conduzir_ate(estado: CombatState, quantas: int) -> None:
 def test_o_condutor_tambem_para_no_limite_de_acoes():
     with pytest.raises(CorruptStateError, match="nao terminou em 2 acoes"):
         _conduzir_ate(duelo_aberto(), 3)
+
+
+def test_insistir_depois_do_fim_encerra_o_gerador():
+    """Sem o `return` depois do ultimo `yield`, quem insistisse receberia
+    passos vazios para sempre em vez de parar -- e um laco que confiasse no
+    `StopIteration` rodaria eternamente sem consumir uma acao."""
+    conducao = conduzir(duelo_aberto())
+    passo = next(conducao)
+    while passo.actions:
+        passo = conducao.send(primeira_legal(passo.state, passo.actions))
+
+    with pytest.raises(StopIteration):
+        conducao.send(EndTurnAction(actor=passo.state.turn_order.current))
