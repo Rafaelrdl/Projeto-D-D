@@ -165,23 +165,53 @@ def d20_check(roll: D20Roll, *, bonus: int, dc: int) -> D20CheckResult:
     )
 
 
-def attack_bonus(
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AttackMath:
+    """As parcelas de um ataque, calculadas de uma vez so.
+
+    Uma funcao e nao duas porque o acerto e o dano de 5e usam o **mesmo**
+    atributo, e duas funcoes separadas deixam isso valendo por coincidencia:
+    basta alguem chamar uma com um perfil e a outra com outro. Aqui os dois
+    saem da mesma leitura de ficha, e `damage == ability_mod` e uma linha do
+    construtor em vez de um acordo entre dois lugares.
+
+    As parcelas saem nomeadas porque o evento `AttackRolled` publica a conta
+    decomposta. Devolver so o total obrigaria o motor a refazer as partes --
+    que e exatamente como a duplicacao nasceu da primeira vez.
+    """
+
+    ability: Ability
+    ability_mod: int
+    proficiency: int
+    """Ja zerado quando o atacante nao e proficiente com a arma."""
+
+    attack: int
+    """`ability_mod + proficiency`: o que entra no d20."""
+
+    damage: int
+    """`ability_mod`, e nada mais.
+
+    Proficiencia **nunca** entra no dano. E o erro de porte de regra mais comum
+    de 5e e o mais silencioso: o dano fica alto demais o combate inteiro sem
+    nada quebrar.
+    """
+
+
+def attack_math(
     profile: AttackProfile,
     abilities: Abilities,
     proficiency_bonus: int,
-) -> int:
-    """Modificador do atributo do ataque, mais proficiencia se houver."""
+) -> AttackMath:
+    """Tudo que um ataque soma, numa leitura so da ficha."""
     modificador = ability_modifier(ability_score(abilities, profile.ability))
-    return modificador + (proficiency_bonus if profile.proficient else 0)
-
-
-def damage_bonus(profile: AttackProfile, abilities: Abilities) -> int:
-    """Modificador do **mesmo** atributo que fez o acerto.
-
-    Proficiencia nao entra aqui. E o erro de porte de regra mais comum de 5e, e
-    e silencioso: o dano fica alto demais o combate inteiro sem nada quebrar.
-    """
-    return ability_modifier(ability_score(abilities, profile.ability))
+    proficiencia = proficiency_bonus if profile.proficient else 0
+    return AttackMath(
+        ability=profile.ability,
+        ability_mod=modificador,
+        proficiency=proficiencia,
+        attack=modificador + proficiencia,
+        damage=modificador,
+    )
 
 
 def classify_attack(check: D20CheckResult) -> AttackOutcome:

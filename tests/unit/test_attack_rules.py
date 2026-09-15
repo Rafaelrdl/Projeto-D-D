@@ -7,10 +7,9 @@ import pytest
 from tacticore.core.enums import Ability, AdvantageState, AttackOutcome
 from tacticore.core.rng import ScriptedRng
 from tacticore.core.rules import (
-    attack_bonus,
+    attack_math,
     classify_attack,
     d20_check,
-    damage_bonus,
     roll_d20,
 )
 from tacticore.core.testing import make_abilities, make_attack
@@ -31,38 +30,50 @@ def classificar(natural: int, *, bonus: int = 0, dc: int = 15) -> AttackOutcome:
 
 
 def test_ataque_soma_atributo_e_proficiencia():
-    ataque = make_attack(ability=Ability.FOR, proficient=True)
-    assert attack_bonus(ataque, GUERREIRO, PROFICIENCIA) == 4 + 3
+    conta = attack_math(make_attack(ability=Ability.FOR, proficient=True), GUERREIRO, PROFICIENCIA)
+    assert (conta.ability_mod, conta.proficiency, conta.attack) == (4, 3, 7)
 
 
 def test_sem_proficiencia_so_o_atributo_entra():
-    ataque = make_attack(ability=Ability.FOR, proficient=False)
-    assert attack_bonus(ataque, GUERREIRO, PROFICIENCIA) == 4
+    conta = attack_math(make_attack(ability=Ability.FOR, proficient=False), GUERREIRO, PROFICIENCIA)
+    assert conta.proficiency == 0
+    assert conta.attack == 4
 
 
 def test_o_atributo_do_ataque_e_o_que_manda():
-    arco = make_attack(ability=Ability.DES, proficient=True)
-    assert attack_bonus(arco, GUERREIRO, PROFICIENCIA) == 2 + 3
+    conta = attack_math(make_attack(ability=Ability.DES, proficient=True), GUERREIRO, PROFICIENCIA)
+    assert conta.ability is Ability.DES
+    assert conta.attack == 2 + 3
 
 
 def test_proficiencia_nunca_entra_no_dano():
     """O erro de porte de regra mais comum de 5e, e o mais silencioso:
     o dano fica alto demais o combate inteiro sem nada quebrar."""
-    ataque = make_attack(ability=Ability.FOR, proficient=True)
-    assert damage_bonus(ataque, GUERREIRO) == 4
-    assert damage_bonus(ataque, GUERREIRO) != attack_bonus(ataque, GUERREIRO, PROFICIENCIA)
+    conta = attack_math(make_attack(ability=Ability.FOR, proficient=True), GUERREIRO, PROFICIENCIA)
+    assert conta.damage == 4
+    assert conta.damage != conta.attack
 
 
-def test_dano_usa_o_mesmo_atributo_do_acerto():
-    arco = make_attack(ability=Ability.DES, proficient=True)
-    assert damage_bonus(arco, GUERREIRO) == 2
+@pytest.mark.parametrize("ability", list(Ability))
+@pytest.mark.parametrize("proficient", [True, False])
+def test_acerto_e_dano_usam_sempre_o_mesmo_atributo(ability: Ability, proficient: bool):
+    """Por construcao, e nao por acordo entre dois lugares.
+
+    Duas funcoes separadas deixariam isto valendo por coincidencia: bastaria
+    alguem chamar uma com um perfil e a outra com outro.
+    """
+    conta = attack_math(
+        make_attack(ability=ability, proficient=proficient), GUERREIRO, PROFICIENCIA
+    )
+    assert conta.damage == conta.ability_mod
+    assert conta.attack - conta.damage == conta.proficiency
 
 
 def test_atributo_fraco_da_bonus_negativo_nos_dois():
     fraco = make_abilities(forca=6)
-    ataque = make_attack(ability=Ability.FOR, proficient=False)
-    assert attack_bonus(ataque, fraco, PROFICIENCIA) == -2
-    assert damage_bonus(ataque, fraco) == -2
+    conta = attack_math(make_attack(ability=Ability.FOR, proficient=False), fraco, PROFICIENCIA)
+    assert conta.attack == -2
+    assert conta.damage == -2
 
 
 # ------------------------------------------------------ classificacao ------

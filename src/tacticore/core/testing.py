@@ -16,6 +16,7 @@ quem le o teste teria que caçar qual dos vinte valores e o relevante.
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
+from typing import assert_never
 
 from tacticore.core.dice import DamageExpr, parse_dice
 from tacticore.core.engine import (
@@ -28,9 +29,18 @@ from tacticore.core.enums import Ability
 from tacticore.core.errors import CorruptStateError
 from tacticore.core.events import (
     AttackRolled,
+    CombatEnded,
+    CreatureDowned,
     DamageRolled,
     Event,
+    HpChanged,
     InitiativeRolled,
+    MovementSpent,
+    RoundStarted,
+    TurnEnded,
+    TurnOrderSet,
+    TurnSkipped,
+    TurnStarted,
 )
 from tacticore.core.ids import AttackId, CreatureId, StatblockId
 from tacticore.core.model import (
@@ -233,8 +243,24 @@ def tape_from_events(events: Sequence[Event]) -> tuple[int, ...]:
                 dados.extend(evento.pair)
             case DamageRolled():
                 dados.extend(d.value for d in evento.roll.dice)
-            case _:
+            # Os que nao rolam dado sao listados um a um, e nao varridos por um
+            # `case _`. Esquecer um evento de rolagem NOVO num `case _` nao da
+            # erro de mypy nem de lint: estoura como `RngExhausted` dentro de
+            # `rng.roll_die`, tres modulos longe da causa.
+            case (
+                TurnOrderSet()
+                | RoundStarted()
+                | TurnStarted()
+                | TurnSkipped()
+                | TurnEnded()
+                | MovementSpent()
+                | HpChanged()
+                | CreatureDowned()
+                | CombatEnded()
+            ):
                 continue
+            case _:  # pragma: no cover - inalcancavel: mypy fecha a uniao
+                assert_never(evento)
     return tuple(dados)
 
 

@@ -56,6 +56,7 @@ from tacticore.core.rules import (
     ability_modifier,
     ability_score,
     apply_damage,
+    attack_math,
     classify_attack,
     d20_check,
     initiative_sort_key,
@@ -447,11 +448,8 @@ def _atacar(state: CombatState, action: AttackAction) -> Applied:
     antes_d20 = position(state.rng)
     rolagem, rng = roll_d20(state.rng, vantagem)
 
-    ability_mod = ability_modifier(ability_score(ficha_ator.abilities, perfil.ability))
-    proficiencia = ficha_ator.proficiency_bonus if perfil.proficient else 0
-    bonus = ability_mod + proficiencia
-
-    checagem = d20_check(rolagem, bonus=bonus, dc=ficha_alvo.armor_class)
+    conta = attack_math(perfil, ficha_ator.abilities, ficha_ator.proficiency_bonus)
+    checagem = d20_check(rolagem, bonus=conta.attack, dc=ficha_alvo.armor_class)
     desfecho = classify_attack(checagem)
     alvo_estava_caido = not is_standing(alvo)
 
@@ -467,9 +465,9 @@ def _atacar(state: CombatState, action: AttackAction) -> Applied:
             pair=rolagem.pair,
             chosen_index=rolagem.chosen_index,
             natural=rolagem.natural,
-            ability=perfil.ability,
-            ability_mod=ability_mod,
-            proficiency=proficiencia,
+            ability=conta.ability,
+            ability_mod=conta.ability_mod,
+            proficiency=conta.proficiency,
             total=checagem.total,
             target_ac=ficha_alvo.armor_class,
             target_was_down=alvo_estava_caido,
@@ -491,7 +489,7 @@ def _atacar(state: CombatState, action: AttackAction) -> Applied:
     dano, rng = roll_damage(
         novo.rng,
         perfil.damage,
-        ability_bonus=ability_mod,
+        ability_bonus=conta.damage,
         critical=desfecho is AttackOutcome.CRITICAL_HIT,
     )
     eventos.append(

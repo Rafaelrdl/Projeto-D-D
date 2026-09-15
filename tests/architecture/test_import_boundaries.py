@@ -14,8 +14,21 @@ import pytest
 
 import tacticore.core
 
+RAIZ = Path(tacticore.__file__).parent
 CORE_DIR = Path(tacticore.core.__file__).parent
 PACKAGE = "tacticore.core"
+
+# A varredura cobre `src/tacticore` INTEIRO, e nao so o core. Um pacote novo
+# nascia com trava zero: `import random` dentro dele passaria na suite, no ruff
+# e no mypy, e a restricao 3 deixaria de ser verificada no primeiro modulo
+# fora do core -- exatamente onde e mais facil esquecer dela.
+#
+# Pacote sem politica declarada REPROVA, pelo mesmo motivo que modulo sem
+# camada declarada reprova: o default silencioso e o buraco.
+POLITICAS: dict[str, str] = {
+    "": "raiz do pacote: so metadado, nao importa nada de tacticore",
+    "core": "motor de regras: stdlib puro e ele mesmo",
+}
 
 # Ordem das camadas: um modulo so pode importar modulos de camada ESTRITAMENTE
 # menor. Empate significa "nao se conhecem" (ex: actions e events).
@@ -123,6 +136,15 @@ def _top(module: str) -> str:
     return module.split(".", maxsplit=1)[0]
 
 
+def _pacote_de(path: Path) -> str:
+    """O pacote de um arquivo, relativo a `tacticore`. Raiz e string vazia."""
+    relativo = path.relative_to(RAIZ).parent
+    return "" if relativo == Path() else relativo.as_posix()
+
+
+TODOS = sorted(RAIZ.rglob("*.py"))
+IDS_TODOS = [str(p.relative_to(RAIZ).as_posix()) for p in TODOS]
+
 MODULES = sorted(CORE_DIR.glob("*.py"))
 IDS = [p.stem for p in MODULES]
 
@@ -135,6 +157,30 @@ def test_todo_modulo_do_core_tem_camada_declarada():
         f"modulos sem camada declarada em LAYERS/OFF_LAYER: {sorted(desconhecidos)}. "
         "Declare a camada junto com o modulo, no mesmo commit."
     )
+
+
+def test_todo_pacote_tem_politica_declarada():
+    """Pacote novo sem politica e um buraco silencioso na restricao 1."""
+    encontrados = {_pacote_de(p) for p in TODOS}
+    desconhecidos = encontrados - set(POLITICAS)
+    assert not desconhecidos, (
+        f"pacotes sem politica declarada em POLITICAS: {sorted(desconhecidos)}. "
+        "Declare a politica junto com o pacote, no mesmo commit."
+    )
+
+
+@pytest.mark.parametrize("path", TODOS, ids=IDS_TODOS)
+def test_nenhum_modulo_importa_io_rede_nem_aleatoriedade(path: Path):
+    """Vale para `src/tacticore` inteiro, e nao so para o core.
+
+    O que muda de pacote para pacote e o que se pode importar; o que NUNCA
+    muda e a proibicao de I/O, rede, relogio e aleatoriedade fora do RngState.
+    """
+    for module, level, lineno in _imports(path):
+        if level:
+            continue
+        motivo = BANNED.get(_top(module))
+        assert motivo is None, f"{path.name}:{lineno} importa {module!r}: {motivo}"
 
 
 @pytest.mark.parametrize("path", MODULES, ids=IDS)
