@@ -8,6 +8,7 @@ condicao de inconsciente, ou morte separada de queda -- muda aqui e so aqui.
 from __future__ import annotations
 
 from tacticore.core.actions import AttackAction
+from tacticore.core.enums import Condition
 from tacticore.core.errors import CorruptStateError
 from tacticore.core.ids import AttackId, CreatureId
 from tacticore.core.model import (
@@ -20,8 +21,11 @@ from tacticore.core.model import (
 from tacticore.core.rules import is_adjacent
 
 FONTE_INIMIGO_ADJACENTE = "inimigo adjacente"
-"""O texto que vai para o log. Constante e nao literal solto porque o teste
-afirma sobre ele e a narrativa o exibe -- dois lugares e um so dono."""
+FONTE_ATACANTE_CAIDO = "atacante caido"
+FONTE_ALVO_CAIDO_PERTO = "alvo caido, e eu estou colado"
+FONTE_ALVO_CAIDO_LONGE = "alvo caido, e eu estou longe"
+"""Os textos que vao para o log. Constantes e nao literais soltos porque os
+testes afirmam sobre eles e a narrativa os exibe -- dois lugares, um dono."""
 
 
 def is_conscious(combatant: Combatant) -> bool:
@@ -99,27 +103,50 @@ def derive_advantage_sources(
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Vantagem e desvantagem que vem do **estado**, e nao da acao.
 
-    Hoje deriva uma coisa so, e e a regra da SRD que diz: atirar com um inimigo
-    colado em voce da desvantagem. Ela e o primeiro consumidor real deste
-    gancho, que existiu vazio desde a etapa 1 esperando exatamente isto -- e o
-    motivo de ele ter sido escrito antes de ter uso e que sem ele esta regra
-    cairia dentro de `_atacar`, que a essa altura tem quarenta testes em cima.
+    Este gancho existiu vazio desde a etapa 1, esperando exatamente isto: hoje
+    sao tres regras, e nenhuma delas encostou em `_atacar`, que a essa altura
+    tem quarenta testes em cima.
 
     As fontes derivadas sao concatenadas **depois** das declaradas na acao, e a
-    ordem e fixa porque ela aparece no log.
+    ordem entre elas e fixa porque aparece no log.
 
-    "A distancia" e definido como `range_ft > PES_POR_CASA`, e nao por um campo
-    de tipo de arma. E o mesmo conjunto enquanto nao houver arma de haste --
-    uma alabarda tem alcance 10 e e corpo a corpo, e o dia em que uma entrar
-    este criterio para de servir. Registrado em `docs/srd-atribuicao.md`.
+    As regras, na ordem em que sao avaliadas:
+
+    1. **Atirar com inimigo colado** da desvantagem. "A distancia" e definido
+       como `range_ft > PES_POR_CASA`, e nao por um campo de tipo de arma --
+       mesmo conjunto enquanto nao houver arma de haste, e registrado como
+       desvio.
+    2. **Estar caido** da desvantagem nos proprios ataques.
+    3. **Atacar quem esta caido** da vantagem se o atacante estiver a 1,5 m, e
+       desvantagem se estiver longe. Repare que isto e **geometria e nao tipo de
+       arma**: um arqueiro colado no caido tem VANTAGEM, e um lanceiro de
+       alcance 10 atacando de duas casas tem desvantagem. Ler `perfil.range_ft`
+       aqui seria a leitura errada da regra, e ela e facil de fazer porque a
+       clausula 1 logo acima le exatamente esse campo.
     """
     perfil = attack_of(statblock_of(state, action.actor), action.attack_id)
-    if perfil is None or perfil.range_ft <= PES_POR_CASA:
+    if perfil is None:
         return (), ()
 
     ator = state.combatants[action.actor]
-    colado = any(
+    alvo = combatant_of(state, action.target)
+
+    vantagens: list[str] = []
+    desvantagens: list[str] = []
+
+    if perfil.range_ft > PES_POR_CASA and any(
         c.team != ator.team and is_conscious(c) and is_adjacent(ator.position, c.position)
         for c in state.combatants.values()
-    )
-    return ((), (FONTE_INIMIGO_ADJACENTE,)) if colado else ((), ())
+    ):
+        desvantagens.append(FONTE_INIMIGO_ADJACENTE)
+
+    if Condition.CAIDO in ator.conditions:
+        desvantagens.append(FONTE_ATACANTE_CAIDO)
+
+    if alvo is not None and Condition.CAIDO in alvo.conditions:
+        if is_adjacent(ator.position, alvo.position):
+            vantagens.append(FONTE_ALVO_CAIDO_PERTO)
+        else:
+            desvantagens.append(FONTE_ALVO_CAIDO_LONGE)
+
+    return tuple(vantagens), tuple(desvantagens)
