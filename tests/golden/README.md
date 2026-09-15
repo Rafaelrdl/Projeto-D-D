@@ -47,6 +47,8 @@ Conferido na prática, na hora de escrevê-los:
 | Desvantagem derivada deixando de ser aplicada | só `tiro_colado` |
 | Truque somando modificador de atributo ao dano | só `arcanista` |
 | Ficha do arcanista entrando no `CATALOGO` | os **seis** que usam o catálogo global |
+| Empate de teste oposto tratado como sucesso | só `empurrao` |
+| Ordem de rolagem do teste oposto invertida | só `empurrao` |
 
 A última linha é o ponto. Nos 20 ataques gravados, nenhum tirou os dois d20
 iguais — o ramo de empate simplesmente não aparece. Quem cobre isso é
@@ -74,7 +76,15 @@ no estado, então pô-la lá mudaria o `final_fingerprint` dos outros seis sem
 nenhuma regra ter mudado — e o diagnóstico chamaria isso de "regressão até prova
 em contrário".
 
-**Os três têm um teste que cobra o que eles exercitam**, e não só o conteúdo
+`empurrao.json` é o quarto, e o único com **três** combatentes. Isso é medida e
+não gosto: num duelo a vítima levanta sempre no próprio turno — levantar custa
+movimento, e a ação dela já foi gasta atacando —, então quando o empurrador volta
+a agir não há mais ninguém no chão. Medido em 300 duelos: **621 quedas, e a fonte
+de vantagem "alvo caído, e eu estou colado" aparece em zero delas.** Com um
+atirador agindo entre o empurrador e o alvo, as três fontes geométricas cabem no
+mesmo log.
+
+**Os quatro têm um teste que cobra o que eles exercitam**, e não só o conteúdo
 congelado. Sem isso, um golden pode virar mais um combate comum em silêncio e a
 lacuna que ele tapava volta sozinha. Foi exatamente esse teste que reprovou a
 primeira seed do `tiro_colado`: ela matava a atiradora na rodada 1, antes de ela

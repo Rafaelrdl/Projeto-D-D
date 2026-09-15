@@ -19,15 +19,15 @@ import pytest
 from tacticore.content.arcanista import ARCANISTA, RAIO_DE_FOGO
 from tacticore.content.srd import BRUTAMONTES, CATALOGO
 from tacticore.core import RULES_VERSION, SCHEMA_VERSION
-from tacticore.core.actions import Action, AttackAction, EndTurnAction
+from tacticore.core.actions import Action, AttackAction, EndTurnAction, ShoveAction
 from tacticore.core.engine import Participant, apply, combat_result, start_combat
 from tacticore.core.enums import Condition
-from tacticore.core.events import Event
+from tacticore.core.events import ContestRolled, Event
 from tacticore.core.ids import AttackId, CreatureId, StatblockId
 from tacticore.core.model import PES_POR_CASA, CombatState, Statblock
 from tacticore.core.queries import is_conscious, statblock_of
 from tacticore.core.results import Applied
-from tacticore.core.rng import ALGORITHM, SplitMix64
+from tacticore.core.rng import ALGORITHM, ScriptedRng, SplitMix64
 from tacticore.core.serde import (
     canonical_json,
     check_invariants,
@@ -35,7 +35,13 @@ from tacticore.core.serde import (
     fingerprint,
     load,
 )
-from tacticore.core.testing import Politica, make_participant, play_out, primeira_legal
+from tacticore.core.testing import (
+    Politica,
+    make_participant,
+    play_out,
+    primeira_legal,
+    tape_from_events,
+)
 
 DADOS = Path(__file__).parent / "data"
 
@@ -492,9 +498,155 @@ def test_o_golden_do_arcanista_e_artilharia_e_nao_outro_tiro_colado():
     assert fontes == set(), "nenhum tiro colado: isso e o que tiro_colado.json ja cobre"
 
 
+# --------------------------------------------------------- o empurrao ------
+
+EMPURRAO_SEED = 94
+"""Escolhida para o encontro ACONTECER, como as tres acima.
+
+Ela traz os TRES desfechos da disputa no mesmo log -- derruba, empate, resiste
+-- e as tres fontes geometricas que estar caido produz. Varridas 400 seeds, so
+14 dao os tres desfechos junto com vantagem e desvantagem derivadas, e duas
+dessas 14 trazem tambem "alvo caido, e eu estou longe".
+"""
+
+EMPURRADOR = CreatureId("empurrador")
+
+
+def empurra_se_der(state: CombatState, acoes: tuple[Action, ...]) -> Action:
+    """Politica propria: o empurrador prefere derrubar; os outros dois jogam sozinhos.
+
+    Nao e IA e nao tenta ser -- e o minimo que faz a mecanica aparecer. Empurrar
+    e jogada DOMINADA no recorte de hoje (ver o docstring de `ShoveAction`),
+    entao `primeira_legal` o oferece e nunca o escolhe: medido, zero vezes nos
+    quatro goldens automaticos.
+
+    Congela so o lado do empurrador. O atirador e o alvo continuam no piloto, e
+    e deles que vem o resto do combate -- inclusive o levantar-se, que nenhuma
+    politica precisa pedir.
+    """
+    if state.turn_order.current != EMPURRADOR:
+        return primeira_legal(state, acoes)
+    for acao in acoes:
+        if isinstance(acao, ShoveAction):
+            return acao
+    return primeira_legal(state, acoes)
+
+
+def rodar_com_empurrao(
+    seed: int, *, politica: Politica = empurra_se_der
+) -> tuple[str, tuple[Event, ...]]:
+    """TRES combatentes, e nao um duelo. Isso e medida, nao gosto.
+
+    Num duelo a vitima levanta SEMPRE no proprio turno -- levantar custa
+    movimento e a acao dela ja foi gasta atacando --, entao quando o empurrador
+    volta a agir nao ha mais ninguem no chao. Medido em 300 duelos: 621 quedas,
+    e a fonte de vantagem "alvo caido, e eu estou colado" aparece em ZERO delas.
+    Um golden em forma de duelo congelaria metade da regra que
+    `test_a_regra_do_caido_e_GEOMETRIA_e_nao_tipo_de_arma` protege.
+
+    Com um atirador que age entre o empurrador e o alvo, as tres fontes cabem
+    no mesmo log.
+    """
+    participantes = (
+        make_participant(
+            id="empurrador", statblock_id="brutamontes", team="herois", position=(0, 0)
+        ),
+        make_participant(id="atirador", statblock_id="duelista", team="herois", position=(0, 4)),
+        make_participant(id="alvo", statblock_id="duelista", team="viloes", position=(1, 0)),
+    )
+    abertura = start_combat(
+        statblocks=CATALOGO, participants=participantes, rng=SplitMix64(seed=seed)
+    )
+    estado, resto = play_out(abertura.state, politica=politica)
+    return fingerprint(estado), (*abertura.events, *resto)
+
+
+def test_encontro_com_empurrao(update_golden: bool):
+    resumo, log = rodar_com_empurrao(EMPURRAO_SEED)
+    gravar_ou_comparar(
+        "empurrao", envelope_de(EMPURRAO_SEED, resumo, log), update_golden=update_golden
+    )
+
+
+def test_o_golden_do_empurrao_exercita_os_TRES_desfechos():
+    """Sem isto, o golden viraria mais um combate comum em silencio.
+
+    O empate e o que mais precisa: o motor o trata igual a derrota, entao
+    nenhum teste de EFEITO os distingue. Esta asercao e a frase propria do
+    narrador sao as duas unicas coisas que seguram `ContestOutcome.TIE`
+    existindo.
+    """
+    gravado = json.loads((DADOS / "empurrao.json").read_text(encoding="utf-8"))
+    disputas = [e for e in gravado["events"] if e["kind"] == "contest_rolled"]
+    assert {e["outcome"] for e in disputas} == {"SUCCESS", "TIE", "FAILURE"}
+
+
+def test_o_golden_do_empurrao_congela_o_quadro_de_quatro_dados():
+    """O item 6 do contrato, conferido de fora, no arquivo.
+
+    Dois d20 por lado, sempre, qualquer que seja o desfecho: se o consumo
+    dependesse de quem ganhou, o primeiro empate deslocaria todo o resto.
+    """
+    gravado = json.loads((DADOS / "empurrao.json").read_text(encoding="utf-8"))
+    disputas = [e for e in gravado["events"] if e["kind"] == "contest_rolled"]
+    assert disputas, "o golden precisa ter pelo menos uma disputa"
+    assert {e["rng_after"] - e["rng_before"] for e in disputas} == {4}
+    for e in disputas:
+        assert len(e["actor_pair"]) == len(e["target_pair"]) == 2
+
+
+def test_o_golden_do_empurrao_mostra_o_CICLO_inteiro_da_condicao():
+    """Derrubar, sofrer por estar no chao, e levantar.
+
+    A queda sozinha nao prova nada: o que interessa e que estar caido MUDE uma
+    rolagem seguinte, e que a condicao saia depois. Sao as duas metades da
+    regra geometrica do caido, e num duelo a primeira nunca aparece.
+    """
+    gravado = json.loads((DADOS / "empurrao.json").read_text(encoding="utf-8"))
+    tipos = [e["kind"] for e in gravado["events"]]
+    assert "knocked_prone" in tipos
+    assert "stood_up" in tipos
+
+    vantagens = {
+        f for e in gravado["events"] if e["kind"] == "attack_rolled" for f in e["advantage_sources"]
+    }
+    desvantagens = {
+        f
+        for e in gravado["events"]
+        if e["kind"] == "attack_rolled"
+        for f in e["disadvantage_sources"]
+    }
+    assert "alvo caido, e eu estou colado" in vantagens, "quem bate de perto ganha vantagem"
+    assert "atacante caido" in desvantagens, "e quem esta no chao ataca pior"
+
+
+def test_o_golden_do_empurrao_se_reproduz_pela_propria_fita():
+    """A trava contra `ContestRolled` no ramo "nao rola dado" de
+    `tape_from_events` -- o erro que compila, passa no mypy e fica verde na
+    suite inteira ate o primeiro combate com empurrao."""
+    _, log = rodar_com_empurrao(EMPURRAO_SEED)
+    fita = tape_from_events(log)
+
+    disputas = sum(1 for e in log if isinstance(e, ContestRolled))
+    assert disputas >= 3, "o golden tem tres desfechos, entao tem ao menos tres disputas"
+
+    participantes = (
+        make_participant(
+            id="empurrador", statblock_id="brutamontes", team="herois", position=(0, 0)
+        ),
+        make_participant(id="atirador", statblock_id="duelista", team="herois", position=(0, 4)),
+        make_participant(id="alvo", statblock_id="duelista", team="viloes", position=(1, 0)),
+    )
+    abertura = start_combat(
+        statblocks=CATALOGO, participants=participantes, rng=ScriptedRng(script=fita)
+    )
+    _, resto = play_out(abertura.state, politica=empurra_se_der)
+    assert events_to_list((*abertura.events, *resto)) == events_to_list(log)
+
+
 def test_os_goldens_nao_sao_todos_iguais():
     """Encontros que dessem o mesmo log nao provariam nada."""
-    nomes = [*IDS, "vantagem", "tiro_colado", "caido", "arcanista"]
+    nomes = [*IDS, "vantagem", "tiro_colado", "caido", "arcanista", "empurrao"]
     resumos = {
         json.loads((DADOS / f"{nome}.json").read_text(encoding="utf-8"))["final_fingerprint"]
         for nome in nomes

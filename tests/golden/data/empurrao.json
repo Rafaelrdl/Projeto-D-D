@@ -1,0 +1,785 @@
+{
+  "events": [
+    {
+      "creature": "alvo",
+      "d20": 20,
+      "dex_mod": 3,
+      "dex_score": 17,
+      "kind": "initiative_rolled",
+      "rng_after": 1,
+      "rng_before": 0,
+      "total": 23
+    },
+    {
+      "creature": "atirador",
+      "d20": 4,
+      "dex_mod": 3,
+      "dex_score": 17,
+      "kind": "initiative_rolled",
+      "rng_after": 2,
+      "rng_before": 1,
+      "total": 7
+    },
+    {
+      "creature": "empurrador",
+      "d20": 20,
+      "dex_mod": -1,
+      "dex_score": 8,
+      "kind": "initiative_rolled",
+      "rng_after": 3,
+      "rng_before": 2,
+      "total": 19
+    },
+    {
+      "kind": "turn_order_set",
+      "order": [
+        "alvo",
+        "empurrador",
+        "atirador"
+      ]
+    },
+    {
+      "kind": "round_started",
+      "round_number": 1
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "alvo",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "alvo",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 18,
+      "outcome": "HIT",
+      "pair": [
+        18,
+        7
+      ],
+      "proficiency": 3,
+      "rng_after": 5,
+      "rng_before": 3,
+      "target": "empurrador",
+      "target_ac": 13,
+      "target_was_down": false,
+      "total": 21
+    },
+    {
+      "actor": "alvo",
+      "kind": "damage_rolled",
+      "rng_after": 7,
+      "rng_before": 5,
+      "roll": {
+        "ability_bonus": 0,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 8,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 2
+          },
+          {
+            "faces": 4,
+            "from_crit": false,
+            "term_index": 1,
+            "value": 2
+          }
+        ],
+        "flat": 0,
+        "total": 4
+      },
+      "target": "empurrador"
+    },
+    {
+      "after": {
+        "current": 10,
+        "maximum": 14
+      },
+      "before": {
+        "current": 14,
+        "maximum": 14
+      },
+      "creature": "empurrador",
+      "dealt": 4,
+      "kind": "hp_changed",
+      "overkill": 0
+    },
+    {
+      "creature": "alvo",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 30
+      },
+      "creature": "empurrador",
+      "kind": "turn_started"
+    },
+    {
+      "actor": "empurrador",
+      "actor_ability": "FOR",
+      "actor_bonus": 3,
+      "actor_chosen_index": 0,
+      "actor_natural": 10,
+      "actor_pair": [
+        10,
+        1
+      ],
+      "actor_total": 13,
+      "kind": "contest_rolled",
+      "outcome": "SUCCESS",
+      "rng_after": 11,
+      "rng_before": 7,
+      "target": "alvo",
+      "target_ability": "DES",
+      "target_bonus": 3,
+      "target_chosen_index": 0,
+      "target_natural": 3,
+      "target_pair": [
+        3,
+        2
+      ],
+      "target_total": 6
+    },
+    {
+      "creature": "alvo",
+      "kind": "knocked_prone"
+    },
+    {
+      "creature": "empurrador",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "atirador",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "DES",
+      "ability_mod": 3,
+      "actor": "atirador",
+      "advantage": "DISADVANTAGE",
+      "advantage_sources": [],
+      "attack_id": "adaga",
+      "attack_name": "Adaga Arremessada",
+      "chosen_index": 1,
+      "disadvantage_sources": [
+        "alvo caido, e eu estou longe"
+      ],
+      "kind": "attack_rolled",
+      "natural": 10,
+      "outcome": "HIT",
+      "pair": [
+        19,
+        10
+      ],
+      "proficiency": 3,
+      "rng_after": 13,
+      "rng_before": 11,
+      "target": "alvo",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 16
+    },
+    {
+      "actor": "atirador",
+      "kind": "damage_rolled",
+      "rng_after": 14,
+      "rng_before": 13,
+      "roll": {
+        "ability_bonus": 3,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 4,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 3
+          }
+        ],
+        "flat": 0,
+        "total": 6
+      },
+      "target": "alvo"
+    },
+    {
+      "after": {
+        "current": 5,
+        "maximum": 11
+      },
+      "before": {
+        "current": 11,
+        "maximum": 11
+      },
+      "creature": "alvo",
+      "dealt": 6,
+      "kind": "hp_changed",
+      "overkill": 0
+    },
+    {
+      "creature": "atirador",
+      "destination": {
+        "x": 0,
+        "y": 1
+      },
+      "feet": 15,
+      "kind": "movement_spent",
+      "origin": {
+        "x": 0,
+        "y": 4
+      },
+      "remaining_ft": 20
+    },
+    {
+      "creature": "atirador",
+      "kind": "turn_ended"
+    },
+    {
+      "kind": "round_started",
+      "round_number": 2
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "alvo",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "alvo",
+      "advantage": "DISADVANTAGE",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 1,
+      "disadvantage_sources": [
+        "atacante caido"
+      ],
+      "kind": "attack_rolled",
+      "natural": 2,
+      "outcome": "MISS",
+      "pair": [
+        14,
+        2
+      ],
+      "proficiency": 3,
+      "rng_after": 16,
+      "rng_before": 14,
+      "target": "atirador",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 5
+    },
+    {
+      "creature": "alvo",
+      "feet": 17,
+      "kind": "stood_up",
+      "remaining_ft": 18
+    },
+    {
+      "creature": "alvo",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 30
+      },
+      "creature": "empurrador",
+      "kind": "turn_started"
+    },
+    {
+      "actor": "empurrador",
+      "actor_ability": "FOR",
+      "actor_bonus": 3,
+      "actor_chosen_index": 0,
+      "actor_natural": 1,
+      "actor_pair": [
+        1,
+        8
+      ],
+      "actor_total": 4,
+      "kind": "contest_rolled",
+      "outcome": "FAILURE",
+      "rng_after": 20,
+      "rng_before": 16,
+      "target": "alvo",
+      "target_ability": "DES",
+      "target_bonus": 3,
+      "target_chosen_index": 0,
+      "target_natural": 19,
+      "target_pair": [
+        19,
+        14
+      ],
+      "target_total": 22
+    },
+    {
+      "creature": "empurrador",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "atirador",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "atirador",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 2,
+      "outcome": "MISS",
+      "pair": [
+        2,
+        10
+      ],
+      "proficiency": 3,
+      "rng_after": 22,
+      "rng_before": 20,
+      "target": "alvo",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 5
+    },
+    {
+      "creature": "atirador",
+      "kind": "turn_ended"
+    },
+    {
+      "kind": "round_started",
+      "round_number": 3
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "alvo",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "alvo",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 10,
+      "outcome": "MISS",
+      "pair": [
+        10,
+        14
+      ],
+      "proficiency": 3,
+      "rng_after": 24,
+      "rng_before": 22,
+      "target": "atirador",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 13
+    },
+    {
+      "creature": "alvo",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 30
+      },
+      "creature": "empurrador",
+      "kind": "turn_started"
+    },
+    {
+      "actor": "empurrador",
+      "actor_ability": "FOR",
+      "actor_bonus": 3,
+      "actor_chosen_index": 0,
+      "actor_natural": 5,
+      "actor_pair": [
+        5,
+        15
+      ],
+      "actor_total": 8,
+      "kind": "contest_rolled",
+      "outcome": "TIE",
+      "rng_after": 28,
+      "rng_before": 24,
+      "target": "alvo",
+      "target_ability": "DES",
+      "target_bonus": 3,
+      "target_chosen_index": 0,
+      "target_natural": 5,
+      "target_pair": [
+        5,
+        6
+      ],
+      "target_total": 8
+    },
+    {
+      "creature": "empurrador",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "atirador",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "atirador",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 10,
+      "outcome": "MISS",
+      "pair": [
+        10,
+        18
+      ],
+      "proficiency": 3,
+      "rng_after": 30,
+      "rng_before": 28,
+      "target": "alvo",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 13
+    },
+    {
+      "creature": "atirador",
+      "kind": "turn_ended"
+    },
+    {
+      "kind": "round_started",
+      "round_number": 4
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "alvo",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "alvo",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 9,
+      "outcome": "MISS",
+      "pair": [
+        9,
+        4
+      ],
+      "proficiency": 3,
+      "rng_after": 32,
+      "rng_before": 30,
+      "target": "atirador",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 12
+    },
+    {
+      "creature": "alvo",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 30
+      },
+      "creature": "empurrador",
+      "kind": "turn_started"
+    },
+    {
+      "actor": "empurrador",
+      "actor_ability": "FOR",
+      "actor_bonus": 3,
+      "actor_chosen_index": 0,
+      "actor_natural": 14,
+      "actor_pair": [
+        14,
+        15
+      ],
+      "actor_total": 17,
+      "kind": "contest_rolled",
+      "outcome": "FAILURE",
+      "rng_after": 36,
+      "rng_before": 32,
+      "target": "alvo",
+      "target_ability": "DES",
+      "target_bonus": 3,
+      "target_chosen_index": 0,
+      "target_natural": 15,
+      "target_pair": [
+        15,
+        19
+      ],
+      "target_total": 18
+    },
+    {
+      "creature": "empurrador",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "atirador",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "atirador",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 3,
+      "outcome": "MISS",
+      "pair": [
+        3,
+        11
+      ],
+      "proficiency": 3,
+      "rng_after": 38,
+      "rng_before": 36,
+      "target": "alvo",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 6
+    },
+    {
+      "creature": "atirador",
+      "kind": "turn_ended"
+    },
+    {
+      "kind": "round_started",
+      "round_number": 5
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "alvo",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "alvo",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 11,
+      "outcome": "MISS",
+      "pair": [
+        11,
+        20
+      ],
+      "proficiency": 3,
+      "rng_after": 40,
+      "rng_before": 38,
+      "target": "atirador",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 14
+    },
+    {
+      "creature": "alvo",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 30
+      },
+      "creature": "empurrador",
+      "kind": "turn_started"
+    },
+    {
+      "actor": "empurrador",
+      "actor_ability": "FOR",
+      "actor_bonus": 3,
+      "actor_chosen_index": 0,
+      "actor_natural": 14,
+      "actor_pair": [
+        14,
+        17
+      ],
+      "actor_total": 17,
+      "kind": "contest_rolled",
+      "outcome": "SUCCESS",
+      "rng_after": 44,
+      "rng_before": 40,
+      "target": "alvo",
+      "target_ability": "DES",
+      "target_bonus": 3,
+      "target_chosen_index": 0,
+      "target_natural": 1,
+      "target_pair": [
+        1,
+        7
+      ],
+      "target_total": 4
+    },
+    {
+      "creature": "alvo",
+      "kind": "knocked_prone"
+    },
+    {
+      "creature": "empurrador",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "atirador",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "atirador",
+      "advantage": "ADVANTAGE",
+      "advantage_sources": [
+        "alvo caido, e eu estou colado"
+      ],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 1,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 17,
+      "outcome": "HIT",
+      "pair": [
+        1,
+        17
+      ],
+      "proficiency": 3,
+      "rng_after": 46,
+      "rng_before": 44,
+      "target": "alvo",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 20
+    },
+    {
+      "actor": "atirador",
+      "kind": "damage_rolled",
+      "rng_after": 48,
+      "rng_before": 46,
+      "roll": {
+        "ability_bonus": 0,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 8,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 3
+          },
+          {
+            "faces": 4,
+            "from_crit": false,
+            "term_index": 1,
+            "value": 4
+          }
+        ],
+        "flat": 0,
+        "total": 7
+      },
+      "target": "alvo"
+    },
+    {
+      "after": {
+        "current": 0,
+        "maximum": 11
+      },
+      "before": {
+        "current": 5,
+        "maximum": 11
+      },
+      "creature": "alvo",
+      "dealt": 5,
+      "kind": "hp_changed",
+      "overkill": 2
+    },
+    {
+      "creature": "alvo",
+      "kind": "creature_downed"
+    },
+    {
+      "kind": "combat_ended",
+      "outcome": {
+        "last_round": 5,
+        "winning_team": "herois"
+      }
+    }
+  ],
+  "final_fingerprint": "3cb8d5b25a81a7c217c6b2eedfe78212355c981867565f57f1f04d457fd04c23",
+  "rng_algo": "splitmix64-lemire/1",
+  "rules_version": 8,
+  "schema_version": 5,
+  "seed": "94"
+}
