@@ -197,7 +197,7 @@ escrito qual regra ia consumi-lo.
   nem remoção possíveis, alcance longo entrou no lugar — e o plano registra o
   porquê.
 - **Etapa 3 — [docs/etapa-3.md](docs/etapa-3.md): em andamento.** O jogador
-  (fatia A, completa), o arcanista e o empurrão. A premissa que mudou o
+  (fatias A e B completas), o arcanista e o empurrão. A premissa que mudou o
   recorte: em 37 commits ninguém nunca **escolheu** uma ação neste motor, e
   `legal_actions` nomeia no próprio docstring dois consumidores que não
   existiam. O que faltava não era mecânica, era um jogador.

@@ -22,8 +22,8 @@ julga como jogo.
 
 | # | Fatia | Passos | Contrato |
 |---|---|---|---|
-| A | **O jogador** — travas, política com nome, tabuleiro, menu, driver, torneio | 7 | Zero. Nem RNG, nem save, nem regra, nem golden de regra |
-| B | **O arcanista** — truque de ataque, a única magia que o motor já roda | 3 | `SCHEMA_VERSION` 4 para 5, uma migração |
+| A | **O jogador** — travas, política com nome, tabuleiro, menu, driver, torneio | 7 | Zero. Nem RNG, nem save, nem regra, nem golden de regra. **Completa** |
+| B | **O arcanista** — truque de ataque, a única magia que o motor já roda | 3 | `SCHEMA_VERSION` 4 para 5, uma migração. **Completa** |
 | C | **Empurrar** — a primeira fonte de condição dentro do motor | 5 | O primeiro d20 fora de ataque; item 6 no contrato do RNG |
 
 Quinze passos. É o teto que a etapa 2 estabeleceu na prática (quinze passos,
@@ -109,11 +109,57 @@ validados, desvantagem com inimigo colado de graça. Erra uma coisa só —
 `attack_math` soma o modificador de atributo ao dano **incondicionalmente**, e
 truque não soma.
 
-| # | Passo | Contrato |
-|---|---|---|
-| 8 | `AttackProfile.adds_ability_to_damage`, com migração v4 para v5 | `SCHEMA_VERSION` 4 para 5. `RULES_VERSION` **não** sobe: a migração escreve `true` e preserva o comportamento exato |
-| 9 | A ficha do arcanista e o Raio de Fogo | Nenhum. A ficha nasce fora do `CATALOGO` — ver decisão 1 |
-| 10 | Golden do arcanista, com catálogo próprio | Golden novo, não regravação |
+| # | Passo | Contrato | |
+|---|---|---|---|
+| 8 | `AttackProfile.adds_ability_to_damage`, com migração v4 para v5 | `SCHEMA_VERSION` 4 para 5. `RULES_VERSION` **não** sobe | feito |
+| 9 | A ficha do arcanista e o Raio de Fogo | Nenhum. A ficha nasce fora do `CATALOGO` | feito |
+| 10 | Golden do arcanista, com catálogo próprio | Golden novo, não regravação | feito |
+
+### O que a execução desmentiu
+
+A análise que precedeu a fatia acertou a forma e errou quatro afirmações, todas
+pegas medindo. Ficam registradas porque o erro delas tem padrão: **as quatro
+eram justificativas dramáticas para decisões que estavam certas por outro
+motivo.**
+
+**O campo entrou SEM default**, e a análise pedia `True`. O argumento dela era
+que aqui o default seguro e o default óbvio coincidem. Coincidem mesmo — e é por
+isso que o default é perigoso: `True` é exatamente o que faria o próximo truque
+nascer errado e em silêncio, que é o bug que o campo existe para impedir. Sem
+default, o erro vira argumento faltando. O default mora em
+`core.testing.make_attack`, que é onde default de builder deve morar.
+
+**`speed_ft` é 30, e é inerte.** A análise dizia que 25 era "a única peça de
+balanceamento da ficha", porque com 30 contra os 30 do brutamontes o vão nunca
+fecharia. Medido em 200 seeds, é falso nas duas metades: sob a política do
+próprio golden, 25, 30 e 35 dão o **mesmo** placar (118/200) e zero passos; sob
+o piloto automático, deslocamento **maior** piora o mago (90/200 com 25 contra
+63/200 com 30). Motivo: `_casa_canonica` só oferece a casa que aproxima, então
+**neste motor não existe recuo** e cada pé a mais só entra mais depressa no
+machado. O docstring da ficha diz isso, em vez de inventar uma história.
+
+**O exemplo não-default no `CODECS` não é o que segura o campo.** A análise
+chamava isso de "achado decisivo": com o exemplo em `True`, um `load` que
+descartasse a chave ficaria invisível. Conferido: fica **1 vermelho**, porque a
+adulteração do save do mesmo commit pega o bug sozinha. O exemplo não-default
+entra assim mesmo — é regra da casa e acrescenta a falha de round-trip —, mas
+não pela razão que foi dada.
+
+**São três linhas na tabela de desvios, e uma delas corrige a análise.** Ela
+queria escrever que um truque de ataque é "a única magia da SRD cujo efeito
+inteiro cabe em role o ataque, role o dano". É falso, e o próprio Raio de Fogo
+desmente: ele acende objeto inflamável não usado nem carregado, e o motor
+descarta isso. `docs/srd-atribuicao.md` é o único documento do projeto cuja
+função é ser verdadeiro sobre a SRD, e frase bonita que não resiste à leitura
+da magia não entra nele.
+
+### O buraco que a fatia encontrou e não fechou
+
+`test_os_goldens_nao_sao_todos_iguais` enumera os goldens numa lista literal em
+vez de varrer a pasta. Medido: com o arquivo em disco e o nome fora da lista, a
+suíte inteira passa. Acrescentar o nome é edição obrigatória de todo commit que
+cria um golden, e **nenhum guardião cobra**. Está escrito em
+`tests/golden/README.md`; trocar a lista por varredura é outro commit.
 
 ## Fatia C — empurrar
 
