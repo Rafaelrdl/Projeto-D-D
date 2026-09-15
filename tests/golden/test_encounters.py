@@ -19,6 +19,7 @@ from tacticore.content.srd import CATALOGO
 from tacticore.core import RULES_VERSION, SCHEMA_VERSION
 from tacticore.core.actions import Action, AttackAction, EndTurnAction
 from tacticore.core.engine import Participant, apply, combat_result, start_combat
+from tacticore.core.enums import Condition
 from tacticore.core.events import Event
 from tacticore.core.ids import AttackId
 from tacticore.core.queries import is_conscious, statblock_of
@@ -79,6 +80,9 @@ ENCONTROS: list[tuple[str, int, tuple[Participant, ...]]] = [
 IDS = [nome for nome, _, _ in ENCONTROS]
 
 VANTAGEM_SEED = 991
+CAIDO_SEED = 4
+"""Escolhida para o encontro acontecer, como a do tiro colado."""
+
 TIRO_COLADO_SEED = 5
 """Escolhida para o encontro acontecer.
 
@@ -256,6 +260,60 @@ def rodar_com_tiro_colado(seed: int) -> tuple[str, tuple[Event, ...]]:
     return fingerprint(estado), tuple(log)
 
 
+def rodar_com_caido(seed: int) -> tuple[str, tuple[Event, ...]]:
+    """Um combate que comeca com alguem no chao.
+
+    Diferente de `vantagem` e `tiro_colado`, este usa o **piloto automatico**:
+    `StandUpAction` esta no menu, entao o caido se levanta sozinho e o ciclo
+    inteiro -- condicao aplicada pelo encontro, efeito na rolagem, remocao pela
+    acao -- sai de `legal_actions` sem ninguem escrever o laco.
+
+    E a diferenca entre uma mecanica que o motor JOGA e uma que ele so sabe
+    representar.
+    """
+    participantes = (
+        make_participant(
+            id="derrubado",
+            statblock_id="duelista",
+            team="herois",
+            position=(0, 0),
+            conditions=(Condition.CAIDO,),
+        ),
+        make_participant(
+            id="brutamontes", statblock_id="brutamontes", team="viloes", position=(1, 0)
+        ),
+    )
+    abertura = start_combat(
+        statblocks=CATALOGO, participants=participantes, rng=SplitMix64(seed=seed)
+    )
+    estado, resto = play_out(abertura.state)
+    return fingerprint(estado), (*abertura.events, *resto)
+
+
+def test_encontro_com_caido(update_golden: bool):
+    resumo, log = rodar_com_caido(CAIDO_SEED)
+    gravar_ou_comparar("caido", envelope_de(CAIDO_SEED, resumo, log), update_golden=update_golden)
+
+
+def test_o_golden_do_caido_exercita_o_ciclo_inteiro():
+    """Aplicada, com efeito na rolagem, e removida -- tudo no mesmo log.
+
+    Sem isto, o golden poderia virar um combate comum em silencio no dia em que
+    `StandUpAction` saisse do menu ou a condicao parasse de derivar fonte.
+    """
+    gravado = json.loads((DADOS / "caido.json").read_text(encoding="utf-8"))
+    tipos = {e["kind"] for e in gravado["events"]}
+    assert "stood_up" in tipos, "o caido se levanta sozinho"
+
+    fontes = {
+        f
+        for e in gravado["events"]
+        if e["kind"] == "attack_rolled"
+        for f in (*e["advantage_sources"], *e["disadvantage_sources"])
+    }
+    assert "atacante caido" in fontes or "alvo caido, e eu estou colado" in fontes
+
+
 @pytest.mark.parametrize(("nome", "seed", "participantes"), ENCONTROS, ids=IDS)
 def test_encontro_canonico(
     nome: str,
@@ -307,7 +365,7 @@ def test_o_golden_de_vantagem_exercita_os_dois_estados():
 
 def test_os_goldens_nao_sao_todos_iguais():
     """Encontros que dessem o mesmo log nao provariam nada."""
-    nomes = [*IDS, "vantagem", "tiro_colado"]
+    nomes = [*IDS, "vantagem", "tiro_colado", "caido"]
     resumos = {
         json.loads((DADOS / f"{nome}.json").read_text(encoding="utf-8"))["final_fingerprint"]
         for nome in nomes

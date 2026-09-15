@@ -1,0 +1,287 @@
+{
+  "events": [
+    {
+      "creature": "brutamontes",
+      "d20": 9,
+      "dex_mod": -1,
+      "dex_score": 8,
+      "kind": "initiative_rolled",
+      "rng_after": 1,
+      "rng_before": 0,
+      "total": 8
+    },
+    {
+      "creature": "derrubado",
+      "d20": 18,
+      "dex_mod": 3,
+      "dex_score": 17,
+      "kind": "initiative_rolled",
+      "rng_after": 2,
+      "rng_before": 1,
+      "total": 21
+    },
+    {
+      "kind": "turn_order_set",
+      "order": [
+        "derrubado",
+        "brutamontes"
+      ]
+    },
+    {
+      "kind": "round_started",
+      "round_number": 1
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "derrubado",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "derrubado",
+      "advantage": "DISADVANTAGE",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 1,
+      "disadvantage_sources": [
+        "atacante caido"
+      ],
+      "kind": "attack_rolled",
+      "natural": 10,
+      "outcome": "HIT",
+      "pair": [
+        18,
+        10
+      ],
+      "proficiency": 3,
+      "rng_after": 4,
+      "rng_before": 2,
+      "target": "brutamontes",
+      "target_ac": 13,
+      "target_was_down": false,
+      "total": 13
+    },
+    {
+      "actor": "derrubado",
+      "kind": "damage_rolled",
+      "rng_after": 6,
+      "rng_before": 4,
+      "roll": {
+        "ability_bonus": 0,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 8,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 4
+          },
+          {
+            "faces": 4,
+            "from_crit": false,
+            "term_index": 1,
+            "value": 3
+          }
+        ],
+        "flat": 0,
+        "total": 7
+      },
+      "target": "brutamontes"
+    },
+    {
+      "after": {
+        "current": 7,
+        "maximum": 14
+      },
+      "before": {
+        "current": 14,
+        "maximum": 14
+      },
+      "creature": "brutamontes",
+      "dealt": 7,
+      "kind": "hp_changed",
+      "overkill": 0
+    },
+    {
+      "creature": "derrubado",
+      "feet": 17,
+      "kind": "stood_up",
+      "remaining_ft": 18
+    },
+    {
+      "creature": "derrubado",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 30
+      },
+      "creature": "brutamontes",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 3,
+      "actor": "brutamontes",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "machado",
+      "attack_name": "Machado",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 19,
+      "outcome": "HIT",
+      "pair": [
+        19,
+        9
+      ],
+      "proficiency": 2,
+      "rng_after": 8,
+      "rng_before": 6,
+      "target": "derrubado",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 24
+    },
+    {
+      "actor": "brutamontes",
+      "kind": "damage_rolled",
+      "rng_after": 9,
+      "rng_before": 8,
+      "roll": {
+        "ability_bonus": 3,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 12,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 3
+          }
+        ],
+        "flat": 1,
+        "total": 7
+      },
+      "target": "derrubado"
+    },
+    {
+      "after": {
+        "current": 4,
+        "maximum": 11
+      },
+      "before": {
+        "current": 11,
+        "maximum": 11
+      },
+      "creature": "derrubado",
+      "dealt": 7,
+      "kind": "hp_changed",
+      "overkill": 0
+    },
+    {
+      "creature": "brutamontes",
+      "kind": "turn_ended"
+    },
+    {
+      "kind": "round_started",
+      "round_number": 2
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "derrubado",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "derrubado",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 11,
+      "outcome": "HIT",
+      "pair": [
+        11,
+        16
+      ],
+      "proficiency": 3,
+      "rng_after": 11,
+      "rng_before": 9,
+      "target": "brutamontes",
+      "target_ac": 13,
+      "target_was_down": false,
+      "total": 14
+    },
+    {
+      "actor": "derrubado",
+      "kind": "damage_rolled",
+      "rng_after": 13,
+      "rng_before": 11,
+      "roll": {
+        "ability_bonus": 0,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 8,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 6
+          },
+          {
+            "faces": 4,
+            "from_crit": false,
+            "term_index": 1,
+            "value": 3
+          }
+        ],
+        "flat": 0,
+        "total": 9
+      },
+      "target": "brutamontes"
+    },
+    {
+      "after": {
+        "current": 0,
+        "maximum": 14
+      },
+      "before": {
+        "current": 7,
+        "maximum": 14
+      },
+      "creature": "brutamontes",
+      "dealt": 7,
+      "kind": "hp_changed",
+      "overkill": 2
+    },
+    {
+      "creature": "brutamontes",
+      "kind": "creature_downed"
+    },
+    {
+      "kind": "combat_ended",
+      "outcome": {
+        "last_round": 2,
+        "winning_team": "herois"
+      }
+    }
+  ],
+  "final_fingerprint": "fb3946f6aaf82e3fcd5635bab1cf8d3df97dda40611a087da325353f5e628003",
+  "rng_algo": "splitmix64-lemire/1",
+  "rules_version": 7,
+  "schema_version": 4,
+  "seed": "4"
+}

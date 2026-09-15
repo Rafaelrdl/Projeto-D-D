@@ -1,7 +1,10 @@
 # ADR 0002 — Os contratos que a etapa 2 vai cobrar
 
 **Status:** aceito
-**Contexto:** fatia 1 da etapa 2, antes do grid existir
+**Contexto:** escrito na fatia 1 da etapa 2, antes do grid existir.
+**Corrigido nas fatias 2 e 3**, pelas cláusulas que a prática desmentiu — as
+correções estão no corpo, com o motivo, e não substituem o texto original em
+silêncio.
 
 ## Por que este documento existe agora
 
@@ -18,8 +21,18 @@ descobri-las com quatro goldens e um formato de save já em cima.
 combate. Isso faz da ordem de `legal_actions` um contrato de facto, sem nunca
 ter sido decidida como contrato.
 
-**(a1)** A ordem de `legal_actions` **é contrato dos goldens** e só muda em
-commit isolado, com a frase de justificativa que `tests/golden/README.md` exige.
+**(a1) — corrigida na fatia 3.** A versão original dizia que a ordem "só muda
+em commit isolado". A fatia 3 a desmentiu duas vezes, e as duas por motivo
+legítimo: o alcance longo mudou **o que** o menu oferece (ataques até a parede
+nova em vez de até o alcance curto), e `StandUpAction` acrescentou um item. Nem
+uma nem outra era "uma mudança de ordem" que coubesse num commit próprio — as
+duas eram consequência de uma mecânica, e separá-las produziria um commit que
+não entrega nada.
+
+> Toda mudança na **ordem ou no conteúdo** de `legal_actions` é declarada no
+> commit que a causa, com a frase que `tests/golden/README.md` exige. Ela não
+> precisa de commit próprio; precisa de ser dita em voz alta, porque `play_out`
+> escolhe `acoes[0]` e gera quatro dos sete goldens.
 
 **(a2) — reescrita na fatia 2, como estava previsto.** A versão original dizia
 "ação nova entra antes de `EndTurnAction`, que fecha a lista", e valia enquanto
@@ -32,10 +45,13 @@ virar um `MoveAction`. A política que a substitui:
 >
 > 1. **Ataques ao alcance**, na ordem dos ataques na ficha × alvos por id.
 >    Gastam a ação, que é o recurso que não volta no turno.
-> 2. **A casa canônica**, quando existe uma que aproxima do inimigo mais perto.
+> 2. **Levantar-se**, quando o ator está caído e tem movimento para pagar.
+>    Antes de andar, porque um caído que anda continua caído e volta a atacar
+>    com desvantagem.
+> 3. **A casa canônica**, quando existe uma que aproxima do inimigo mais perto.
 >    Gasta movimento, que é divisível e parcialmente recuperável na rodada
 >    seguinte.
-> 3. **`EndTurnAction`**, sempre por último, sempre presente.
+> 4. **`EndTurnAction`**, sempre por último, sempre presente.
 >
 > A consequência deliberada: quando nada está ao alcance, `acoes[0]` é o
 > movimento — e é assim que um combate que começa a 20 pés fecha distância em
