@@ -15,6 +15,7 @@ from typing import Any
 
 import pytest
 
+from tacticore.content.srd import CATALOGO
 from tacticore.core import RULES_VERSION, SCHEMA_VERSION
 from tacticore.core.actions import Action, AttackAction, EndTurnAction
 from tacticore.core.engine import Participant, apply, combat_result, start_combat
@@ -29,39 +30,9 @@ from tacticore.core.serde import (
     fingerprint,
     load,
 )
-from tacticore.core.testing import (
-    make_abilities,
-    make_attack,
-    make_participant,
-    make_statblock,
-    play_out,
-)
+from tacticore.core.testing import make_participant, play_out
 
 DADOS = Path(__file__).parent / "data"
-
-BRUTAMONTES = make_statblock(
-    id="brutamontes",
-    name="Brutamontes",
-    abilities=make_abilities(forca=16, destreza=8),
-    armor_class=13,
-    max_hp=14,
-    proficiency_bonus=2,
-    speed_ft=30,
-    attacks=(make_attack(id="machado", name="Machado", damage="1d12+1"),),
-)
-
-DUELISTA = make_statblock(
-    id="duelista",
-    name="Duelista",
-    abilities=make_abilities(forca=10, destreza=17),
-    armor_class=15,
-    max_hp=11,
-    proficiency_bonus=3,
-    speed_ft=35,
-    attacks=(make_attack(id="estoque", name="Estoque", damage="1d8+1d4"),),
-)
-
-CATALOGO = {BRUTAMONTES.id: BRUTAMONTES, DUELISTA.id: DUELISTA}
 
 # Os tres cobrem coisas diferentes: um duelo desigual, dois iguais (que
 # exercitam o desempate de iniciativa) e um dois-contra-dois.

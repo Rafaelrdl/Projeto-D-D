@@ -29,6 +29,7 @@ POLITICAS: dict[str, str] = {
     "": "raiz do pacote: so metadado, nao importa nada de tacticore",
     "core": "motor de regras: stdlib puro e ele mesmo",
     "render": "apresentacao: le o core e monta texto; puro, nao imprime",
+    "content": "fichas e encontros: dado de jogo, puro, sem abrir arquivo",
 }
 
 # Ordem das camadas: um modulo so pode importar modulos de camada ESTRITAMENTE
@@ -84,6 +85,14 @@ ALLOWED_STDLIB = frozenset(
         "typing",
     }
 )
+
+# A UNICA excecao a proibicao de I/O, nomeada e com motivo. Um projeto que
+# nunca imprime nada nao serve para nada; o que importa e que exista exatamente
+# um lugar onde isso acontece, e que acrescentar o segundo exija editar esta
+# lista -- e portanto exija alguem defender a escolha.
+EXCECOES_DE_IO: dict[str, str] = {
+    "__main__.py": "a unica camada de I/O do projeto: le argumento e imprime",
+}
 
 # Listados a parte so para a mensagem de erro dizer o porque.
 BANNED = {
@@ -174,14 +183,34 @@ def test_todo_pacote_tem_politica_declarada():
 def test_nenhum_modulo_importa_io_rede_nem_aleatoriedade(path: Path):
     """Vale para `src/tacticore` inteiro, e nao so para o core.
 
-    O que muda de pacote para pacote e o que se pode importar; o que NUNCA
-    muda e a proibicao de I/O, rede, relogio e aleatoriedade fora do RngState.
+    O que muda de pacote para pacote e o que se pode importar; o que quase
+    nunca muda e a proibicao de I/O, rede, relogio e aleatoriedade fora do
+    RngState -- a unica excecao esta em `EXCECOES_DE_IO`, com nome e motivo.
     """
+    if path.name in EXCECOES_DE_IO:
+        pytest.skip(f"{path.name}: {EXCECOES_DE_IO[path.name]}")
+
     for module, level, lineno in _imports(path):
         if level:
             continue
         motivo = BANNED.get(_top(module))
         assert motivo is None, f"{path.name}:{lineno} importa {module!r}: {motivo}"
+
+
+def test_so_existe_uma_excecao_de_io():
+    """A excecao vale enquanto for UMA. Duas ja e uma politica, e politica
+    precisa estar escrita em outro lugar que nao um dicionario de teste."""
+    assert len(EXCECOES_DE_IO) == 1, (
+        f"excecoes de I/O: {sorted(EXCECOES_DE_IO)}. Se o projeto precisa mesmo "
+        "de mais de um lugar que imprime, isso e decisao de arquitetura e vai "
+        "para o CLAUDE.md antes de vir para ca."
+    )
+
+
+def test_a_excecao_de_io_aponta_para_um_arquivo_que_existe():
+    nomes = {p.name for p in TODOS}
+    fantasmas = set(EXCECOES_DE_IO) - nomes
+    assert not fantasmas, f"excecao para arquivo inexistente: {sorted(fantasmas)}"
 
 
 @pytest.mark.parametrize("path", MODULES, ids=IDS)

@@ -76,7 +76,7 @@ markers = [
 branch = true
 # `render` entra no mesmo gate: sem isto a regra 4 ("mecanica nova entra
 # junto com teste") ficaria falsa para o primeiro pacote fora do core.
-source_pkgs = ["tacticore.core", "tacticore.render"]
+source_pkgs = ["tacticore.core", "tacticore.render", "tacticore.content"]
 
 [tool.coverage.report]
 fail_under = 95
