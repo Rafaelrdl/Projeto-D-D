@@ -35,6 +35,9 @@ motor simplifica acrescenta uma linha aqui no mesmo commit que a simplifica**
 | Acuidade (usar DES com arma de acuidade) | `AttackProfile.ability` é um atributo só | Vira `tuple[Ability, ...]` quando entrar |
 | Atacar a si mesmo é mecanicamente legal | Recusado com `SELF_TARGET_NOT_ALLOWED` | Na prática é sempre bug de chamador ou de IA. A exceção volta como campo com default quando houver efeito em área |
 | Bônus de proficiência derivado de nível ou CR | Campo explícito na ficha | Tabela de proficiência é conteúdo; deixar o motor deduzi-la é pôr conteúdo dentro da regra |
+| Truques de dano escalam com o **nível do personagem** (Raio de Fogo: 1d10, depois 2d10 no 5º, 3d10 no 11º e 4d10 no 17º) | A ficha congela `1d10`, o valor de 1º nível | Não existe nível no motor, e pelo mesmo motivo que `proficiency_bonus` é campo explícito: tabela de progressão é conteúdo. Escalar exigiria um campo de nível lido só aqui |
+| Raio de Fogo acende um **objeto inflamável** atingido, se ele não estiver sendo usado ou carregado | Nada acontece: o motor roda só a metade de ataque e dano | Não existe objeto neste motor, nem alvo que não seja criatura. É a cláusula que impede dizer que o truque "roda inteiro" |
+| Magia tem escola, nível, tempo de conjuração, componentes (V, S, M), duração e concentração | Raio de Fogo é um `AttackProfile` como o machado: atributo, proficiência, dado e alcance | Um truque de **ataque** é a magia da SRD cujo efeito mais se aproxima de "role o ataque, role o dano" — e nem ele chega lá (ver a linha acima). Nenhum dos outros campos teria leitor, e campo sem leitor no objeto mais serializado do projeto é o erro que `attack_bonus` já custou nove commits |
 
 ### Iniciativa e turno
 

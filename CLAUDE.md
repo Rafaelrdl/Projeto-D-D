@@ -184,8 +184,8 @@ escrito qual regra ia consumi-lo.
 - **Toda regra da SRD que o motor simplifica ganha uma linha em
   `docs/srd-atribuicao.md` no mesmo commit.** Nenhum guardião cobra isso. A
   tabela ficou vazia a etapa 1 inteira, e quando foi preenchida tinha onze
-  desvios que ninguém tinha anotado. Hoje são dezenove, mais uma linha que já
-  virou "implementado" (alcance longo) e ficou como registro.
+  desvios que ninguém tinha anotado. Hoje são vinte e dois, mais uma linha que
+  já virou "implementado" (alcance longo) e ficou como registro.
 
 ## Etapas
 
