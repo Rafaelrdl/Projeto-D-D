@@ -28,7 +28,7 @@ motor simplifica acrescenta uma linha aqui no mesmo commit que a simplifica**
 
 | Regra da SRD | O que fazemos | Por quê |
 |---|---|---|
-| Armas à distância têm alcance **curto e longo**, com desvantagem no longo | `AttackProfile.range_ft` é um número só; além dele o ataque é recusado | O alcance longo precisa de uma fonte de desvantagem derivada do estado, que chega no passo seguinte |
+| Armas à distância têm alcance **curto e longo**, com desvantagem no longo | Implementado: `range_ft` é o curto, `long_range_ft` é a parede, e entre os dois há desvantagem | — |
 | Tipo de dano, resistência, vulnerabilidade, imunidade | Dano não tem tipo | Tipo sem resistência implementada é campo inerte no objeto mais serializado do projeto |
 | Multiataque | Uma ação, um ataque | Muda o contrato de consumo do RNG por ação |
 | Corpo a corpo e à distância são **tipos de arma**, e não consequência do alcance | "À distância" é `range_ft > 5` | É o mesmo conjunto enquanto não houver arma de haste. Uma alabarda tem alcance 10 e é corpo a corpo: no dia em que uma entrar, `AttackProfile` ganha o tipo e este critério sai |

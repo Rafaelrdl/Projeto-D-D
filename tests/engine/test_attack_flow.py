@@ -429,3 +429,60 @@ def test_as_fontes_declaradas_vem_antes_das_derivadas():
     evento = resultado.events[0]
     assert isinstance(evento, AttackRolled)
     assert evento.disadvantage_sources == ("cegado", "inimigo adjacente")
+
+
+def test_o_alcance_longo_e_o_limite_da_recusa():
+    """Curto passa a ser penalidade, e longo passa a ser a parede."""
+    ficha = make_statblock(
+        id="ficha",
+        attacks=(make_attack(id="arco", range_ft=20, long_range_ft=40),),
+    )
+
+    def tiro(casas: int, fita: tuple[int, ...] = ()) -> ActionResult:
+        estado = make_state(
+            statblocks=(ficha,),
+            combatants=(
+                make_combatant(id="a", statblock_id="ficha", team="herois"),
+                make_combatant(id="b", statblock_id="ficha", team="viloes"),
+            ),
+            current="a",
+            rng=ScriptedRng(script=fita),
+            posicoes={"a": (0, 0), "b": (casas, 0)},
+        )
+        return apply(
+            estado,
+            AttackAction(actor=CreatureId("a"), target=CreatureId("b"), attack_id=AttackId("arco")),
+        )
+
+    assert isinstance(tiro(4, (15, 1, 4)), Applied), "20 pes: dentro do curto"
+    assert isinstance(tiro(8, (15, 1, 4)), Applied), "40 pes: dentro do longo"
+    fora = tiro(9)
+    assert isinstance(fora, Rejected), "45 pes: alem do longo"
+    assert fora.reason is RejectionReason.OUT_OF_RANGE
+
+
+def test_a_desvantagem_de_alcance_longo_chega_ao_evento():
+    ficha = make_statblock(
+        id="ficha",
+        armor_class=10,
+        attacks=(make_attack(id="arco", name="Arco", range_ft=20, long_range_ft=60, damage="1d6"),),
+    )
+    estado = make_state(
+        statblocks=(ficha,),
+        combatants=(
+            make_combatant(id="a", statblock_id="ficha", team="herois"),
+            make_combatant(id="b", statblock_id="ficha", team="viloes"),
+        ),
+        current="a",
+        rng=ScriptedRng(script=(19, 6, 3)),
+        posicoes={"a": (0, 0), "b": (8, 0)},
+    )
+    resultado = apply(
+        estado,
+        AttackAction(actor=CreatureId("a"), target=CreatureId("b"), attack_id=AttackId("arco")),
+    )
+    assert isinstance(resultado, Applied)
+    evento = resultado.events[0]
+    assert isinstance(evento, AttackRolled)
+    assert evento.disadvantage_sources == ("alem do alcance curto",)
+    assert evento.natural == 6, "pegou o menor dos dois"

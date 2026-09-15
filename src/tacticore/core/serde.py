@@ -80,7 +80,7 @@ SCHEMA_VERSIONS_ACEITAS: Final[tuple[int, ...]] = (1, 2, 3, 4)
 Uma versao so entra aqui junto com a funcao de migracao que a traz ate a atual.
 Sem isso, a lista viraria uma lista de boas intencoes."""
 
-RULES_VERSION: Final[int] = 5
+RULES_VERSION: Final[int] = 6
 """Muda quando o RESULTADO muda: ordem de consumo do RNG ou qualquer regra.
 
 Incrementar isto e obrigacao de todo commit que altere o que o motor calcula.

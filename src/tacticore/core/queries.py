@@ -18,12 +18,13 @@ from tacticore.core.model import (
     CombatState,
     Statblock,
 )
-from tacticore.core.rules import is_adjacent
+from tacticore.core.rules import distance_ft, is_adjacent
 
 FONTE_INIMIGO_ADJACENTE = "inimigo adjacente"
 FONTE_ATACANTE_CAIDO = "atacante caido"
 FONTE_ALVO_CAIDO_PERTO = "alvo caido, e eu estou colado"
 FONTE_ALVO_CAIDO_LONGE = "alvo caido, e eu estou longe"
+FONTE_ALCANCE_LONGO = "alem do alcance curto"
 """Os textos que vao para o log. Constantes e nao literais soltos porque os
 testes afirmam sobre eles e a narrativa os exibe -- dois lugares, um dono."""
 
@@ -116,8 +117,12 @@ def derive_advantage_sources(
        como `range_ft > PES_POR_CASA`, e nao por um campo de tipo de arma --
        mesmo conjunto enquanto nao houver arma de haste, e registrado como
        desvio.
-    2. **Estar caido** da desvantagem nos proprios ataques.
-    3. **Atacar quem esta caido** da vantagem se o atacante estiver a 1,5 m, e
+    2. **Atirar entre o alcance curto e o longo** da desvantagem. Para arma
+       corpo a corpo os dois alcances sao iguais, entao o intervalo e vazio e a
+       clausula nunca dispara -- o que e certo, porque a essa distancia o ataque
+       ja foi recusado.
+    3. **Estar caido** da desvantagem nos proprios ataques.
+    4. **Atacar quem esta caido** da vantagem se o atacante estiver a 1,5 m, e
        desvantagem se estiver longe. Repare que isto e **geometria e nao tipo de
        arma**: um arqueiro colado no caido tem VANTAGEM, e um lanceiro de
        alcance 10 atacando de duas casas tem desvantagem. Ler `perfil.range_ft`
@@ -139,6 +144,16 @@ def derive_advantage_sources(
         for c in state.combatants.values()
     ):
         desvantagens.append(FONTE_INIMIGO_ADJACENTE)
+
+    # ENTRE os dois alcances, e nao apenas "alem do curto": passado o alcance
+    # longo o ataque e recusado, e anunciar penalidade para um ataque impossivel
+    # e poluir o log com uma explicacao de algo que nao aconteceu. A primeira
+    # versao disto marcava desvantagem para arma corpo a corpo a duas casas, que
+    # `validate` nunca deixaria passar.
+    if alvo is not None and (
+        perfil.range_ft < distance_ft(ator.position, alvo.position) <= perfil.long_range_ft
+    ):
+        desvantagens.append(FONTE_ALCANCE_LONGO)
 
     if Condition.CAIDO in ator.conditions:
         desvantagens.append(FONTE_ATACANTE_CAIDO)

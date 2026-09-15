@@ -932,7 +932,7 @@
   ],
   "final_fingerprint": "593ca239e6b94687c7813ba17b0da8998cb0a5cf9b6a0ad8453340179fdcf2a7",
   "rng_algo": "splitmix64-lemire/1",
-  "rules_version": 5,
+  "rules_version": 6,
   "schema_version": 4,
   "seed": "31337"
 }

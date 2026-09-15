@@ -17,6 +17,7 @@ from tacticore.core.enums import Condition
 from tacticore.core.ids import AttackId, CreatureId
 from tacticore.core.model import CombatState
 from tacticore.core.queries import (
+    FONTE_ALCANCE_LONGO,
     FONTE_ALVO_CAIDO_LONGE,
     FONTE_ALVO_CAIDO_PERTO,
     FONTE_ATACANTE_CAIDO,
@@ -40,7 +41,7 @@ def arena(
         id="ficha",
         attacks=(
             make_attack(id="espada", range_ft=5),
-            make_attack(id="adaga", range_ft=20),
+            make_attack(id="adaga", range_ft=20, long_range_ft=60),
         ),
     )
     times = times or {}
@@ -92,7 +93,7 @@ def test_arma_corpo_a_corpo_nao_sofre_a_regra():
 def test_aliado_colado_nao_atrapalha():
     """A SRD fala de criatura hostil. Um aliado ao lado nao estorva o tiro."""
     estado = arena(
-        posicoes={"a": (0, 0), "c": (1, 0), "b": (5, 0)},
+        posicoes={"a": (0, 0), "c": (1, 0), "b": (4, 0)},
         times={"a": "herois", "c": "herois", "b": "viloes"},
     )
     assert derivar(estado, ADAGA) == ((), ())
@@ -101,7 +102,7 @@ def test_aliado_colado_nao_atrapalha():
 def test_inimigo_caido_nao_atrapalha():
     """Quem esta a zero nao ameaca ninguem."""
     estado = arena(
-        posicoes={"a": (0, 0), "c": (1, 0), "b": (5, 0)},
+        posicoes={"a": (0, 0), "c": (1, 0), "b": (4, 0)},
         times={"a": "herois", "c": "viloes", "b": "viloes"},
         hp={"c": 0},
     )
@@ -111,7 +112,7 @@ def test_inimigo_caido_nao_atrapalha():
 def test_qualquer_inimigo_colado_conta_e_nao_so_o_alvo():
     """Atirar no de longe com outro colado tambem e desvantagem."""
     estado = arena(
-        posicoes={"a": (0, 0), "c": (1, 0), "b": (5, 0)},
+        posicoes={"a": (0, 0), "c": (1, 0), "b": (4, 0)},
         times={"a": "herois", "c": "viloes", "b": "viloes"},
     )
     assert derivar(estado, ADAGA) == ((), (FONTE_INIMIGO_ADJACENTE,))
@@ -120,7 +121,7 @@ def test_qualquer_inimigo_colado_conta_e_nao_so_o_alvo():
 def test_a_propria_casa_nao_conta_como_colada():
     """Ninguem esta ao lado de si proprio -- e por isso que `is_adjacent`
     recusa a mesma casa."""
-    estado = arena(posicoes={"a": (0, 0), "b": (9, 0)})
+    estado = arena(posicoes={"a": (0, 0), "b": (4, 0)})
     assert derivar(estado, ADAGA) == ((), ())
 
 
@@ -254,3 +255,34 @@ def test_as_tres_regras_se_somam():
 def test_quem_nao_esta_caido_nao_sofre_nada():
     estado = com_caido(caidos=(), posicoes={"a": (0, 0), "b": (1, 0)})
     assert derivar(estado, ESPADA) == ((), ())
+
+
+# -------------------------------------------------------- alcance longo ----
+
+
+def test_atirar_entre_o_curto_e_o_longo_da_desvantagem():
+    """A divida que o repositorio assinou duas vezes e levou uma fatia para pagar."""
+    estado = arena(posicoes={"a": (0, 0), "b": (6, 0)})
+    assert derivar(estado, ADAGA) == ((), (FONTE_ALCANCE_LONGO,))
+
+
+def test_dentro_do_alcance_curto_nao_ha_penalidade():
+    estado = arena(posicoes={"a": (0, 0), "b": (4, 0)})
+    assert derivar(estado, ADAGA) == ((), ())
+
+
+def test_o_limiar_do_alcance_curto_e_inclusivo():
+    """20 pes de alcance curto acerta a 20 sem penalidade, e a 25 com."""
+    assert derivar(arena(posicoes={"a": (0, 0), "b": (4, 0)}), ADAGA) == ((), ())
+    assert derivar(arena(posicoes={"a": (0, 0), "b": (5, 0)}), ADAGA) == (
+        (),
+        (FONTE_ALCANCE_LONGO,),
+    )
+
+
+def test_arma_corpo_a_corpo_nunca_sofre_penalidade_de_alcance():
+    """Curto e longo iguais fazem o intervalo ser vazio -- e e certo, porque a
+    essa distancia o ataque ja foi recusado por `validate`."""
+    for casas in range(1, 6):
+        _, desvantagens = derivar(arena(posicoes={"a": (0, 0), "b": (casas, 0)}), ESPADA)
+        assert FONTE_ALCANCE_LONGO not in desvantagens

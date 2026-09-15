@@ -294,11 +294,12 @@ def _validar_ataque(
 
     alvo = state.combatants[action.target]
     distancia = distance_ft(ator.position, alvo.position)
-    if distancia > perfil.range_ft:
+    if distancia > perfil.long_range_ft:
         return _rejeitar(
             state,
             RejectionReason.OUT_OF_RANGE,
-            f"{alvo.id!r} esta a {distancia} pes e {perfil.id!r} alcanca {perfil.range_ft}",
+            f"{alvo.id!r} esta a {distancia} pes e {perfil.id!r} nao passa de "
+            f"{perfil.long_range_ft}",
         )
     return None
 
@@ -654,7 +655,7 @@ def legal_actions(state: CombatState) -> tuple[Action, ...]:
             AttackAction(actor=ator.id, target=alvo.id, attack_id=perfil.id)
             for perfil in statblock_of(state, ator.id).attacks
             for alvo in inimigos
-            if distance_ft(ator.position, alvo.position) <= perfil.range_ft
+            if distance_ft(ator.position, alvo.position) <= perfil.long_range_ft
         )
 
     destino = _casa_canonica(state, ator)

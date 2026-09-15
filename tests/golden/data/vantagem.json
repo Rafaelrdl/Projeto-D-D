@@ -355,7 +355,7 @@
   ],
   "final_fingerprint": "c5676a0c2339fcd9234d05040a1ecaf5a1939df17ac2f87d50f6825d85f73da1",
   "rng_algo": "splitmix64-lemire/1",
-  "rules_version": 5,
+  "rules_version": 6,
   "schema_version": 4,
   "seed": "991"
 }
