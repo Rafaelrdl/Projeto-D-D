@@ -17,7 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, assert_never
 
-from tacticore.core.enums import Ability, AdvantageState, AttackOutcome
+from tacticore.core.enums import Ability, AdvantageState, AttackOutcome, ContestOutcome
 from tacticore.core.ids import CreatureId
 from tacticore.core.model import PES_POR_CASA, Abilities, AttackProfile, HitPoints, Position
 from tacticore.core.rng import RngState, roll_dice
@@ -356,3 +356,100 @@ def stand_up_cost_ft(speed_ft: int) -> int:
     arredonda para baixo, e toda conta do SRD neste motor e inteira.
     """
     return speed_ft // 2
+
+
+# ------------------------------------------------- teste de atributo oposto -
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ContestResult:
+    """Dois d20 comparados **um com o outro**, e nao com uma dificuldade.
+
+    O irmao de `D20CheckResult`, e nao um parametro dele. A SRD separa as duas
+    coisas: num teste oposto os dois lados rolam e "they compare the totals of
+    their two checks", e -- decisivo aqui -- "if the contest results in a tie,
+    the situation remains the same as it was before the contest".
+
+    `d20_check` e a regra **oposta** e nao serve: `dc` e obrigatorio, o corpo e
+    `total >= dc` e o docstring dela diz "Empate passa". Aqui empate nao passa.
+
+    As parcelas saem nomeadas pelo mesmo motivo que em `AttackMath`: o evento
+    publica a conta decomposta, e devolver so o desfecho obrigaria o motor a
+    refazer as somas -- que e exatamente como a duplicacao de `attack_bonus`
+    nasceu da primeira vez.
+    """
+
+    actor_natural: int
+    actor_bonus: int
+    actor_total: int
+    target_natural: int
+    target_bonus: int
+    target_total: int
+    outcome: ContestOutcome
+
+
+def contest(
+    *,
+    actor: D20Roll,
+    actor_bonus: int,
+    target: D20Roll,
+    target_bonus: int,
+) -> ContestResult:
+    """Compara os dois totais. Quem inicia precisa de total **estritamente maior**.
+
+    "The participant with the higher check total wins the contest." Empate nao
+    e vitoria de ninguem, e por isso tem membro proprio em vez de virar
+    `FAILURE` -- ver `ContestOutcome`.
+
+    Tudo por palavra-chave, inclusive os dois `D20Roll`. Sao dois parametros do
+    mesmo tipo cuja ordem muda a resposta, e posicionais fariam "troquei os dois
+    lados" ficar indistinguivel de codigo certo na hora de ler. A ordem em que
+    os dados sao **rolados** e outra coisa, e contrato: mora no item 6 do
+    docstring de `tacticore.core`. Esta funcao nao rola nada.
+    """
+    total_a = actor.natural + actor_bonus
+    total_d = target.natural + target_bonus
+
+    if total_a > total_d:
+        desfecho = ContestOutcome.SUCCESS
+    elif total_a == total_d:
+        desfecho = ContestOutcome.TIE
+    else:
+        desfecho = ContestOutcome.FAILURE
+
+    return ContestResult(
+        actor_natural=actor.natural,
+        actor_bonus=actor_bonus,
+        actor_total=total_a,
+        target_natural=target.natural,
+        target_bonus=target_bonus,
+        target_total=total_d,
+        outcome=desfecho,
+    )
+
+
+def defense_ability(abilities: Abilities) -> Ability:
+    """Com que atributo o alvo de um empurrao resiste: o melhor de FOR e DES.
+
+    Na SRD quem escolhe e o alvo -- "the target's Strength (Athletics) or
+    Dexterity (Acrobatics) check (the target chooses the ability to use)". Nao
+    existe ponto neste motor onde quem nao e `turn_order.current` decida
+    (`_validar_contexto` recusa com `NOT_YOUR_TURN`), entao a escolha e
+    deterministica, e "o melhor" e a unica que nao precisa de justificativa.
+
+    **O desempate nao muda numero nenhum.** Com os dois modificadores iguais os
+    dois atributos dao o mesmo total; ele decide so o rotulo que o evento grava.
+    Esta dito aqui para ninguem ir procurar no combate um efeito que nao existe
+    -- e o teste dele afirma sobre o `Ability` devolvido, nunca sobre um total,
+    porque um teste sobre o total seria decoracao.
+
+    `if` e nao ternario pelo motivo ja medido em `attack_math`: `coverage` nao
+    cria arco para expressao condicional. Saiba, ainda assim, que o **empate**
+    toma o mesmo arco que `forca > destreza` -- cobertura de branch nao cobra o
+    desempate, e so o teste com ficha sintetica cobra.
+    """
+    forca = ability_modifier(abilities.forca)
+    destreza = ability_modifier(abilities.destreza)
+    if forca >= destreza:
+        return Ability.FOR
+    return Ability.DES

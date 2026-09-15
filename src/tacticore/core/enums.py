@@ -59,6 +59,32 @@ class AttackOutcome(StrEnum):
     CRITICAL_MISS = "CRITICAL_MISS"
 
 
+class ContestOutcome(StrEnum):
+    """Como terminou um teste de atributo oposto.
+
+    Tres estados e nao um bool, e o terceiro e o que a SRD manda existir:
+    "The participant with the higher check total wins the contest" e, logo
+    depois, "If the contest results in a tie, the situation remains the same as
+    it was before the contest" (Using Ability Scores -> Contests).
+
+    Para quem INICIA um empurrao, `TIE` e `FAILURE` tem o mesmo efeito, e vao
+    ter para sempre -- empate nunca derruba ninguem. O membro nao existe por
+    causa desse caso. Ele existe porque `contest` e **generica**: num teste
+    oposto empate nao e derrota de ninguem, e "a situacao nao muda" so quem
+    chamou sabe traduzir. O dia em que o motor for o lado que RESISTE, a
+    diferenca entre "resisti" e "empatei" deixa de ser cosmetica.
+
+    Ate la ela e cosmetica, e sustentada por duas coisas so: a frase propria do
+    narrador e o cobrador do golden. Sem qualquer uma das duas, a primeira seed
+    que deixasse de empatar apagaria o unico registro de que o terceiro estado
+    existe.
+    """
+
+    SUCCESS = "SUCCESS"
+    TIE = "TIE"
+    FAILURE = "FAILURE"
+
+
 class RejectionReason(StrEnum):
     """Por que o motor recusou uma acao.
 
