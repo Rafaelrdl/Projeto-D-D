@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from tacticore.core.actions import EndTurnAction, MoveAction
 from tacticore.core.engine import advance_turn, apply
 from tacticore.core.enums import RejectionReason, SkipReason
@@ -15,6 +17,7 @@ from tacticore.core.events import (
 from tacticore.core.ids import CreatureId
 from tacticore.core.model import CombatState, Position, TurnBudget
 from tacticore.core.results import ActionResult, Applied, Rejected
+from tacticore.core.rng import ScriptedRng, SplitMix64, position
 from tacticore.core.testing import make_budget, make_combatant, make_statblock, make_state
 
 
@@ -277,3 +280,76 @@ def test_andar_para_longe_tambem_e_legal():
     resultado = aplicado(apply(estado, MoveAction(actor=CreatureId("a"), to=casa(-6, 0))))
     assert resultado.state.combatants["a"].position == casa(-6, 0)
     assert resultado.state.combatants["a"].budget.movement_remaining_ft == 0
+
+
+# ------------------------------------------- o turno nao toca no stream ----
+#
+# O ADR 0002 sec. 2 congela que `advance_turn` nao consome RNG na etapa 2
+# inteira, e essa garantia e usada implicitamente por todo teste que conta
+# posicoes do stream: se passar o turno sacasse um dado, a conta de
+# `test_attack_flow` e a fita de `test_seed_replay` estariam medindo outra
+# coisa sem ninguem notar.
+#
+# Ate aqui a clausula nao tinha UM teste -- este arquivo nao mencionava `rng`
+# nenhuma vez. Uma clausula de ADR sem trava e uma frase que envelhece: quando
+# a virada do sec. 2 for mesmo necessaria, o que se apaga com justificativa e
+# um teste, e nao um paragrafo que ninguem le.
+#
+# A posicao de partida e 7, e nao 0, de proposito: `position() == 0` antes e
+# depois passaria tambem num motor que resetasse o stream.
+
+FITA_VAZIA = ScriptedRng(script=())
+"""Qualquer saque sobre ela levanta `RngExhausted`. E a segunda metade da
+prova: `position` diz que o contador nao andou, a fita vazia diz que nem a
+tentativa aconteceu."""
+
+
+def test_advance_turn_nao_consome_rng():
+    estado = duelo()
+    estado = replace(estado, rng=SplitMix64(seed=99, counter=7))
+    depois, _ = advance_turn(estado)
+    assert position(depois.rng) == position(estado.rng) == 7
+
+
+def test_advance_turn_nao_consome_rng_nem_quando_pula_turno():
+    """O ramo do `TurnSkipped` e o mais tentador: e onde uma salvaguarda de
+    fim de turno entraria primeiro."""
+    estado = trio_com_um_caido(current="a")
+    estado = replace(estado, rng=SplitMix64(seed=99, counter=7))
+    depois, eventos = advance_turn(estado)
+    assert any(isinstance(e, TurnSkipped) for e in eventos), "o ramo nao foi exercitado"
+    assert position(depois.rng) == 7
+
+
+def test_advance_turn_nao_consome_rng_nem_quando_ninguem_esta_de_pe():
+    """O ramo de saida do laco, onde a rodada avanca sem abrir turno."""
+    estado = make_state(
+        statblocks=(make_statblock(id="ficha", speed_ft=30),),
+        combatants=(
+            make_combatant(id="a", team="herois", hp=0),
+            make_combatant(id="b", team="viloes", hp=0),
+        ),
+        current="a",
+        rng=SplitMix64(seed=99, counter=7),
+    )
+    depois, eventos = advance_turn(estado)
+    assert not any(isinstance(e, TurnStarted) for e in eventos), "ninguem devia abrir turno"
+    assert position(depois.rng) == 7
+
+
+def test_encerrar_o_turno_pela_acao_tambem_nao_consome():
+    """`advance_turn` e chamada por dentro de `EndTurnAction`, e e esse o
+    caminho que o combate de verdade percorre."""
+    estado = replace(duelo(), rng=SplitMix64(seed=99, counter=7))
+    resultado = aplicado(apply(estado, EndTurnAction(actor=CreatureId("a"))))
+    assert position(resultado.state.rng) == 7
+
+
+def test_uma_rodada_inteira_atravessa_com_a_fita_vazia():
+    """Tres passagens de turno seguidas, incluindo a virada de rodada e um
+    turno pulado, sobre uma fita sem um unico valor."""
+    estado = replace(trio_com_um_caido(current="a"), rng=FITA_VAZIA)
+    for _ in range(3):
+        estado, _ = advance_turn(estado)
+    assert estado.turn_order.round_number > 1, "a rodada nao virou; o teste nao provou a virada"
+    assert position(estado.rng) == 0
