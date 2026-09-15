@@ -90,12 +90,24 @@ lacuna que ele tapava volta sozinha. Foi exatamente esse teste que reprovou a
 primeira seed do `tiro_colado`: ela matava a atiradora na rodada 1, antes de ela
 atirar.
 
-## A lista `nomes` é à mão, e isso é um buraco conhecido
+## Golden novo não precisa entrar em lista nenhuma
 
-`test_os_goldens_nao_sao_todos_iguais` enumera os goldens numa lista literal em
-vez de varrer a pasta. Medido: com o arquivo em disco e o nome **fora** da
-lista, a suíte inteira passa — um golden que duplicasse outro não seria notado.
+`test_os_goldens_nao_sao_todos_iguais` **varre a pasta**. Até a etapa 3 ele
+enumerava os goldens numa lista literal, e o buraco foi medido duas vezes: com o
+arquivo em disco e o nome fora da lista, a suíte inteira passava. Um golden que
+duplicasse outro não seria notado, e acrescentar o nome era edição obrigatória
+que nenhum guardião cobrava.
 
-Por isso acrescentar o nome à lista é edição obrigatória de todo commit que cria
-um golden, e nenhum guardião cobra. Trocar a lista por uma varredura da pasta
-fecha o buraco, e é outro commit.
+Agora um `.json` solto em `data/` é **reprovado**, e não ignorado: ou ele tem a
+forma do envelope de encontro, ou entra em `NAO_E_ENCONTRO` com o motivo
+escrito. Hoje há exatamente um nome lá, `save_legado`, que é pino de formato e
+não encontro.
+
+A exclusão é por **nome** e não por formato de propósito. Filtrar por "tem a
+chave `events`" pareceria mais robusto e seria o contrário: um golden de
+encontro que perdesse a chave sairia da varredura em silêncio — exatamente o
+tipo de buraco que a varredura existe para fechar.
+
+**O que ela não fecha:** um golden órfão, cujo teste produtor tenha sido apagado,
+continua passando enquanto o fingerprint dele for único. Isso é peso morto que
+aparece num `git status`, e não um verde falso sobre o motor.

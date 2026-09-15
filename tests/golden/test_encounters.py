@@ -644,14 +644,80 @@ def test_o_golden_do_empurrao_se_reproduz_pela_propria_fita():
     assert events_to_list((*abertura.events, *resto)) == events_to_list(log)
 
 
+NAO_E_ENCONTRO = frozenset({"save_legado"})
+"""O unico arquivo de `data/` que nao e um encontro congelado.
+
+`save_legado.json` e um **pino de formato**: um save em v1 que atravessa a
+cadeia de migracoes, sem chave `events` e sem `final_fingerprint`. Ele tem os
+dois testes proprios logo abaixo.
+
+Excluido por NOME e nao por formato, de proposito. Filtrar por "tem a chave
+`events`" pareceria mais robusto e seria o contrario: um golden de encontro que
+perdesse a chave sairia da varredura em silencio, que e exatamente o tipo de
+buraco que esta varredura existe para fechar.
+"""
+
+
+def goldens_de_encontro() -> dict[str, dict[str, Any]]:
+    """Todo golden de encontro da pasta, achado por VARREDURA e nao por lista.
+
+    Ate a etapa 3 isto era uma lista literal, e o buraco foi medido duas vezes:
+    com o arquivo em disco e o nome fora da lista, a suite inteira passava. Cada
+    golden novo dependia de alguem lembrar de editar a lista, e esquecer nao
+    deixava nada vermelho.
+
+    .. note::
+       A varredura fecha a direcao que importa -- arquivo que ninguem olha --,
+       e nao a inversa: um golden ORFAO, cujo teste produtor tenha sido apagado,
+       continua passando enquanto o fingerprint dele for unico. Isso e peso
+       morto que aparece num `git status`, e nao um verde falso sobre o motor.
+    """
+    achados = {
+        arquivo.stem: json.loads(arquivo.read_text(encoding="utf-8"))
+        for arquivo in sorted(DADOS.glob("*.json"))
+        if arquivo.stem not in NAO_E_ENCONTRO
+    }
+    assert achados, f"nenhum golden encontrado em {DADOS}: a varredura quebrou"
+    return achados
+
+
+def test_a_varredura_acha_os_encontros_parametrizados():
+    """A trava contra varredura vazia ou apontada para a pasta errada.
+
+    Sem ela, um `glob` que deixasse de casar faria o teste de baixo passar
+    trivialmente: um conjunto vazio nao tem repeticao. `IDS` sai de `ENCONTROS`,
+    entao esta asercao se mantem sozinha -- nao e uma segunda lista a mao.
+    """
+    achados = set(goldens_de_encontro())
+    faltando = set(IDS) - achados
+    assert not faltando, f"a varredura nao achou {sorted(faltando)} em {DADOS}"
+
+
+def test_todo_golden_de_encontro_tem_a_forma_do_envelope():
+    """Arquivo solto na pasta agora e reprovado, e nao ignorado.
+
+    Antes da varredura, um `.json` qualquer em `data/` era invisivel: a lista
+    literal so olhava os nomes que alguem tinha escrito nela.
+    """
+    for nome, gravado in goldens_de_encontro().items():
+        faltando = {"events", "final_fingerprint", "seed", "schema_version", "rules_version"} - set(
+            gravado
+        )
+        assert not faltando, (
+            f"{nome}.json esta em tests/golden/data/ mas nao tem {sorted(faltando)}. "
+            f"Se nao e um encontro congelado, ele precisa entrar em NAO_E_ENCONTRO "
+            f"com o motivo escrito -- e nao ficar solto na pasta."
+        )
+
+
 def test_os_goldens_nao_sao_todos_iguais():
     """Encontros que dessem o mesmo log nao provariam nada."""
-    nomes = [*IDS, "vantagem", "tiro_colado", "caido", "arcanista", "empurrao"]
-    resumos = {
-        json.loads((DADOS / f"{nome}.json").read_text(encoding="utf-8"))["final_fingerprint"]
-        for nome in nomes
-    }
-    assert len(resumos) == len(nomes)
+    encontros = goldens_de_encontro()
+    resumos = {gravado["final_fingerprint"] for gravado in encontros.values()}
+    assert len(resumos) == len(encontros), (
+        "dois goldens de encontro tem o mesmo final_fingerprint, ou seja congelam "
+        "o mesmo combate. Um deles nao esta provando nada."
+    )
 
 
 def _save_legado() -> tuple[dict[str, Any], str]:

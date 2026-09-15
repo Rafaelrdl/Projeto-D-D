@@ -153,13 +153,13 @@ descarta isso. `docs/srd-atribuicao.md` é o único documento do projeto cuja
 função é ser verdadeiro sobre a SRD, e frase bonita que não resiste à leitura
 da magia não entra nele.
 
-### O buraco que a fatia encontrou e não fechou
+### O buraco que a fatia encontrou, e fechou depois
 
-`test_os_goldens_nao_sao_todos_iguais` enumera os goldens numa lista literal em
-vez de varrer a pasta. Medido: com o arquivo em disco e o nome fora da lista, a
-suíte inteira passa. Acrescentar o nome é edição obrigatória de todo commit que
-cria um golden, e **nenhum guardião cobra**. Está escrito em
-`tests/golden/README.md`; trocar a lista por varredura é outro commit.
+`test_os_goldens_nao_sao_todos_iguais` enumerava os goldens numa lista literal em
+vez de varrer a pasta. Medido duas vezes, na fatia B e na C: com o arquivo em
+disco e o nome fora da lista, a suíte inteira passava. **Fechado num commit
+próprio logo depois da etapa** — a lista virou varredura, e um `.json` solto em
+`data/` passou a ser reprovado em vez de ignorado.
 
 ## Fatia C — empurrar
 
