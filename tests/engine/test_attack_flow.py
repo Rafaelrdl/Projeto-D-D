@@ -364,3 +364,68 @@ def test_o_limite_e_inclusivo():
 def test_arma_de_arremesso_alcanca_longe():
     resultado = atacar_em(arena_com_alcance(alcance=30, casas=6, fita=(15, 1, 4)))
     assert isinstance(resultado, Applied)
+
+
+def test_a_desvantagem_derivada_chega_ao_evento():
+    """A ponte entre `derive_advantage_sources` e o log.
+
+    A regra e testada isolada em test_derive_advantage.py; aqui se prova que
+    ela de fato entra no ataque, aparece no evento e consome os dois d20 do
+    quadro fixo escolhendo o menor.
+    """
+    ficha = make_statblock(
+        id="ficha",
+        armor_class=10,
+        attacks=(make_attack(id="adaga", name="Adaga", range_ft=20, damage="1d4"),),
+    )
+    estado = make_state(
+        statblocks=(ficha,),
+        combatants=(
+            make_combatant(id="a", statblock_id="ficha", team="herois"),
+            make_combatant(id="b", statblock_id="ficha", team="viloes"),
+        ),
+        current="a",
+        rng=ScriptedRng(script=(18, 4, 2)),
+        posicoes={"a": (0, 0), "b": (1, 0)},
+    )
+    resultado = apply(
+        estado,
+        AttackAction(actor=CreatureId("a"), target=CreatureId("b"), attack_id=AttackId("adaga")),
+    )
+    assert isinstance(resultado, Applied)
+
+    evento = resultado.events[0]
+    assert isinstance(evento, AttackRolled)
+    assert evento.advantage is AdvantageState.DISADVANTAGE
+    assert evento.disadvantage_sources == ("inimigo adjacente",)
+    assert (evento.pair, evento.natural) == ((18, 4), 4), "pegou o menor dos dois"
+
+
+def test_as_fontes_declaradas_vem_antes_das_derivadas():
+    """A ordem e fixa porque ela aparece no log."""
+    ficha = make_statblock(
+        id="ficha", attacks=(make_attack(id="adaga", range_ft=20, damage="1d4"),)
+    )
+    estado = make_state(
+        statblocks=(ficha,),
+        combatants=(
+            make_combatant(id="a", statblock_id="ficha", team="herois"),
+            make_combatant(id="b", statblock_id="ficha", team="viloes"),
+        ),
+        current="a",
+        rng=ScriptedRng(script=(10, 10, 2)),
+        posicoes={"a": (0, 0), "b": (1, 0)},
+    )
+    resultado = apply(
+        estado,
+        AttackAction(
+            actor=CreatureId("a"),
+            target=CreatureId("b"),
+            attack_id=AttackId("adaga"),
+            disadvantage_sources=("cegado",),
+        ),
+    )
+    assert isinstance(resultado, Applied)
+    evento = resultado.events[0]
+    assert isinstance(evento, AttackRolled)
+    assert evento.disadvantage_sources == ("cegado", "inimigo adjacente")

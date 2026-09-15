@@ -81,6 +81,16 @@ DUELISTA: Final = Statblock(
             damage=parse_dice("1d8+1d4"),
             range_ft=5,
         ),
+        AttackProfile(
+            id=AttackId("adaga"),
+            name="Adaga Arremessada",
+            # Esta e escolhida, e nao herdada de default: arma de arremesso usa
+            # Destreza, que e onde o duelista tem 17.
+            ability=Ability.DES,
+            proficient=True,
+            damage=parse_dice("1d4"),
+            range_ft=20,
+        ),
     ),
 )
 """Rapido e fragil: DES 17 quase sempre abre a rodada, e 11 de vida nao perdoa."""

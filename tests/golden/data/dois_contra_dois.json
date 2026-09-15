@@ -62,27 +62,13 @@
       "kind": "turn_started"
     },
     {
-      "creature": "lamina_2",
-      "destination": {
-        "x": 1,
-        "y": 1
-      },
-      "feet": 15,
-      "kind": "movement_spent",
-      "origin": {
-        "x": 4,
-        "y": 1
-      },
-      "remaining_ft": 20
-    },
-    {
-      "ability": "FOR",
-      "ability_mod": 0,
+      "ability": "DES",
+      "ability_mod": 3,
       "actor": "lamina_2",
       "advantage": "NORMAL",
       "advantage_sources": [],
-      "attack_id": "estoque",
-      "attack_name": "Estoque",
+      "attack_id": "adaga",
+      "attack_name": "Adaga Arremessada",
       "chosen_index": 0,
       "disadvantage_sources": [],
       "kind": "attack_rolled",
@@ -98,38 +84,32 @@
       "target": "bruto_1",
       "target_ac": 13,
       "target_was_down": false,
-      "total": 20
+      "total": 23
     },
     {
       "actor": "lamina_2",
       "kind": "damage_rolled",
-      "rng_after": 8,
+      "rng_after": 7,
       "rng_before": 6,
       "roll": {
-        "ability_bonus": 0,
+        "ability_bonus": 3,
         "critical": false,
         "dice": [
           {
-            "faces": 8,
-            "from_crit": false,
-            "term_index": 0,
-            "value": 7
-          },
-          {
             "faces": 4,
             "from_crit": false,
-            "term_index": 1,
-            "value": 2
+            "term_index": 0,
+            "value": 4
           }
         ],
         "flat": 0,
-        "total": 9
+        "total": 7
       },
       "target": "bruto_1"
     },
     {
       "after": {
-        "current": 5,
+        "current": 7,
         "maximum": 14
       },
       "before": {
@@ -137,247 +117,27 @@
         "maximum": 14
       },
       "creature": "bruto_1",
-      "dealt": 9,
+      "dealt": 7,
       "kind": "hp_changed",
       "overkill": 0
     },
     {
       "creature": "lamina_2",
-      "kind": "turn_ended"
-    },
-    {
-      "budget": {
-        "action_available": true,
-        "movement_remaining_ft": 30
-      },
-      "creature": "bruto_1",
-      "kind": "turn_started"
-    },
-    {
-      "ability": "FOR",
-      "ability_mod": 3,
-      "actor": "bruto_1",
-      "advantage": "NORMAL",
-      "advantage_sources": [],
-      "attack_id": "machado",
-      "attack_name": "Machado",
-      "chosen_index": 0,
-      "disadvantage_sources": [],
-      "kind": "attack_rolled",
-      "natural": 20,
-      "outcome": "CRITICAL_HIT",
-      "pair": [
-        20,
-        10
-      ],
-      "proficiency": 2,
-      "rng_after": 10,
-      "rng_before": 8,
-      "target": "lamina_2",
-      "target_ac": 15,
-      "target_was_down": false,
-      "total": 25
-    },
-    {
-      "actor": "bruto_1",
-      "kind": "damage_rolled",
-      "rng_after": 12,
-      "rng_before": 10,
-      "roll": {
-        "ability_bonus": 3,
-        "critical": true,
-        "dice": [
-          {
-            "faces": 12,
-            "from_crit": false,
-            "term_index": 0,
-            "value": 7
-          },
-          {
-            "faces": 12,
-            "from_crit": true,
-            "term_index": 0,
-            "value": 5
-          }
-        ],
-        "flat": 1,
-        "total": 16
-      },
-      "target": "lamina_2"
-    },
-    {
-      "after": {
-        "current": 0,
-        "maximum": 11
-      },
-      "before": {
-        "current": 11,
-        "maximum": 11
-      },
-      "creature": "lamina_2",
-      "dealt": 11,
-      "kind": "hp_changed",
-      "overkill": 5
-    },
-    {
-      "creature": "lamina_2",
-      "kind": "creature_downed"
-    },
-    {
-      "creature": "bruto_1",
       "destination": {
-        "x": 3,
-        "y": 0
-      },
-      "feet": 15,
-      "kind": "movement_spent",
-      "origin": {
-        "x": 0,
-        "y": 0
-      },
-      "remaining_ft": 15
-    },
-    {
-      "creature": "bruto_1",
-      "kind": "turn_ended"
-    },
-    {
-      "budget": {
-        "action_available": true,
-        "movement_remaining_ft": 35
-      },
-      "creature": "lamina_1",
-      "kind": "turn_started"
-    },
-    {
-      "creature": "lamina_1",
-      "destination": {
-        "x": 3,
+        "x": 1,
         "y": 1
       },
       "feet": 15,
       "kind": "movement_spent",
       "origin": {
-        "x": 0,
+        "x": 4,
         "y": 1
       },
       "remaining_ft": 20
     },
     {
-      "ability": "FOR",
-      "ability_mod": 0,
-      "actor": "lamina_1",
-      "advantage": "NORMAL",
-      "advantage_sources": [],
-      "attack_id": "estoque",
-      "attack_name": "Estoque",
-      "chosen_index": 0,
-      "disadvantage_sources": [],
-      "kind": "attack_rolled",
-      "natural": 19,
-      "outcome": "HIT",
-      "pair": [
-        19,
-        18
-      ],
-      "proficiency": 3,
-      "rng_after": 14,
-      "rng_before": 12,
-      "target": "bruto_2",
-      "target_ac": 13,
-      "target_was_down": false,
-      "total": 22
-    },
-    {
-      "actor": "lamina_1",
-      "kind": "damage_rolled",
-      "rng_after": 16,
-      "rng_before": 14,
-      "roll": {
-        "ability_bonus": 0,
-        "critical": false,
-        "dice": [
-          {
-            "faces": 8,
-            "from_crit": false,
-            "term_index": 0,
-            "value": 5
-          },
-          {
-            "faces": 4,
-            "from_crit": false,
-            "term_index": 1,
-            "value": 1
-          }
-        ],
-        "flat": 0,
-        "total": 6
-      },
-      "target": "bruto_2"
-    },
-    {
-      "after": {
-        "current": 8,
-        "maximum": 14
-      },
-      "before": {
-        "current": 14,
-        "maximum": 14
-      },
-      "creature": "bruto_2",
-      "dealt": 6,
-      "kind": "hp_changed",
-      "overkill": 0
-    },
-    {
-      "creature": "lamina_1",
-      "kind": "turn_ended"
-    },
-    {
-      "budget": {
-        "action_available": true,
-        "movement_remaining_ft": 30
-      },
-      "creature": "bruto_2",
-      "kind": "turn_started"
-    },
-    {
-      "ability": "FOR",
-      "ability_mod": 3,
-      "actor": "bruto_2",
-      "advantage": "NORMAL",
-      "advantage_sources": [],
-      "attack_id": "machado",
-      "attack_name": "Machado",
-      "chosen_index": 0,
-      "disadvantage_sources": [],
-      "kind": "attack_rolled",
-      "natural": 5,
-      "outcome": "MISS",
-      "pair": [
-        5,
-        6
-      ],
-      "proficiency": 2,
-      "rng_after": 18,
-      "rng_before": 16,
-      "target": "bruto_1",
-      "target_ac": 13,
-      "target_was_down": false,
-      "total": 10
-    },
-    {
-      "creature": "bruto_2",
-      "kind": "turn_ended"
-    },
-    {
-      "kind": "round_started",
-      "round_number": 2
-    },
-    {
       "creature": "lamina_2",
-      "kind": "turn_skipped",
-      "reason": "ACTOR_IS_DOWN"
+      "kind": "turn_ended"
     },
     {
       "budget": {
@@ -405,10 +165,10 @@
         20
       ],
       "proficiency": 2,
-      "rng_after": 20,
-      "rng_before": 18,
-      "target": "bruto_2",
-      "target_ac": 13,
+      "rng_after": 9,
+      "rng_before": 7,
+      "target": "lamina_2",
+      "target_ac": 15,
       "target_was_down": false,
       "total": 11
     },
@@ -435,19 +195,192 @@
       "chosen_index": 0,
       "disadvantage_sources": [],
       "kind": "attack_rolled",
-      "natural": 8,
+      "natural": 10,
       "outcome": "MISS",
       "pair": [
-        8,
-        10
+        10,
+        11
       ],
       "proficiency": 3,
-      "rng_after": 22,
-      "rng_before": 20,
+      "rng_after": 11,
+      "rng_before": 9,
+      "target": "lamina_2",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 13
+    },
+    {
+      "creature": "lamina_1",
+      "kind": "turn_ended"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 30
+      },
+      "creature": "bruto_2",
+      "kind": "turn_started"
+    },
+    {
+      "creature": "bruto_2",
+      "destination": {
+        "x": 1,
+        "y": 0
+      },
+      "feet": 15,
+      "kind": "movement_spent",
+      "origin": {
+        "x": 4,
+        "y": 0
+      },
+      "remaining_ft": 15
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 3,
+      "actor": "bruto_2",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "machado",
+      "attack_name": "Machado",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 9,
+      "outcome": "HIT",
+      "pair": [
+        9,
+        19
+      ],
+      "proficiency": 2,
+      "rng_after": 13,
+      "rng_before": 11,
+      "target": "bruto_1",
+      "target_ac": 13,
+      "target_was_down": false,
+      "total": 14
+    },
+    {
+      "actor": "bruto_2",
+      "kind": "damage_rolled",
+      "rng_after": 14,
+      "rng_before": 13,
+      "roll": {
+        "ability_bonus": 3,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 12,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 11
+          }
+        ],
+        "flat": 1,
+        "total": 15
+      },
+      "target": "bruto_1"
+    },
+    {
+      "after": {
+        "current": 0,
+        "maximum": 14
+      },
+      "before": {
+        "current": 7,
+        "maximum": 14
+      },
+      "creature": "bruto_1",
+      "dealt": 7,
+      "kind": "hp_changed",
+      "overkill": 8
+    },
+    {
+      "creature": "bruto_1",
+      "kind": "creature_downed"
+    },
+    {
+      "creature": "bruto_2",
+      "kind": "turn_ended"
+    },
+    {
+      "kind": "round_started",
+      "round_number": 2
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "lamina_2",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "lamina_2",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 11,
+      "outcome": "MISS",
+      "pair": [
+        11,
+        3
+      ],
+      "proficiency": 3,
+      "rng_after": 16,
+      "rng_before": 14,
+      "target": "lamina_1",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 14
+    },
+    {
+      "creature": "lamina_2",
+      "kind": "turn_ended"
+    },
+    {
+      "creature": "bruto_1",
+      "kind": "turn_skipped",
+      "reason": "ACTOR_IS_DOWN"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "lamina_1",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "lamina_1",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 5,
+      "outcome": "MISS",
+      "pair": [
+        5,
+        6
+      ],
+      "proficiency": 3,
+      "rng_after": 18,
+      "rng_before": 16,
       "target": "bruto_2",
       "target_ac": 13,
       "target_was_down": false,
-      "total": 11
+      "total": 8
     },
     {
       "creature": "lamina_1",
@@ -472,58 +405,19 @@
       "chosen_index": 0,
       "disadvantage_sources": [],
       "kind": "attack_rolled",
-      "natural": 19,
-      "outcome": "HIT",
+      "natural": 6,
+      "outcome": "MISS",
       "pair": [
-        19,
-        17
+        6,
+        20
       ],
       "proficiency": 2,
-      "rng_after": 24,
-      "rng_before": 22,
-      "target": "bruto_1",
-      "target_ac": 13,
+      "rng_after": 20,
+      "rng_before": 18,
+      "target": "lamina_1",
+      "target_ac": 15,
       "target_was_down": false,
-      "total": 24
-    },
-    {
-      "actor": "bruto_2",
-      "kind": "damage_rolled",
-      "rng_after": 25,
-      "rng_before": 24,
-      "roll": {
-        "ability_bonus": 3,
-        "critical": false,
-        "dice": [
-          {
-            "faces": 12,
-            "from_crit": false,
-            "term_index": 0,
-            "value": 10
-          }
-        ],
-        "flat": 1,
-        "total": 14
-      },
-      "target": "bruto_1"
-    },
-    {
-      "after": {
-        "current": 0,
-        "maximum": 14
-      },
-      "before": {
-        "current": 5,
-        "maximum": 14
-      },
-      "creature": "bruto_1",
-      "dealt": 5,
-      "kind": "hp_changed",
-      "overkill": 9
-    },
-    {
-      "creature": "bruto_1",
-      "kind": "creature_downed"
+      "total": 11
     },
     {
       "creature": "bruto_2",
@@ -534,9 +428,41 @@
       "round_number": 3
     },
     {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
       "creature": "lamina_2",
-      "kind": "turn_skipped",
-      "reason": "ACTOR_IS_DOWN"
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "lamina_2",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 8,
+      "outcome": "MISS",
+      "pair": [
+        8,
+        10
+      ],
+      "proficiency": 3,
+      "rng_after": 22,
+      "rng_before": 20,
+      "target": "lamina_1",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 11
+    },
+    {
+      "creature": "lamina_2",
+      "kind": "turn_ended"
     },
     {
       "creature": "bruto_1",
@@ -562,25 +488,25 @@
       "chosen_index": 0,
       "disadvantage_sources": [],
       "kind": "attack_rolled",
-      "natural": 12,
+      "natural": 19,
       "outcome": "HIT",
       "pair": [
-        12,
-        12
+        19,
+        17
       ],
       "proficiency": 3,
-      "rng_after": 27,
-      "rng_before": 25,
+      "rng_after": 24,
+      "rng_before": 22,
       "target": "bruto_2",
       "target_ac": 13,
       "target_was_down": false,
-      "total": 15
+      "total": 22
     },
     {
       "actor": "lamina_1",
       "kind": "damage_rolled",
-      "rng_after": 29,
-      "rng_before": 27,
+      "rng_after": 26,
+      "rng_before": 24,
       "roll": {
         "ability_bonus": 0,
         "critical": false,
@@ -589,31 +515,31 @@
             "faces": 8,
             "from_crit": false,
             "term_index": 0,
-            "value": 3
+            "value": 7
           },
           {
             "faces": 4,
             "from_crit": false,
             "term_index": 1,
-            "value": 2
+            "value": 3
           }
         ],
         "flat": 0,
-        "total": 5
+        "total": 10
       },
       "target": "bruto_2"
     },
     {
       "after": {
-        "current": 3,
+        "current": 4,
         "maximum": 14
       },
       "before": {
-        "current": 8,
+        "current": 14,
         "maximum": 14
       },
       "creature": "bruto_2",
-      "dealt": 5,
+      "dealt": 10,
       "kind": "hp_changed",
       "overkill": 0
     },
@@ -640,19 +566,54 @@
       "chosen_index": 0,
       "disadvantage_sources": [],
       "kind": "attack_rolled",
-      "natural": 8,
-      "outcome": "MISS",
+      "natural": 12,
+      "outcome": "HIT",
       "pair": [
-        8,
-        12
+        12,
+        6
       ],
       "proficiency": 2,
-      "rng_after": 31,
-      "rng_before": 29,
+      "rng_after": 28,
+      "rng_before": 26,
       "target": "lamina_1",
       "target_ac": 15,
       "target_was_down": false,
-      "total": 13
+      "total": 17
+    },
+    {
+      "actor": "bruto_2",
+      "kind": "damage_rolled",
+      "rng_after": 29,
+      "rng_before": 28,
+      "roll": {
+        "ability_bonus": 3,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 12,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 6
+          }
+        ],
+        "flat": 1,
+        "total": 10
+      },
+      "target": "lamina_1"
+    },
+    {
+      "after": {
+        "current": 1,
+        "maximum": 11
+      },
+      "before": {
+        "current": 11,
+        "maximum": 11
+      },
+      "creature": "lamina_1",
+      "dealt": 10,
+      "kind": "hp_changed",
+      "overkill": 0
     },
     {
       "creature": "bruto_2",
@@ -663,9 +624,41 @@
       "round_number": 4
     },
     {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
       "creature": "lamina_2",
-      "kind": "turn_skipped",
-      "reason": "ACTOR_IS_DOWN"
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "lamina_2",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 8,
+      "outcome": "MISS",
+      "pair": [
+        8,
+        12
+      ],
+      "proficiency": 3,
+      "rng_after": 31,
+      "rng_before": 29,
+      "target": "lamina_1",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 11
+    },
+    {
+      "creature": "lamina_2",
+      "kind": "turn_ended"
     },
     {
       "creature": "bruto_1",
@@ -738,29 +731,208 @@
         "maximum": 14
       },
       "before": {
-        "current": 3,
+        "current": 4,
         "maximum": 14
       },
       "creature": "bruto_2",
-      "dealt": 3,
+      "dealt": 4,
       "kind": "hp_changed",
-      "overkill": 6
+      "overkill": 5
     },
     {
       "creature": "bruto_2",
       "kind": "creature_downed"
     },
     {
+      "creature": "lamina_1",
+      "kind": "turn_ended"
+    },
+    {
+      "creature": "bruto_2",
+      "kind": "turn_skipped",
+      "reason": "ACTOR_IS_DOWN"
+    },
+    {
+      "kind": "round_started",
+      "round_number": 5
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "lamina_2",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "lamina_2",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 8,
+      "outcome": "MISS",
+      "pair": [
+        8,
+        1
+      ],
+      "proficiency": 3,
+      "rng_after": 37,
+      "rng_before": 35,
+      "target": "lamina_1",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 11
+    },
+    {
+      "creature": "lamina_2",
+      "kind": "turn_ended"
+    },
+    {
+      "creature": "bruto_1",
+      "kind": "turn_skipped",
+      "reason": "ACTOR_IS_DOWN"
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "lamina_1",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "lamina_1",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 9,
+      "outcome": "MISS",
+      "pair": [
+        9,
+        4
+      ],
+      "proficiency": 3,
+      "rng_after": 39,
+      "rng_before": 37,
+      "target": "lamina_2",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 12
+    },
+    {
+      "creature": "lamina_1",
+      "kind": "turn_ended"
+    },
+    {
+      "creature": "bruto_2",
+      "kind": "turn_skipped",
+      "reason": "ACTOR_IS_DOWN"
+    },
+    {
+      "kind": "round_started",
+      "round_number": 6
+    },
+    {
+      "budget": {
+        "action_available": true,
+        "movement_remaining_ft": 35
+      },
+      "creature": "lamina_2",
+      "kind": "turn_started"
+    },
+    {
+      "ability": "FOR",
+      "ability_mod": 0,
+      "actor": "lamina_2",
+      "advantage": "NORMAL",
+      "advantage_sources": [],
+      "attack_id": "estoque",
+      "attack_name": "Estoque",
+      "chosen_index": 0,
+      "disadvantage_sources": [],
+      "kind": "attack_rolled",
+      "natural": 18,
+      "outcome": "HIT",
+      "pair": [
+        18,
+        7
+      ],
+      "proficiency": 3,
+      "rng_after": 41,
+      "rng_before": 39,
+      "target": "lamina_1",
+      "target_ac": 15,
+      "target_was_down": false,
+      "total": 21
+    },
+    {
+      "actor": "lamina_2",
+      "kind": "damage_rolled",
+      "rng_after": 43,
+      "rng_before": 41,
+      "roll": {
+        "ability_bonus": 0,
+        "critical": false,
+        "dice": [
+          {
+            "faces": 8,
+            "from_crit": false,
+            "term_index": 0,
+            "value": 3
+          },
+          {
+            "faces": 4,
+            "from_crit": false,
+            "term_index": 1,
+            "value": 4
+          }
+        ],
+        "flat": 0,
+        "total": 7
+      },
+      "target": "lamina_1"
+    },
+    {
+      "after": {
+        "current": 0,
+        "maximum": 11
+      },
+      "before": {
+        "current": 1,
+        "maximum": 11
+      },
+      "creature": "lamina_1",
+      "dealt": 1,
+      "kind": "hp_changed",
+      "overkill": 6
+    },
+    {
+      "creature": "lamina_1",
+      "kind": "creature_downed"
+    },
+    {
       "kind": "combat_ended",
       "outcome": {
-        "last_round": 4,
-        "winning_team": "herois"
+        "last_round": 6,
+        "winning_team": "viloes"
       }
     }
   ],
-  "final_fingerprint": "c91e76b8f23e51726639c3e5ad77ee62ef2640680e065e9fa266bed5c38c8787",
+  "final_fingerprint": "5f84cff4a0d6fe50a1f18bd60cc950fb9cb1bc7d83c5f20c422afe8a3d335bf1",
   "rng_algo": "splitmix64-lemire/1",
-  "rules_version": 3,
+  "rules_version": 4,
   "schema_version": 3,
   "seed": "31337"
 }

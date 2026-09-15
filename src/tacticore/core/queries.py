@@ -10,7 +10,18 @@ from __future__ import annotations
 from tacticore.core.actions import AttackAction
 from tacticore.core.errors import CorruptStateError
 from tacticore.core.ids import AttackId, CreatureId
-from tacticore.core.model import AttackProfile, Combatant, CombatState, Statblock
+from tacticore.core.model import (
+    PES_POR_CASA,
+    AttackProfile,
+    Combatant,
+    CombatState,
+    Statblock,
+)
+from tacticore.core.rules import is_adjacent
+
+FONTE_INIMIGO_ADJACENTE = "inimigo adjacente"
+"""O texto que vai para o log. Constante e nao literal solto porque o teste
+afirma sobre ele e a narrativa o exibe -- dois lugares e um so dono."""
 
 
 def is_standing(combatant: Combatant) -> bool:
@@ -70,14 +81,27 @@ def derive_advantage_sources(
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Vantagem e desvantagem que vem do **estado**, e nao da acao.
 
-    Hoje nao deriva nada, e e de proposito que a funcao exista mesmo assim.
-    Quando condicoes, flanqueamento e magias entrarem, a vantagem passa a
-    depender do estado -- e sem este gancho essa mudanca cairia dentro de
-    `apply`, que a essa altura vai ter quarenta testes de ataque em cima. Com
-    ele, a mudanca e aqui, isolada, com teste proprio.
+    Hoje deriva uma coisa so, e e a regra da SRD que diz: atirar com um inimigo
+    colado em voce da desvantagem. Ela e o primeiro consumidor real deste
+    gancho, que existiu vazio desde a etapa 1 esperando exatamente isto -- e o
+    motivo de ele ter sido escrito antes de ter uso e que sem ele esta regra
+    cairia dentro de `_atacar`, que a essa altura tem quarenta testes em cima.
 
     As fontes derivadas sao concatenadas **depois** das declaradas na acao, e a
     ordem e fixa porque ela aparece no log.
+
+    "A distancia" e definido como `range_ft > PES_POR_CASA`, e nao por um campo
+    de tipo de arma. E o mesmo conjunto enquanto nao houver arma de haste --
+    uma alabarda tem alcance 10 e e corpo a corpo, e o dia em que uma entrar
+    este criterio para de servir. Registrado em `docs/srd-atribuicao.md`.
     """
-    del state, action
-    return (), ()
+    perfil = attack_of(statblock_of(state, action.actor), action.attack_id)
+    if perfil is None or perfil.range_ft <= PES_POR_CASA:
+        return (), ()
+
+    ator = state.combatants[action.actor]
+    colado = any(
+        c.team != ator.team and is_standing(c) and is_adjacent(ator.position, c.position)
+        for c in state.combatants.values()
+    )
+    return ((), (FONTE_INIMIGO_ADJACENTE,)) if colado else ((), ())

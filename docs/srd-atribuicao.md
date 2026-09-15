@@ -31,6 +31,7 @@ motor simplifica acrescenta uma linha aqui no mesmo commit que a simplifica**
 | Armas à distância têm alcance **curto e longo**, com desvantagem no longo | `AttackProfile.range_ft` é um número só; além dele o ataque é recusado | O alcance longo precisa de uma fonte de desvantagem derivada do estado, que chega no passo seguinte |
 | Tipo de dano, resistência, vulnerabilidade, imunidade | Dano não tem tipo | Tipo sem resistência implementada é campo inerte no objeto mais serializado do projeto |
 | Multiataque | Uma ação, um ataque | Muda o contrato de consumo do RNG por ação |
+| Corpo a corpo e à distância são **tipos de arma**, e não consequência do alcance | "À distância" é `range_ft > 5` | É o mesmo conjunto enquanto não houver arma de haste. Uma alabarda tem alcance 10 e é corpo a corpo: no dia em que uma entrar, `AttackProfile` ganha o tipo e este critério sai |
 | Acuidade (usar DES com arma de acuidade) | `AttackProfile.ability` é um atributo só | Vira `tuple[Ability, ...]` quando entrar |
 | Atacar a si mesmo é mecanicamente legal | Recusado com `SELF_TARGET_NOT_ALLOWED` | Na prática é sempre bug de chamador ou de IA. A exceção volta como campo com default quando houver efeito em área |
 | Bônus de proficiência derivado de nível ou CR | Campo explícito na ficha | Tabela de proficiência é conteúdo; deixar o motor deduzi-la é pôr conteúdo dentro da regra |

@@ -40,27 +40,13 @@
       "kind": "turn_started"
     },
     {
-      "creature": "gemeo_a",
-      "destination": {
-        "x": 3,
-        "y": 0
-      },
-      "feet": 15,
-      "kind": "movement_spent",
-      "origin": {
-        "x": 0,
-        "y": 0
-      },
-      "remaining_ft": 20
-    },
-    {
-      "ability": "FOR",
-      "ability_mod": 0,
+      "ability": "DES",
+      "ability_mod": 3,
       "actor": "gemeo_a",
       "advantage": "NORMAL",
       "advantage_sources": [],
-      "attack_id": "estoque",
-      "attack_name": "Estoque",
+      "attack_id": "adaga",
+      "attack_name": "Adaga Arremessada",
       "chosen_index": 0,
       "disadvantage_sources": [],
       "kind": "attack_rolled",
@@ -76,28 +62,22 @@
       "target": "gemeo_b",
       "target_ac": 15,
       "target_was_down": false,
-      "total": 22
+      "total": 25
     },
     {
       "actor": "gemeo_a",
       "kind": "damage_rolled",
-      "rng_after": 6,
+      "rng_after": 5,
       "rng_before": 4,
       "roll": {
-        "ability_bonus": 0,
+        "ability_bonus": 3,
         "critical": false,
         "dice": [
           {
-            "faces": 8,
-            "from_crit": false,
-            "term_index": 0,
-            "value": 4
-          },
-          {
             "faces": 4,
             "from_crit": false,
-            "term_index": 1,
-            "value": 1
+            "term_index": 0,
+            "value": 2
           }
         ],
         "flat": 0,
@@ -118,6 +98,20 @@
       "dealt": 5,
       "kind": "hp_changed",
       "overkill": 0
+    },
+    {
+      "creature": "gemeo_a",
+      "destination": {
+        "x": 3,
+        "y": 0
+      },
+      "feet": 15,
+      "kind": "movement_spent",
+      "origin": {
+        "x": 0,
+        "y": 0
+      },
+      "remaining_ft": 20
     },
     {
       "creature": "gemeo_a",
@@ -142,19 +136,19 @@
       "chosen_index": 0,
       "disadvantage_sources": [],
       "kind": "attack_rolled",
-      "natural": 10,
+      "natural": 5,
       "outcome": "MISS",
       "pair": [
-        10,
-        7
+        5,
+        10
       ],
       "proficiency": 3,
-      "rng_after": 8,
-      "rng_before": 6,
+      "rng_after": 7,
+      "rng_before": 5,
       "target": "gemeo_a",
       "target_ac": 15,
       "target_was_down": false,
-      "total": 13
+      "total": 8
     },
     {
       "creature": "gemeo_b",
@@ -183,19 +177,19 @@
       "chosen_index": 0,
       "disadvantage_sources": [],
       "kind": "attack_rolled",
-      "natural": 3,
+      "natural": 7,
       "outcome": "MISS",
       "pair": [
-        3,
-        9
+        7,
+        3
       ],
       "proficiency": 3,
-      "rng_after": 10,
-      "rng_before": 8,
+      "rng_after": 9,
+      "rng_before": 7,
       "target": "gemeo_b",
       "target_ac": 15,
       "target_was_down": false,
-      "total": 6
+      "total": 10
     },
     {
       "creature": "gemeo_a",
@@ -220,19 +214,19 @@
       "chosen_index": 0,
       "disadvantage_sources": [],
       "kind": "attack_rolled",
-      "natural": 3,
+      "natural": 9,
       "outcome": "MISS",
       "pair": [
-        3,
-        20
+        9,
+        3
       ],
       "proficiency": 3,
-      "rng_after": 12,
-      "rng_before": 10,
+      "rng_after": 11,
+      "rng_before": 9,
       "target": "gemeo_a",
       "target_ac": 15,
       "target_was_down": false,
-      "total": 6
+      "total": 12
     },
     {
       "creature": "gemeo_b",
@@ -261,28 +255,28 @@
       "chosen_index": 0,
       "disadvantage_sources": [],
       "kind": "attack_rolled",
-      "natural": 19,
-      "outcome": "HIT",
+      "natural": 20,
+      "outcome": "CRITICAL_HIT",
       "pair": [
-        19,
-        18
+        20,
+        19
       ],
       "proficiency": 3,
-      "rng_after": 14,
-      "rng_before": 12,
+      "rng_after": 13,
+      "rng_before": 11,
       "target": "gemeo_b",
       "target_ac": 15,
       "target_was_down": false,
-      "total": 22
+      "total": 23
     },
     {
       "actor": "gemeo_a",
       "kind": "damage_rolled",
-      "rng_after": 16,
-      "rng_before": 14,
+      "rng_after": 17,
+      "rng_before": 13,
       "roll": {
         "ability_bonus": 0,
-        "critical": false,
+        "critical": true,
         "dice": [
           {
             "faces": 8,
@@ -291,14 +285,26 @@
             "value": 7
           },
           {
+            "faces": 8,
+            "from_crit": true,
+            "term_index": 0,
+            "value": 7
+          },
+          {
             "faces": 4,
             "from_crit": false,
             "term_index": 1,
             "value": 3
+          },
+          {
+            "faces": 4,
+            "from_crit": true,
+            "term_index": 1,
+            "value": 4
           }
         ],
         "flat": 0,
-        "total": 10
+        "total": 21
       },
       "target": "gemeo_b"
     },
@@ -314,7 +320,7 @@
       "creature": "gemeo_b",
       "dealt": 6,
       "kind": "hp_changed",
-      "overkill": 4
+      "overkill": 15
     },
     {
       "creature": "gemeo_b",
@@ -328,9 +334,9 @@
       }
     }
   ],
-  "final_fingerprint": "e65d9146b1f50006389d971afd324b8cb3c62191dc72d091588b37a7dce9ae1b",
+  "final_fingerprint": "4c5684759689327419e6c82bb429b4d266c4a559cb2ce6112504fef422bec432",
   "rng_algo": "splitmix64-lemire/1",
-  "rules_version": 3,
+  "rules_version": 4,
   "schema_version": 3,
   "seed": "7"
 }

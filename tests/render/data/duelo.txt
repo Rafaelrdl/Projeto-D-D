@@ -3,14 +3,27 @@ lamina rola iniciativa: d20 14 +3 (DES 17) = 17
 ordem de iniciativa: lamina, bruto
 == rodada 1 ==
 turno de lamina: 1 acao, 35 pes
+lamina ataca bruto com Adaga Arremessada: d20 15 +3 DES +3 prof = 21 vs CA 13 -> acerto
+  dano: d4=1 +3 = 4
+  bruto: 14 -> 10 hp (4 de dano)
 lamina anda 15 pes (4,0) -> (1,0), 20 restantes
-lamina ataca bruto com Estoque: d20 15 +0 FOR +3 prof = 18 vs CA 13 -> acerto
-  dano: d8=2 d4=1 +0 = 3
-  bruto: 14 -> 11 hp (3 de dano)
 lamina encerra o turno
 turno de bruto: 1 acao, 30 pes
-bruto ataca lamina com Machado: d20 20 +3 FOR +2 prof = 25 vs CA 15 -> ACERTO CRITICO
-  dano critico: d12=11 d12=7 +4 = 22
-  lamina: 11 -> 0 hp (11 de dano, 11 desperdicados)
-  lamina cai
-combate encerrado na rodada 1: vitoria de herois
+bruto ataca lamina com Machado: d20 5 +3 FOR +2 prof = 10 vs CA 15 -> erro
+bruto encerra o turno
+== rodada 2 ==
+turno de lamina: 1 acao, 35 pes
+lamina ataca bruto com Estoque: d20 16 +0 FOR +3 prof = 19 vs CA 13 -> acerto
+  dano: d8=5 d4=1 +0 = 6
+  bruto: 10 -> 4 hp (6 de dano)
+lamina encerra o turno
+turno de bruto: 1 acao, 30 pes
+bruto ataca lamina com Machado: d20 6 +3 FOR +2 prof = 11 vs CA 15 -> erro
+bruto encerra o turno
+== rodada 3 ==
+turno de lamina: 1 acao, 35 pes
+lamina ataca bruto com Estoque: d20 10 +0 FOR +3 prof = 13 vs CA 13 -> acerto
+  dano: d8=7 d4=2 +0 = 9
+  bruto: 4 -> 0 hp (4 de dano, 5 desperdicados)
+  bruto cai
+combate encerrado na rodada 3: vitoria de viloes
