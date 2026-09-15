@@ -7,7 +7,8 @@ regras puro, exercitado por testes, mais uma camada fina de texto para que um
 combate possa ser **lido**:
 
 ```bash
-uv run python -m tacticore        # roda um duelo e narra o log
+uv run python -m tacticore          # roda um duelo e narra o log
+uv run python -m tacticore --jogar  # voce joga o lado dos herois
 ```
 
 ## Restrições inegociáveis
@@ -97,9 +98,25 @@ justificativa.
   apresentação, e apresentação dentro do core é I/O disfarçado. Quem monta a
   frase é `tacticore.render`, fora do core.
 - **Existe exatamente um lugar no projeto que faz I/O:** `tacticore.__main__`.
-  A exceção está registrada em `EXCECOES_DE_IO` e travada por dois testes — ela
+  A exceção está registrada em `EXCECOES_DE_IO` e travada por três testes — ela
   vale **enquanto for uma**. Um segundo lugar que imprima é decisão de
   arquitetura, e vem para cá antes de virar código.
+  O guardião varre **duas** coisas: módulo importado (`BANNED`) e **chamada a
+  `print`/`input` por AST** (`CHAMADAS_DE_IO`). A segunda metade não existiu até
+  a etapa 3, e nesse intervalo um `print` em qualquer módulo passava na suíte,
+  no ruff e no mypy strict — esta regra era a mais citada do arquivo e a única
+  sem trava nenhuma.
+- **Existe exatamente um laço de combate:** `core.testing.conduzir`, um gerador
+  que cede `(estado, eventos, menu)` e recebe a `Action`. `play_out` tapa esse
+  ponto de suspensão com uma `Politica`; `__main__ --jogar` o tapa com uma
+  pessoa. **Escrever um segundo laço só para o CLI é o que não se faz** — seriam
+  dois motores de decisão para manter em sincronia, e o teste que guarda isso é
+  "um jogador que digita 1 toda vez produz o combate do piloto automático".
+- **Quem escolhe tem nome.** `acoes[0]` era uma política embutida numa linha, e
+  sem nome não dá para comparar duas. `Politica` recebe o **estado** além do
+  menu: uma política que só vê a lista de ações nunca passa de um seletor de
+  índice, porque `AttackAction` carrega o id do alvo e não a vida dele. Nenhuma
+  política pode ler `state.rng` — `apply` é oráculo.
 - **Golden de regra e golden de apresentação vivem em pastas separadas.**
   `tests/golden/data/` exige uma frase no commit dizendo qual regra mudou;
   `tests/render/data/` se regrava sem cerimônia. Misturados, ou se justifica
@@ -176,18 +193,24 @@ escrito qual regra ia consumi-lo.
   O recorte da fatia 3 mudou durante a execução — Cego saiu por não ter fonte
   nem remoção possíveis, alcance longo entrou no lugar — e o plano registra o
   porquê.
+- **Etapa 3 — [docs/etapa-3.md](docs/etapa-3.md): em andamento.** O jogador
+  (fatia A, completa), o arcanista e o empurrão. A premissa que mudou o
+  recorte: em 37 commits ninguém nunca **escolheu** uma ação neste motor, e
+  `legal_actions` nomeia no próprio docstring dois consumidores que não
+  existiam. O que faltava não era mecânica, era um jogador.
 
-## Fora de escopo até a etapa 3
+## Fora de escopo na etapa 3
 
-Magias e salvaguardas, IA de inimigo, itens e classes, ataque de oportunidade,
-ação bônus e reação, multiataque, HP temporário, tipo de dano e resistência.
+Salvaguarda, magia de área, espaço de magia, IA pontuadora, ataque de
+oportunidade, reação, ação bônus, multiataque, tipo de dano, resistência, HP
+temporário, morte separada de inconsciência, itens e classes.
 
-E, o mais sentido de todos: **uma fonte de condição dentro do motor.** Hoje a
-única é `Participant.conditions` — o encontro nasce com ela. Empurrar, que é a
-fonte de Caído na SRD, é teste de atributo oposto: d20 contra d20, e com o
-quadro fixo são quatro dados por empurrão. Seria a primeira mecânica a consumir
-RNG fora de ataque, e o ADR 0002 manda que ela entre sozinha.
+**Cada exclusão tem o motivo escrito em [docs/etapa-3.md](docs/etapa-3.md), e
+o motivo quase nunca é "é difícil" — é "não existe quem consuma".** Salvaguarda
+sai porque não há produtor de CD no repositório inteiro: `d20_check` tem um
+único chamador e o único `dc` que existe é `armor_class`. A IA sai porque as
+duas fichas não dão o que decidir — medido, o estoque e a adaga do duelista têm
+praticamente o mesmo dano esperado contra CA 13.
 
-O desenho deixa porta aberta para eles — campos com default, ganchos com
-consumidor nomeado —, mas nada disso é implementado agora. `docs/etapa-2.md`
-explica o que ficou de fora e por quê, um a um.
+Reabrir qualquer uma delas começa por derrubar o motivo, e não por escrever a
+mecânica.
