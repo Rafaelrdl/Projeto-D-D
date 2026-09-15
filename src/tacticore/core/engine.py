@@ -654,22 +654,24 @@ def _casa_canonica(state: CombatState, ator: Combatant) -> Position | None:
         c.position for c in state.combatants.values() if c.team != ator.team and is_standing(c)
     ]
 
-    def chave(casa: Position) -> tuple[int, int, int, int, int]:
-        """Boa, barata, direta -- nessa ordem, e so entao arbitraria.
+    def chave(casa: Position) -> tuple[int, int, int, int]:
+        """Boa, direta, e so entao arbitraria.
 
         1. Distancia ao inimigo mais perto: e para isso que se anda.
-        2. Custo em pes: desempate que faz FICAR PARADO vencer quando andar nao
-           melhora nada. Sem ele, quem ja esta colado no inimigo da um passo
-           lateral inutil todo turno, porque a casa ao lado empata na distancia.
-        3. Desvio de Manhattan: a distancia de Chebyshev empata muitas casas
-           (ir reto e ir na diagonal custam o mesmo), e entre elas a menos
-           torta e a que alguem desenharia.
-        4. `x` e `y`: o que sobrar tem que ser deterministico.
+        2. Desvio de Manhattan ate a casa. Faz duas coisas de uma vez: **fica
+           parado vence** quando andar nao melhora a distancia (so a propria
+           casa tem desvio zero), e entre as muitas casas que Chebyshev empata
+           -- ir reto e ir na diagonal custam o mesmo -- vence a menos torta.
+        3. `x` e `y`: o que sobrar tem que ser deterministico.
+
+        Houve um terceiro criterio aqui, o custo em pes, e ele foi removido: uma
+        sonda mostrou que zera-lo nao quebrava teste nenhum. Custo e desvio sao
+        ambos zero exatamente na casa do ator e positivos fora dela, entao o
+        desvio ja fazia o trabalho inteiro sozinho.
         """
-        custo = distance_ft(ator.position, casa)
         desvio = abs(casa.x - ator.position.x) + abs(casa.y - ator.position.y)
         perto = min(distance_ft(casa, alvo) for alvo in inimigos)
-        return (perto, custo, desvio, casa.x, casa.y)
+        return (perto, desvio, casa.x, casa.y)
 
     ocupadas = {c.position for c in state.combatants.values() if c.id != ator.id}
     candidatas = [
