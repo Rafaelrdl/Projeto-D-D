@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from tacticore.core.actions import Action, AttackAction, EndTurnAction, MoveAction
+from tacticore.core.actions import Action, AttackAction, EndTurnAction, MoveAction, ShoveAction
 from tacticore.core.engine import apply, combat_result, legal_actions
-from tacticore.core.enums import RejectionReason
+from tacticore.core.enums import Condition, RejectionReason
 from tacticore.core.events import CombatEnded
 from tacticore.core.ids import AttackId, CreatureId
 from tacticore.core.model import CombatState, Position
@@ -29,6 +29,8 @@ def arena(
     fita: tuple[int, ...] = (),
     budget_a: object = None,
     posicoes: dict[str, tuple[int, int]] | None = None,
+    casas: int | None = None,
+    conditions_b: tuple[Condition, ...] = (),
 ) -> CombatState:
     """`a` (herois) contra `b` (viloes), mais quem `extras` pedir."""
     ficha = make_statblock(
@@ -40,7 +42,7 @@ def arena(
     )
     lutadores = [
         make_combatant(id="a", team="herois", budget=budget_a),  # type: ignore[arg-type]
-        make_combatant(id="b", team="viloes", hp=hp_b),
+        make_combatant(id="b", team="viloes", hp=hp_b, conditions=conditions_b),
     ]
     lutadores.extend(make_combatant(id=nome, team=time, hp=vida) for nome, time, vida in extras)
     return make_state(
@@ -48,7 +50,7 @@ def arena(
         combatants=tuple(lutadores),
         current="a",
         rng=ScriptedRng(script=fita),
-        posicoes=posicoes,
+        posicoes={"a": (0, 0), "b": (casas, 0)} if casas is not None else posicoes,
     )
 
 
@@ -197,8 +199,43 @@ def test_o_menu_de_quem_ja_esta_colado_no_inimigo():
     acoes = legal_actions(arena())
     assert acoes == (
         AttackAction(actor=CreatureId("a"), target=CreatureId("b"), attack_id=ESPADA),
+        # O empurrao entra no MESMO degrau do ataque, porque gasta a mesma
+        # acao, e por ULTIMO dentro dele: `acoes[0]` continua sendo um ataque,
+        # e e disso que o piloto automatico depende para terminar combate.
+        ShoveAction(actor=CreatureId("a"), target=CreatureId("b")),
         EndTurnAction(actor=CreatureId("a")),
     )
+
+
+def test_empurrar_vem_DEPOIS_de_todos_os_ataques():
+    """A ordem do menu nao e preferencia estetica: e o que faz o combate acabar.
+
+    Com o empurrao antes dos ataques, `primeira_legal` empurra todo turno,
+    ninguem ataca, ninguem morre e `play_out` estoura em "o combate nao terminou
+    em 500 acoes" -- medido, 38 testes vermelhos, incluindo quatro goldens e o
+    torneio. Depois deles, `acoes[0]` nao muda.
+    """
+    tipos = [type(a) for a in legal_actions(arena())]
+    assert tipos.index(AttackAction) < tipos.index(ShoveAction)
+    assert tipos.index(ShoveAction) < tipos.index(EndTurnAction)
+
+
+def test_o_menu_nao_oferece_empurrao_de_longe():
+    """Empurrar exige casa adjacente, e o menu so oferece o que `validate`
+    aceita -- a propriedade central de `legal_actions`."""
+    acoes = legal_actions(arena(casas=3))
+    assert not any(isinstance(a, ShoveAction) for a in acoes)
+
+
+def test_o_menu_oferece_empurrao_a_quem_ja_esta_caido():
+    """Derrubar quem esta no chao e legal na SRD, aqui e no-op, e `validate`
+    aceita de qualquer jeito -- a mesma assimetria de atacar quem caiu.
+
+    Um filtro nasceria como ramo que nenhum combate alcanca, e a decisao fica
+    escrita aqui para nao virar esquecimento na proxima leitura.
+    """
+    acoes = legal_actions(arena(conditions_b=(Condition.CAIDO,)))
+    assert any(isinstance(a, ShoveAction) for a in acoes)
 
 
 def test_o_menu_oferece_uma_casa_so_e_nao_todas_as_alcancaveis():

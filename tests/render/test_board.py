@@ -16,7 +16,7 @@ import pytest
 from tacticore.core.enums import Condition
 from tacticore.core.model import CombatState, Position
 from tacticore.core.testing import make_combatant, make_statblock, make_state
-from tacticore.render.board import CAIDO, VAZIA, board
+from tacticore.render.board import INCONSCIENTE, VAZIA, board
 
 
 def arena(
@@ -93,12 +93,12 @@ def test_quem_esta_caido_aparece_com_o_glifo_proprio():
     """Ele continua ocupando a casa: um tabuleiro que o escondesse mentiria
     sobre o que bloqueia passagem."""
     linhas = desenho(arena(hp_b=0))
-    assert CAIDO in linhas[2].split()
+    assert INCONSCIENTE in linhas[2].split()
 
 
 def test_quem_esta_caido_aparece_assim_na_legenda_tambem():
     legenda = board(arena(hp_b=0))[-1]
-    assert legenda.startswith(CAIDO)
+    assert legenda.startswith(INCONSCIENTE)
     assert "0/10 hp" in legenda
 
 

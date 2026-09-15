@@ -811,7 +811,10 @@ def legal_actions(state: CombatState) -> tuple[Action, ...]:
     legalidade, que mora em `validate`.
 
     A ordem e deterministica: ataques na ordem da ficha, alvos em ordem
-    lexicografica de id.
+    lexicografica de id, e o empurrao depois de todos os ataques -- mesmo
+    degrau, porque gasta a mesma acao, e por ultimo dentro dele. Oferecido a
+    alvo ja caido tambem: derrubar quem esta no chao e legal na SRD e aqui e
+    no-op, e um filtro nasceria como ramo que nenhum combate alcanca.
     """
     if combat_result(state) is not None:
         return ()
@@ -834,6 +837,16 @@ def legal_actions(state: CombatState) -> tuple[Action, ...]:
             for perfil in statblock_of(state, ator.id).attacks
             for alvo in inimigos
             if distance_ft(ator.position, alvo.position) <= perfil.long_range_ft
+        )
+
+        # Empurrar cai no MESMO degrau dos ataques, porque gasta a mesma acao
+        # -- e por ULTIMO dentro dele. Nao e preferencia estetica: com o
+        # empurrao antes, `primeira_legal` empurra todo turno, ninguem ataca e
+        # nenhum combate termina. A medida esta no commit.
+        acoes.extend(
+            ShoveAction(actor=ator.id, target=alvo.id)
+            for alvo in inimigos
+            if is_adjacent(ator.position, alvo.position)
         )
 
     # Levantar entra no degrau do MOVIMENTO, porque e movimento que ele gasta --

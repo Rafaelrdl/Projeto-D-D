@@ -32,10 +32,18 @@ Sem folga, quem esta na borda parece encostado numa parede que nao existe --
 este motor nao tem parede. Com folga, ve-se que ha para onde andar."""
 
 VAZIA = "."
-CAIDO = "x"
-"""Glifo de quem esta a 0 HP. Ele continua ocupando a casa (ninguem sai da
-ordem de iniciativa ao cair), e um tabuleiro que o escondesse mentiria sobre o
-que bloqueia passagem."""
+INCONSCIENTE = "x"
+"""Glifo de quem esta a 0 de vida.
+
+**Chamava-se `CAIDO` ate a etapa 3**, e o nome era uma bomba-relogio: a legenda
+logo abaixo imprime a **condicao** `CAIDO` por extenso, e ate o empurrao existir
+nenhuma das duas aparecia junto da outra. A partir do commit que poe Empurrar no
+menu, o mesmo tabuleiro do `--jogar` mostra as duas coisas -- quem esta no chao
+por ter caido de 0 de vida, e quem esta no chao por ter sido derrubado.
+
+Quem esta a 0 continua ocupando a casa -- ninguem sai da ordem de iniciativa
+ao cair --, e um tabuleiro que o escondesse mentiria sobre o que bloqueia
+passagem."""
 
 ALFABETO = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 """O glifo vem da posicao na ordem de iniciativa, e nao da inicial do id.
@@ -83,7 +91,7 @@ def board(state: CombatState) -> tuple[str, ...]:
             elif is_conscious(state.combatants[cid]):
                 celas.append(f"{glifos[cid]:>{largura}}")
             else:
-                celas.append(f"{CAIDO:>{largura}}")
+                celas.append(f"{INCONSCIENTE:>{largura}}")
         linhas.append(f"{y:>{rotulo}} " + " ".join(celas))
 
     linhas.append("")
@@ -102,7 +110,7 @@ def _legenda(state: CombatState, glifos: dict[CreatureId, str]) -> list[str]:
     saida = []
     for cid in state.turn_order.order:
         c = state.combatants[cid]
-        marca = glifos[cid] if is_conscious(c) else CAIDO
+        marca = glifos[cid] if is_conscious(c) else INCONSCIENTE
         extra = " " + ",".join(x.value.lower() for x in c.conditions) if c.conditions else ""
         saida.append(f"{marca} {cid:<{largura}}  {c.team}  {c.hp.current}/{c.hp.maximum} hp{extra}")
     return saida
