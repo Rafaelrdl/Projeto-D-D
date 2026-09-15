@@ -22,7 +22,13 @@ from tacticore.core.events import Event
 from tacticore.core.queries import is_standing, statblock_of
 from tacticore.core.results import Applied
 from tacticore.core.rng import ALGORITHM, SplitMix64
-from tacticore.core.serde import canonical_json, events_to_list, fingerprint, load
+from tacticore.core.serde import (
+    canonical_json,
+    check_invariants,
+    events_to_list,
+    fingerprint,
+    load,
+)
 from tacticore.core.testing import (
     make_abilities,
     make_attack,
@@ -116,11 +122,39 @@ def gravar_ou_comparar(nome: str, atual: dict[str, Any], *, update_golden: bool)
     assert arquivo.is_file(), f"golden ausente; rode com --update-golden para criar {arquivo}"
     esperado = json.loads(arquivo.read_text(encoding="utf-8"))
 
-    assert esperado["rules_version"] == RULES_VERSION, (
-        "o golden foi gravado com outra versao de regras. Se a mudanca foi "
-        "intencional, regrave e diga no commit qual regra mudou e por que."
+    assert canonical_json(atual) == canonical_json(esperado), _diagnostico(nome, esperado)
+
+
+def _diagnostico(nome: str, esperado: dict[str, Any]) -> str:
+    """Classifica a divergencia antes de mandar o dono explicar qual regra mudou.
+
+    A mensagem antiga cobrava sempre uma frase sobre REGRA. Na etapa 2 a maioria
+    dos diffs de golden vem de mudanca de FORMATO -- campo novo no estado, que
+    mexe no `final_fingerprint` sem o motor calcular nada diferente -- e essa
+    frase e impossivel de escrever com honestidade. Mandar escrever mentira e um
+    jeito eficiente de ensinar a ignorar a mensagem.
+    """
+    regra_mudou = esperado.get("rules_version") != RULES_VERSION
+    formato_mudou = esperado.get("schema_version") != SCHEMA_VERSION
+
+    if regra_mudou:
+        return (
+            f"golden {nome}: mudanca de REGRA "
+            f"(rules_version {esperado.get('rules_version')} -> {RULES_VERSION}). "
+            "Regrave com --update-golden e diga no commit qual regra mudou e por que."
+        )
+    if formato_mudou:
+        return (
+            f"golden {nome}: mudanca de FORMATO "
+            f"(schema_version {esperado.get('schema_version')} -> {SCHEMA_VERSION}), "
+            "com as regras iguais. Regrave e cite a migracao no commit; nao invente "
+            "uma regra que mudou."
+        )
+    return (
+        f"golden {nome}: o log divergiu sem que rules_version nem schema_version "
+        "mudassem. Isto e regressao ate prova em contrario -- confira o diff antes "
+        "de pensar em regravar."
     )
-    assert canonical_json(atual) == canonical_json(esperado)
 
 
 def rodar(seed: int, participantes: tuple[Participant, ...]) -> tuple[str, tuple[Event, ...]]:
@@ -217,13 +251,105 @@ def test_os_goldens_nao_sao_todos_iguais():
     assert len(resumos) == len(IDS) + 1
 
 
-def test_o_save_legado_ainda_carrega():
-    """Compatibilidade de formato, e nao golden.
+def _save_legado() -> tuple[dict[str, Any], str]:
+    """O envelope congelado e o fingerprint que ele prometia, separados.
 
-    Este arquivo NAO e regravado por `--update-golden`. Se ele parar de
-    carregar, isso e uma quebra de save, e a correcao e um caminho de migracao
-    -- nao apagar o arquivo.
+    Este arquivo NAO e regravado por `--update-golden`.
     """
     envelope = json.loads((DADOS / "save_legado.json").read_text(encoding="utf-8"))
-    esperado = envelope.pop("final_fingerprint_esperado")
+    return envelope, envelope.pop("final_fingerprint_esperado")
+
+
+def test_o_save_legado_ainda_carrega():
+    """GARANTIA PERMANENTE, nunca relaxada: um save gravado no formato v1
+    continua carregando e continua descrevendo um estado coerente.
+
+    Se este parar de passar, a correcao e um caminho de migracao. Nao e
+    regravar o arquivo, e nao e apagar o teste.
+    """
+    envelope, _ = _save_legado()
+    estado = load(envelope)
+    assert check_invariants(estado) == ()
+
+
+def test_o_fingerprint_do_save_legado_e_este():
+    """PIN DE FORMATO, e nao garantia.
+
+    Separado do teste acima de proposito: este aqui **vai** falhar toda vez que
+    um campo novo entrar no estado, porque o fingerprint cobre o estado inteiro.
+    Quando isso acontecer, o valor e recalculado a mao e o commit cita a
+    migracao que o justifica. Fundir os dois num assert so faria a garantia
+    permanente ser relaxada junto, sem ninguem perceber.
+    """
+    envelope, esperado = _save_legado()
     assert fingerprint(load(envelope)) == esperado
+
+
+# ------------------------------------------------- diagnostico da falha -----
+# A trava so vale se souber classificar. Estes tres provam que ela dispara com
+# a mensagem certa em cada caso -- sem eles, ela seria uma string bonita que
+# ninguem nunca viu.
+
+
+def test_diagnostico_de_mudanca_de_regra():
+    velho = {"rules_version": RULES_VERSION - 1, "schema_version": SCHEMA_VERSION}
+    mensagem = _diagnostico("duelo", velho)
+    assert "REGRA" in mensagem
+    assert "qual regra mudou" in mensagem
+
+
+def test_diagnostico_de_mudanca_de_formato():
+    """Regras iguais, formato diferente: o caso comum da etapa 2."""
+    velho = {"rules_version": RULES_VERSION, "schema_version": SCHEMA_VERSION - 1}
+    mensagem = _diagnostico("duelo", velho)
+    assert "FORMATO" in mensagem
+    assert "nao invente" in mensagem
+    assert "REGRA" not in mensagem
+
+
+def test_diagnostico_de_regressao_pura():
+    """Nada de versao mudou e o log divergiu: ate prova em contrario, e bug."""
+    igual = {"rules_version": RULES_VERSION, "schema_version": SCHEMA_VERSION}
+    mensagem = _diagnostico("duelo", igual)
+    assert "regressao" in mensagem
+
+
+def test_regra_e_formato_juntos_reportam_regra():
+    """Quando os dois mudam, o que importa e a regra: mudanca de resultado e a
+    mais grave, e quem le precisa ver isso primeiro."""
+    velho = {"rules_version": RULES_VERSION - 1, "schema_version": SCHEMA_VERSION - 1}
+    assert "REGRA" in _diagnostico("duelo", velho)
+
+
+def test_a_mensagem_chega_em_quem_roda_o_teste(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """O diagnostico so serve se vier junto do assert que falha.
+
+    Com um golden de mentira num diretorio temporario: o `_diagnostico` le o
+    ESPERADO, que e o arquivo em disco, e nao o atual -- foi assim que a
+    primeira versao deste teste falhou, adulterando o lado errado.
+    """
+    monkeypatch.setattr("tests.golden.test_encounters.DADOS", tmp_path)
+
+    antigo = envelope_de(1, "resumo_de_antigamente", ())
+    antigo["schema_version"] = SCHEMA_VERSION - 1
+    (tmp_path / "falso.json").write_text(json.dumps(antigo), encoding="utf-8")
+
+    with pytest.raises(AssertionError, match="mudanca de FORMATO"):
+        gravar_ou_comparar("falso", envelope_de(1, "resumo_de_agora", ()), update_golden=False)
+
+
+def test_a_flag_de_regravacao_vem_do_conftest_da_raiz(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, update_golden: bool
+):
+    """A fixture existe aqui, e e a mesma que `tests/render/` vai usar.
+
+    Se `pytest_addoption` voltar para `tests/golden/conftest.py`, este teste
+    continua passando -- mas o de `tests/render/` para de coletar. A trava de
+    verdade e aquele; este so documenta de onde a fixture vem.
+    """
+    monkeypatch.setattr("tests.golden.test_encounters.DADOS", tmp_path)
+    assert isinstance(update_golden, bool)
+
+    with pytest.raises(pytest.skip.Exception, match="regravado"):
+        gravar_ou_comparar("novo", envelope_de(1, "x", ()), update_golden=True)
+    assert (tmp_path / "novo.json").is_file()
