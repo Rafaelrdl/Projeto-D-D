@@ -14,8 +14,8 @@ from tacticore.core.ids import CreatureId, StatblockId
 from tacticore.core.model import Combatant, HitPoints, Position
 from tacticore.core.queries import (
     combatant_of,
-    is_standing,
-    standing_teams,
+    conscious_teams,
+    is_conscious,
     statblock_of,
 )
 from tacticore.core.testing import make_combatant, make_statblock, make_state
@@ -23,7 +23,7 @@ from tacticore.core.testing import make_combatant, make_statblock, make_state
 
 @pytest.mark.parametrize(("atual", "de_pe"), [(10, True), (1, True), (0, False)])
 def test_de_pe_e_ter_vida(atual: int, de_pe: bool):
-    assert is_standing(make_combatant(hp=atual)) is de_pe
+    assert is_conscious(make_combatant(hp=atual)) is de_pe
 
 
 def test_combatente_por_id():
@@ -79,7 +79,7 @@ def test_times_de_pe():
             make_combatant(id="b", team="viloes"),
         )
     )
-    assert standing_teams(estado) == ("herois", "viloes")
+    assert conscious_teams(estado) == ("herois", "viloes")
 
 
 def test_time_inteiro_caido_sai_da_lista():
@@ -89,7 +89,7 @@ def test_time_inteiro_caido_sai_da_lista():
             make_combatant(id="b", team="viloes", hp=0),
         )
     )
-    assert standing_teams(estado) == ("herois",)
+    assert conscious_teams(estado) == ("herois",)
 
 
 def test_todo_mundo_caido_nao_deixa_time_nenhum():
@@ -99,7 +99,7 @@ def test_todo_mundo_caido_nao_deixa_time_nenhum():
             make_combatant(id="b", team="viloes", hp=0),
         )
     )
-    assert standing_teams(estado) == ()
+    assert conscious_teams(estado) == ()
 
 
 def test_times_saem_em_ordem_alfabetica():
@@ -112,4 +112,4 @@ def test_times_saem_em_ordem_alfabetica():
             make_combatant(id="c", team="mike"),
         )
     )
-    assert standing_teams(estado) == ("alfa", "mike", "zulu")
+    assert conscious_teams(estado) == ("alfa", "mike", "zulu")

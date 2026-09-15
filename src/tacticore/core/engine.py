@@ -45,9 +45,9 @@ from tacticore.core.model import (
 from tacticore.core.queries import (
     attack_of,
     combatant_of,
+    conscious_teams,
     derive_advantage_sources,
-    is_standing,
-    standing_teams,
+    is_conscious,
     statblock_of,
 )
 from tacticore.core.results import ActionResult, Applied, Rejected
@@ -339,7 +339,7 @@ def _validar_contexto(state: CombatState, action: Action) -> Rejected | Combatan
             RejectionReason.NOT_YOUR_TURN,
             f"o turno e de {state.turn_order.current!r}, nao de {ator.id!r}",
         )
-    if not is_standing(ator):
+    if not is_conscious(ator):
         return _rejeitar(state, RejectionReason.ACTOR_IS_DOWN, f"{ator.id!r} esta caido")
 
     return ator
@@ -400,7 +400,7 @@ def advance_turn(state: CombatState) -> tuple[CombatState, tuple[Event, ...]]:
             eventos.append(RoundStarted(round_number=rodada))
 
         candidato = atual.combatants[ordem[indice]]
-        if not is_standing(candidato):
+        if not is_conscious(candidato):
             eventos.append(TurnSkipped(creature=candidato.id, reason=SkipReason.ACTOR_IS_DOWN))
             continue
 
@@ -508,7 +508,7 @@ def _atacar(state: CombatState, action: AttackAction) -> Applied:
     conta = attack_math(perfil, ficha_ator.abilities, ficha_ator.proficiency_bonus)
     checagem = d20_check(rolagem, bonus=conta.attack, dc=ficha_alvo.armor_class)
     desfecho = classify_attack(checagem)
-    alvo_estava_caido = not is_standing(alvo)
+    alvo_estava_caido = not is_conscious(alvo)
 
     eventos: list[Event] = [
         AttackRolled(
@@ -587,7 +587,7 @@ def combat_result(state: CombatState) -> CombatOutcome | None:
     esquecer do campo. Derivar custa uma varredura de combatentes e resolve as
     duas coisas de uma vez.
     """
-    de_pe = standing_teams(state)
+    de_pe = conscious_teams(state)
     if len(de_pe) >= MINIMO_DE_TIMES:
         return None
     return CombatOutcome(
@@ -616,14 +616,14 @@ def legal_actions(state: CombatState) -> tuple[Action, ...]:
         return ()
 
     ator = state.combatants[state.turn_order.current]
-    if not is_standing(ator):
+    if not is_conscious(ator):
         return ()
 
     acoes: list[Action] = []
 
     if ator.budget.action_available:
         inimigos = sorted(
-            (c for c in state.combatants.values() if c.team != ator.team and is_standing(c)),
+            (c for c in state.combatants.values() if c.team != ator.team and is_conscious(c)),
             key=lambda c: str(c.id),
         )
         # So o que esta ao alcance. E aqui que a ordem do menu deixa de ser
@@ -669,7 +669,7 @@ def _casa_canonica(state: CombatState, ator: Combatant) -> Position | None:
     # a pre-condicao quebrar, o `min` abaixo estoura no lugar exato do erro, que
     # e o que se quer de uma invariante violada.
     inimigos = [
-        c.position for c in state.combatants.values() if c.team != ator.team and is_standing(c)
+        c.position for c in state.combatants.values() if c.team != ator.team and is_conscious(c)
     ]
 
     def chave(casa: Position) -> tuple[int, int, int, int]:

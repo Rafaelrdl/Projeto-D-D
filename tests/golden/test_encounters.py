@@ -21,7 +21,7 @@ from tacticore.core.actions import Action, AttackAction, EndTurnAction
 from tacticore.core.engine import Participant, apply, combat_result, start_combat
 from tacticore.core.events import Event
 from tacticore.core.ids import AttackId
-from tacticore.core.queries import is_standing, statblock_of
+from tacticore.core.queries import is_conscious, statblock_of
 from tacticore.core.results import Applied
 from tacticore.core.rng import ALGORITHM, SplitMix64
 from tacticore.core.serde import (
@@ -186,7 +186,7 @@ def rodar_com_vantagem(seed: int) -> tuple[str, tuple[Event, ...]]:
 
         ator = estado.combatants[estado.turn_order.current]
         inimigos = sorted(
-            (c.id for c in estado.combatants.values() if c.team != ator.team and is_standing(c)),
+            (c.id for c in estado.combatants.values() if c.team != ator.team and is_conscious(c)),
             key=str,
         )
 
@@ -236,7 +236,7 @@ def rodar_com_tiro_colado(seed: int) -> tuple[str, tuple[Event, ...]]:
 
         ator = estado.combatants[estado.turn_order.current]
         inimigos = sorted(
-            (c.id for c in estado.combatants.values() if c.team != ator.team and is_standing(c)),
+            (c.id for c in estado.combatants.values() if c.team != ator.team and is_conscious(c)),
             key=str,
         )
 

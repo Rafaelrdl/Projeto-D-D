@@ -24,8 +24,26 @@ FONTE_INIMIGO_ADJACENTE = "inimigo adjacente"
 afirma sobre ele e a narrativa o exibe -- dois lugares e um so dono."""
 
 
-def is_standing(combatant: Combatant) -> bool:
-    """Se ainda esta de pe. Cair e chegar a zero."""
+def is_conscious(combatant: Combatant) -> bool:
+    """Se ainda esta consciente. Chegar a zero apaga.
+
+    O nome mudou de `is_standing` na fatia 3, e a mudanca e so de nome: o corpo
+    e o mesmo. "Estar de pe" passou a ser outra coisa com a condicao Caido --
+    na SRD, *prone* independe de vida, e um caido esta de pe zero por cento do
+    tempo e vivo o tempo todo.
+
+    E `is_conscious` e nao `is_alive` porque `hp.current > 0` e consciencia, nao
+    vida: a distincao entre morto e inconsciente esta registrada como desvio em
+    `docs/srd-atribuicao.md` e vai entrar um dia. Queimar `is_alive` agora
+    tiraria o nome de quem vai precisar dele.
+
+    **Nao foi partida em tres.** `is_valid_target` nao teria chamador --
+    `engine._validar_ataque` confere orcamento, auto-alvo, alvo inexistente,
+    ataque inexistente e alcance, e nunca consulta quem caiu, o que e assimetria
+    declarada de proposito na docstring de `legal_actions`. E `can_act` nasceria
+    com este mesmo corpo e assim continuaria depois da fatia inteira, porque
+    Caido nao incapacita. `can_act` nasce com a primeira condicao que incapacite.
+    """
     return combatant.hp.current > 0
 
 
@@ -53,14 +71,14 @@ def statblock_of(state: CombatState, creature: CreatureId) -> Statblock:
     return statblock
 
 
-def standing_teams(state: CombatState) -> tuple[str, ...]:
-    """Os times que ainda tem alguem de pe, em ordem alfabetica.
+def conscious_teams(state: CombatState) -> tuple[str, ...]:
+    """Os times que ainda tem alguem consciente, em ordem alfabetica.
 
     Tupla ordenada e nao `set`: o resultado alimenta a decisao de fim de
     combate, e um conjunto obrigaria quem consome a escolher um elemento de uma
     colecao cuja ordem de iteracao varia com `PYTHONHASHSEED`.
     """
-    return tuple(sorted({c.team for c in state.combatants.values() if is_standing(c)}))
+    return tuple(sorted({c.team for c in state.combatants.values() if is_conscious(c)}))
 
 
 def attack_of(statblock: Statblock, attack: AttackId) -> AttackProfile | None:
@@ -101,7 +119,7 @@ def derive_advantage_sources(
 
     ator = state.combatants[action.actor]
     colado = any(
-        c.team != ator.team and is_standing(c) and is_adjacent(ator.position, c.position)
+        c.team != ator.team and is_conscious(c) and is_adjacent(ator.position, c.position)
         for c in state.combatants.values()
     )
     return ((), (FONTE_INIMIGO_ADJACENTE,)) if colado else ((), ())
