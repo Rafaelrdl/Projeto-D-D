@@ -1,6 +1,7 @@
 # Golden de apresentação
 
-`duelo.txt` é o combate da seed padrão narrado em texto.
+`duelo.txt` é o combate da seed padrão narrado em texto, e `tabuleiro.txt` é o
+mesmo combate retratado na abertura e no fim.
 
 **Este golden se regrava sem cerimônia.** Ele é de apresentação: um diff aqui é
 quase sempre "mudei a redação de uma linha", e não há nada a justificar.

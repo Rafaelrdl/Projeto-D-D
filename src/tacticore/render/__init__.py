@@ -11,6 +11,7 @@ consulta relogio. Quem escreve na tela e `tacticore.__main__`, e so ele.
 
 from __future__ import annotations
 
+from tacticore.render.board import board
 from tacticore.render.text import narrate, narrate_event
 
-__all__ = ("narrate", "narrate_event")
+__all__ = ("board", "narrate", "narrate_event")

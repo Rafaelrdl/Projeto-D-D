@@ -1,0 +1,17 @@
+== abertura ==
+   -1  0  1  2  3  4  5
+-1  .  .  .  .  .  .  .
+ 0  .  2  .  .  .  1  .
+ 1  .  .  .  .  .  .  .
+
+1 lamina  viloes  11/11 hp
+2 bruto   herois  14/14 hp
+
+== fim ==
+   -1  0  1  2
+-1  .  .  .  .
+ 0  .  x  1  .
+ 1  .  .  .  .
+
+1 lamina  viloes  11/11 hp
+x bruto   herois  0/14 hp
