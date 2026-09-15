@@ -10,6 +10,7 @@ Cada enum entra junto com a mecanica que a consome, e nao antes.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from enum import StrEnum
 
 
@@ -88,3 +89,41 @@ class SkipReason(StrEnum):
     """
 
     ACTOR_IS_DOWN = "ACTOR_IS_DOWN"
+
+
+class Condition(StrEnum):
+    """Condicoes que um combatente pode carregar.
+
+    Nasce com **um** membro, como manda o docstring no topo deste modulo: cada
+    enum entra junto com a mecanica que o consome. Cego, Envenenado e o resto da
+    lista da SRD entram quando houver uma fonte que os produza -- hoje as fontes
+    deles sao magia, salvaguarda e iluminacao, e as tres estao fora de escopo
+    por decisao escrita.
+
+    E `StrEnum` puro e nao dataclass: um `ActiveCondition` com `source` e
+    `duracao` teria `source` constante (a unica fonte e o encontro) e duracao
+    fora de escopo -- dois campos inertes, mais um codec, mais uma entrada no
+    guardiao. Quando duracao entrar, o enum vira dataclass num commit proprio.
+    """
+
+    CAIDO = "CAIDO"
+
+
+def canonical_conditions(conditions: Iterable[Condition]) -> tuple[Condition, ...]:
+    """Ordena pelo valor e tira repeticao.
+
+    Existe porque `Combatant.conditions` e uma tupla, e tupla aceita ordem
+    arbitraria e repeticao -- duas coisas que mudam o `fingerprint` sem mudar o
+    estado logico, ja que `canonical_json` ordena chaves de objeto e **nao**
+    itens de lista. Toda escrita no campo passa por aqui; a invariante de carga
+    confere que passou.
+
+    Pelo **valor** da string e nao pela ordem de declaracao do enum: declarar um
+    membro novo no meio re-canonizaria todo save existente sem salto de schema.
+
+    Mora aqui, e nao em `rules`, pelo mesmo motivo que `PES_POR_CASA` mora em
+    `model`: e propriedade do vocabulario e nao regra de jogo, e `serde` precisa
+    dela tanto quanto quem escreve o campo. Presa em `rules`, o guardiao de
+    camadas reprovaria `serde` -- e foi ele que apontou, de novo.
+    """
+    return tuple(sorted(set(conditions), key=str))

@@ -128,18 +128,37 @@ def test_a_migracao_so_acrescenta_os_campos_que_faltavam():
     assert depois["turn_order"] == antes["turn_order"]
     assert depois["rng"] == antes["rng"]
 
+    ACRESCENTADOS_NO_COMBATENTE = {"position", "conditions"}
+    ACRESCENTADOS_NO_ATAQUE = {"range_ft", "long_range_ft"}
+
     for chave, combatente in depois["combatants"].items():  # type: ignore[union-attr]
         original = antes["combatants"][chave]  # type: ignore[index]
-        sem_posicao = {k: v for k, v in combatente.items() if k != "position"}
-        assert sem_posicao == original
+        antigos = {k: v for k, v in combatente.items() if k not in ACRESCENTADOS_NO_COMBATENTE}
+        assert antigos == original
 
     for chave, ficha in depois["statblocks"].items():  # type: ignore[union-attr]
         original = antes["statblocks"][chave]  # type: ignore[index]
         sem_ataques = {k: v for k, v in ficha.items() if k != "attacks"}
         assert sem_ataques == {k: v for k, v in original.items() if k != "attacks"}
         for ataque, antigo in zip(ficha["attacks"], original["attacks"], strict=True):
-            sem_alcance = {k: v for k, v in ataque.items() if k != "range_ft"}
-            assert sem_alcance == antigo
+            antigos = {k: v for k, v in ataque.items() if k not in ACRESCENTADOS_NO_ATAQUE}
+            assert antigos == antigo
+
+
+def test_a_migracao_de_condicao_nao_inventa_nada():
+    """Lista vazia e a unica resposta possivel: o save v3 descreve um mundo onde
+    condicao nao existia. E a unica migracao da cadeia que nao se desculpa."""
+    estado = load(envelope_v1())
+    assert all(c.conditions == () for c in estado.combatants.values())
+
+
+def test_a_migracao_de_alcance_longo_preserva_o_comportamento_de_v3():
+    """Longo igual ao curto quer dizer "sem longe": o ataque continua sendo
+    recusado exatamente onde era antes."""
+    estado = load(envelope_v1())
+    for ficha in estado.statblocks.values():
+        for perfil in ficha.attacks:
+            assert perfil.long_range_ft == perfil.range_ft
 
 
 def test_a_migracao_de_alcance_assume_corpo_a_corpo():

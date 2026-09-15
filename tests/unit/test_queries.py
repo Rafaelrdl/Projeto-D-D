@@ -65,6 +65,7 @@ def test_combatente_apontando_para_ficha_inexistente_e_bug_do_motor():
                 hp=HitPoints(current=1, maximum=1),
                 budget=make_combatant().budget,
                 position=Position(x=0, y=0),
+                conditions=(),
             ),
         ),
     )

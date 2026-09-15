@@ -25,6 +25,7 @@ from tacticore.core.enums import (
     Ability,
     AdvantageState,
     AttackOutcome,
+    Condition,
     SkipReason,
 )
 from tacticore.core.events import (
@@ -125,7 +126,9 @@ CODECS: Mapping[
     AttackProfile: (  # type: ignore[dict-item]
         serde.dump_attack_profile,
         lambda raw: serde.load_attack_profile(raw, "t"),
-        make_attack(id="cimitarra", proficient=False, damage="1d6-1", range_ft=20),
+        make_attack(
+            id="cimitarra", proficient=False, damage="1d6-1", range_ft=20, long_range_ft=60
+        ),
     ),
     Statblock: (  # type: ignore[dict-item]
         serde.dump_statblock,
@@ -140,7 +143,7 @@ CODECS: Mapping[
     Combatant: (  # type: ignore[dict-item]
         serde.dump_combatant,
         lambda raw: serde.load_combatant(raw, "t"),
-        make_combatant(id="goblin_1", team="inimigos", hp=3),
+        make_combatant(id="goblin_1", team="inimigos", hp=3, conditions=(Condition.CAIDO,)),
     ),
     TurnOrder: (  # type: ignore[dict-item]
         serde.dump_turn_order,

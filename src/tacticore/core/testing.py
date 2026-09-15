@@ -26,7 +26,7 @@ from tacticore.core.engine import (
     combat_result,
     legal_actions,
 )
-from tacticore.core.enums import Ability
+from tacticore.core.enums import Ability, Condition, canonical_conditions
 from tacticore.core.errors import CorruptStateError
 from tacticore.core.events import (
     AttackRolled,
@@ -89,6 +89,7 @@ def make_attack(
     proficient: bool = True,
     damage: str | DamageExpr = "1d6",
     range_ft: int = 5,
+    long_range_ft: int | None = None,
 ) -> AttackProfile:
     """Aceita a notacao em string por conveniencia de quem escreve o teste."""
     return AttackProfile(
@@ -98,6 +99,9 @@ def make_attack(
         proficient=proficient,
         damage=parse_dice(damage) if isinstance(damage, str) else damage,
         range_ft=range_ft,
+        # Sem alcance longo proprio, a arma nao tem "longe": e o que vale
+        # para toda arma corpo a corpo.
+        long_range_ft=range_ft if long_range_ft is None else long_range_ft,
     )
 
 
@@ -139,6 +143,7 @@ def make_combatant(
     hp: int | HitPoints | None = None,
     max_hp: int = 10,
     budget: TurnBudget | None = None,
+    conditions: Iterable[Condition] = (),
 ) -> Combatant:
     """`hp` aceita um int para o caso comum de "quero este com 1 de vida".
 
@@ -161,6 +166,7 @@ def make_combatant(
         budget=make_budget() if budget is None else budget,
         # A origem e provisoria: `make_state` reposiciona.
         position=Position(x=0, y=0),
+        conditions=canonical_conditions(conditions),
     )
 
 
@@ -223,6 +229,7 @@ def make_participant(
     statblock_id: str = "ficha",
     team: str = "herois",
     position: Position | tuple[int, int] = (0, 0),
+    conditions: Iterable[Condition] = (),
 ) -> Participant:
     casa = Position(x=position[0], y=position[1]) if isinstance(position, tuple) else position
     return Participant(
@@ -230,6 +237,7 @@ def make_participant(
         statblock_id=StatblockId(statblock_id),
         team=team,
         position=casa,
+        conditions=canonical_conditions(conditions),
     )
 
 

@@ -50,6 +50,7 @@ BRUTAMONTES: Final = Statblock(
             proficient=True,
             damage=parse_dice("1d12+1"),
             range_ft=5,
+            long_range_ft=5,
         ),
     ),
 )
@@ -80,6 +81,7 @@ DUELISTA: Final = Statblock(
             proficient=True,
             damage=parse_dice("1d8+1d4"),
             range_ft=5,
+            long_range_ft=5,
         ),
         AttackProfile(
             id=AttackId("adaga"),
@@ -89,7 +91,9 @@ DUELISTA: Final = Statblock(
             ability=Ability.DES,
             proficient=True,
             damage=parse_dice("1d4"),
+            # 20/60 e o alcance da adaga de arremesso na SRD.
             range_ft=20,
+            long_range_ft=60,
         ),
     ),
 )

@@ -8,7 +8,7 @@ mentirem ao mesmo tempo, entao ele tambem tem teste.
 from __future__ import annotations
 
 from tacticore.core.dice import DiceTerm, parse_dice
-from tacticore.core.enums import Ability
+from tacticore.core.enums import Ability, Condition
 from tacticore.core.model import HitPoints
 from tacticore.core.rng import ScriptedRng, SplitMix64
 from tacticore.core.testing import (
@@ -120,3 +120,22 @@ def test_rodada_padrao_e_um():
 def test_estados_iguais_comparam_iguais():
     """Igualdade estrutural e o que sustenta os testes de determinismo."""
     assert make_state() == make_state()
+
+
+def test_condicoes_saem_em_ordem_canonica():
+    """Toda escrita no campo passa por `canonical_conditions`; a invariante de
+    carga confere que passou."""
+    c = make_combatant(conditions=(Condition.CAIDO, Condition.CAIDO))
+    assert c.conditions == (Condition.CAIDO,)
+
+
+def test_combatente_nasce_sem_condicao():
+    assert make_combatant().conditions == ()
+
+
+def test_arma_sem_alcance_longo_proprio_nao_tem_longe():
+    assert make_attack(range_ft=20).long_range_ft == 20
+
+
+def test_alcance_longo_informado_passa_direto():
+    assert make_attack(range_ft=20, long_range_ft=60).long_range_ft == 60

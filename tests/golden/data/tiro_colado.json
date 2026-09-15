@@ -415,9 +415,9 @@
       }
     }
   ],
-  "final_fingerprint": "d7e73f6e2f821942e13c0633c035a1d71a079cdf7e272e46bc163646291b7fe3",
+  "final_fingerprint": "02aa8595356b926a01322fa257aa72548fa26c8324c5fe13de75dbc316a3c561",
   "rng_algo": "splitmix64-lemire/1",
   "rules_version": 4,
-  "schema_version": 3,
+  "schema_version": 4,
   "seed": "5"
 }

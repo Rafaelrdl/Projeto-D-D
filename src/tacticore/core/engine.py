@@ -13,7 +13,14 @@ from typing import assert_never
 
 from tacticore.core.actions import Action, AttackAction, EndTurnAction, MoveAction
 from tacticore.core.dice import roll_damage
-from tacticore.core.enums import Ability, AttackOutcome, RejectionReason, SkipReason
+from tacticore.core.enums import (
+    Ability,
+    AttackOutcome,
+    Condition,
+    RejectionReason,
+    SkipReason,
+    canonical_conditions,
+)
 from tacticore.core.errors import CorruptStateError, InvalidEncounterError
 from tacticore.core.events import (
     AttackRolled,
@@ -88,6 +95,20 @@ class Participant:
     position: Position
     """Onde ele comeca. Quem monta o encontro escolhe -- posicao inicial e
     conteudo, nao regra, e o motor nao tem opiniao sobre formacao."""
+
+    conditions: tuple[Condition, ...] = ()
+    """Com o que ele ja entra em combate.
+
+    **A unica fonte de condicao neste motor**, e isso e uma limitacao honesta e
+    nao um desenho: na SRD, Caido vem de Empurrar e Cego vem de magia, e as duas
+    estao fora de escopo -- Empurrar precisa de teste de atributo oposto, que
+    consumiria RNG fora de ataque pela primeira vez e por isso tem que entrar
+    sozinho (ADR 0002). A fonte chega na etapa 3; o que esta fatia entrega e o
+    resto: ler a condicao, aplicar o efeito, serializar e REMOVER.
+
+    Tem default `()` e os campos de `Combatant` nao tem. A assimetria e
+    deliberada: `Participant` nunca e serializada, entao a armadilha de "default
+    nao faz save antigo carregar" nao existe aqui."""
 
 
 def _validar_encontro(
@@ -213,6 +234,7 @@ def start_combat(
             hp=HitPoints(current=ficha.max_hp, maximum=ficha.max_hp),
             budget=_orcamento_inicial(ficha),
             position=por_id[cid].position,
+            conditions=canonical_conditions(por_id[cid].conditions),
         )
 
     state = CombatState(

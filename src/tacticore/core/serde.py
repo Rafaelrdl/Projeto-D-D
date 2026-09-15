@@ -36,7 +36,7 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Final, assert_never
 
 from tacticore.core.dice import DamageExpr, DamageRoll, DiceTerm, DieRoll
-from tacticore.core.enums import Ability
+from tacticore.core.enums import Ability, Condition, canonical_conditions
 from tacticore.core.errors import InvalidSaveError, UnsupportedSchemaVersion
 from tacticore.core.events import (
     AttackRolled,
@@ -71,10 +71,10 @@ from tacticore.core.rng import ALGORITHM, RngState, ScriptedRng, SplitMix64
 
 type JsonValue = str | int | bool | list[JsonValue] | dict[str, JsonValue] | None
 
-SCHEMA_VERSION: Final[int] = 3
+SCHEMA_VERSION: Final[int] = 4
 """Muda quando o FORMATO muda: campo novo, campo removido, campo renomeado."""
 
-SCHEMA_VERSIONS_ACEITAS: Final[tuple[int, ...]] = (1, 2, 3)
+SCHEMA_VERSIONS_ACEITAS: Final[tuple[int, ...]] = (1, 2, 3, 4)
 """Os formatos que este motor sabe abrir, do mais antigo ao atual.
 
 Uma versao so entra aqui junto com a funcao de migracao que a traz ate a atual.
@@ -309,6 +309,7 @@ def dump_attack_profile(profile: AttackProfile) -> dict[str, JsonValue]:
         "proficient": profile.proficient,
         "damage": dump_damage_expr(profile.damage),
         "range_ft": profile.range_ft,
+        "long_range_ft": profile.long_range_ft,
     }
 
 
@@ -327,6 +328,7 @@ def load_attack_profile(raw: Mapping[str, JsonValue], caminho: str) -> AttackPro
         proficient=_booleano(raw, "proficient", caminho),
         damage=load_damage_expr(_objeto(raw, "damage", caminho), f"{caminho}.damage"),
         range_ft=_inteiro(raw, "range_ft", caminho),
+        long_range_ft=_inteiro(raw, "long_range_ft", caminho),
     )
 
 
@@ -373,6 +375,22 @@ def load_turn_budget(raw: Mapping[str, JsonValue], caminho: str) -> TurnBudget:
     )
 
 
+def _condicoes(raw: Mapping[str, JsonValue], caminho: str) -> tuple[Condition, ...]:
+    lidas: list[Condition] = []
+    for indice, item in enumerate(_lista(raw, "conditions", caminho)):
+        if not isinstance(item, str):
+            msg = f"{caminho}.conditions[{indice}]: esperava texto"
+            raise InvalidSaveError(msg)
+        try:
+            lidas.append(Condition(item))
+        except ValueError as erro:
+            msg = f"{caminho}.conditions[{indice}]: condicao desconhecida {item!r}"
+            raise InvalidSaveError(msg) from erro
+    # Sem normalizar: a ordem e a ausencia de repeticao sao INVARIANTES, e
+    # consertar em silencio aqui faria `check_invariants` nunca ver o problema.
+    return tuple(lidas)
+
+
 def dump_combatant(c: Combatant) -> dict[str, JsonValue]:
     return {
         "id": str(c.id),
@@ -381,6 +399,7 @@ def dump_combatant(c: Combatant) -> dict[str, JsonValue]:
         "hp": dump_hit_points(c.hp),
         "budget": dump_turn_budget(c.budget),
         "position": dump_position(c.position),
+        "conditions": [c.value for c in c.conditions],
     }
 
 
@@ -392,6 +411,7 @@ def load_combatant(raw: Mapping[str, JsonValue], caminho: str) -> Combatant:
         hp=load_hit_points(_objeto(raw, "hp", caminho), f"{caminho}.hp"),
         budget=load_turn_budget(_objeto(raw, "budget", caminho), f"{caminho}.budget"),
         position=load_position(_objeto(raw, "position", caminho), f"{caminho}.position"),
+        conditions=_condicoes(raw, caminho),
     )
 
 
@@ -506,9 +526,42 @@ def _migrar_v2_para_v3(estado: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
     return {**estado, "statblocks": migradas}
 
 
+def _migrar_v3_para_v4(estado: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
+    """v3 nao tinha condicao nem alcance longo.
+
+    Ninguem nasce com condicao: a lista vazia e a unica resposta possivel, e ela
+    nao e escolha -- o save v3 descreve um mundo onde condicao nao existia.
+
+    Alcance longo vira igual ao curto, que preserva EXATAMENTE o comportamento
+    de v3: sem "longe", o ataque e recusado alem do alcance curto, como era. E a
+    unica migracao da cadeia que nao precisa se desculpar por inventar nada.
+    """
+    lutadores = _objeto(estado, "combatants", "v3.state")
+    migrados: dict[str, JsonValue] = {
+        chave: {**_sub(bruto, f"v3.combatants[{chave!r}]"), "conditions": []}
+        for chave, bruto in lutadores.items()
+    }
+
+    fichas = _objeto(estado, "statblocks", "v3.state")
+    com_alcance: dict[str, JsonValue] = {}
+    for chave, bruto in fichas.items():
+        ficha = dict(_sub(bruto, f"v3.statblocks[{chave!r}]"))
+        ataques = _lista(ficha, "attacks", f"v3.statblocks[{chave!r}]")
+        novos: list[JsonValue] = []
+        for i, a in enumerate(ataques):
+            ataque = dict(_sub(a, f"v3.statblocks[{chave!r}].attacks[{i}]"))
+            ataque["long_range_ft"] = ataque["range_ft"]
+            novos.append(ataque)
+        ficha["attacks"] = novos
+        com_alcance[chave] = ficha
+
+    return {**estado, "combatants": migrados, "statblocks": com_alcance}
+
+
 _MIGRACOES: Final[Mapping[int, Callable[[Mapping[str, JsonValue]], dict[str, JsonValue]]]] = {
     1: _migrar_v1_para_v2,
     2: _migrar_v2_para_v3,
+    3: _migrar_v3_para_v4,
 }
 """Uma funcao por salto, indexada pela versao de ORIGEM.
 
@@ -580,6 +633,11 @@ def check_invariants(state: CombatState) -> tuple[str, ...]:
             problemas.append(f"{cid!r} tem hp {c.hp.current} fora de 0..{c.hp.maximum}")
         if c.budget.movement_remaining_ft < 0:
             problemas.append(f"{cid!r} tem movimento negativo")
+        if tuple(c.conditions) != canonical_conditions(c.conditions):
+            problemas.append(
+                f"{cid!r} tem condicoes fora da ordem canonica ou repetidas: "
+                f"{[x.value for x in c.conditions]}"
+            )
 
     casas: dict[tuple[int, int], list[str]] = {}
     for cid, c in state.combatants.items():
@@ -596,6 +654,11 @@ def check_invariants(state: CombatState) -> tuple[str, ...]:
                 problemas.append(
                     f"o ataque {perfil.id!r} de {sid!r} alcanca {perfil.range_ft} pes; "
                     f"o minimo e {PES_POR_CASA}"
+                )
+            if perfil.long_range_ft < perfil.range_ft:
+                problemas.append(
+                    f"o ataque {perfil.id!r} de {sid!r} tem alcance longo "
+                    f"{perfil.long_range_ft} menor que o curto {perfil.range_ft}"
                 )
 
     ordem = state.turn_order.order

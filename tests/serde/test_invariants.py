@@ -169,3 +169,52 @@ def test_alcance_de_uma_casa_e_o_minimo_valido():
     env = envelope_valido()
     env["state"]["statblocks"]["goblin"]["attacks"][0]["range_ft"] = 5
     assert load(env) is not None
+
+
+# ------------------------------------------------- condicoes e alcance -----
+
+
+def test_condicao_repetida_e_recusada():
+    """Tupla aceita repeticao; o estado logico nao. Duas copias de CAIDO mudam
+    o fingerprint sem mudar nada do que o motor calcula."""
+    env = envelope_valido()
+    env["state"]["combatants"]["goblin_1"]["conditions"] = ["CAIDO", "CAIDO"]
+    with pytest.raises(InvalidSaveError, match="fora da ordem canonica ou repetidas"):
+        load(env)
+
+
+def test_condicao_desconhecida_e_recusada():
+    env = envelope_valido()
+    env["state"]["combatants"]["goblin_1"]["conditions"] = ["ENFEITICADO"]
+    with pytest.raises(InvalidSaveError, match="condicao desconhecida"):
+        load(env)
+
+
+def test_condicao_com_tipo_errado_e_recusada():
+    env = envelope_valido()
+    env["state"]["combatants"]["goblin_1"]["conditions"] = [7]
+    with pytest.raises(InvalidSaveError, match=r"conditions\[0\]: esperava texto"):
+        load(env)
+
+
+def test_lista_de_condicoes_vazia_e_valida():
+    env = envelope_valido()
+    env["state"]["combatants"]["goblin_1"]["conditions"] = []
+    assert load(env).combatants["goblin_1"].conditions == ()
+
+
+def test_alcance_longo_menor_que_o_curto_e_recusado():
+    """Longo e o limite de fora; menor que o curto nao descreve arma nenhuma."""
+    env = envelope_valido()
+    env["state"]["statblocks"]["goblin"]["attacks"][0]["long_range_ft"] = 1
+    with pytest.raises(InvalidSaveError, match="alcance longo 1 menor que o curto 5"):
+        load(env)
+
+
+def test_alcance_longo_igual_ao_curto_e_valido():
+    """E o que toda arma corpo a corpo tem: nao existe "longe" para quem bate
+    de perto."""
+    env = envelope_valido()
+    perfil = env["state"]["statblocks"]["goblin"]["attacks"][0]
+    perfil["range_ft"] = perfil["long_range_ft"] = 5
+    assert load(env) is not None

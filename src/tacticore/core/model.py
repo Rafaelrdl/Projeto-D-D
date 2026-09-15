@@ -30,7 +30,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from tacticore.core.dice import DamageExpr
-from tacticore.core.enums import Ability
+from tacticore.core.enums import Ability, Condition
 from tacticore.core.ids import AttackId, CreatureId, StatblockId
 from tacticore.core.rng import RngState
 
@@ -116,8 +116,20 @@ class AttackProfile:
     proficient: bool
     damage: DamageExpr
 
+    long_range_ft: int
+    """O alcance longo: ate onde o ataque ainda chega, com desvantagem.
+
+    Para arma corpo a corpo vale o mesmo que `range_ft` -- nao ha "longe" para
+    quem bate de perto -- e a invariante exige `long_range_ft >= range_ft`.
+
+    Este campo e uma divida que o proprio repositorio assinou em dois lugares:
+    o docstring de `range_ft`, logo abaixo, e a linha de `docs/srd-atribuicao.md`
+    que dizia que o alcance longo "chega no passo seguinte". O passo seguinte
+    levou uma fatia inteira para vir.
+    """
+
     range_ft: int
-    """Ate onde o ataque alcanca, em pes.
+    """O alcance curto: ate onde o ataque acerta sem penalidade.
 
     Sem default, pelo mesmo motivo que `Combatant.position`: um default aqui
     pareceria manter os saves v2 carregando e nao manteria. E `5` -- o alcance
@@ -125,9 +137,10 @@ class AttackProfile:
     default sem pensar, o que faria toda arma de arremesso nascer errada e em
     silencio.
 
-    A SRD tem alcance curto e longo para armas a distancia, com desvantagem no
-    longo. Aqui e um numero so; o segundo esta registrado em
-    `docs/srd-atribuicao.md`."""
+    Sem default, pelo mesmo motivo que `Combatant.position`, e com um agravante:
+    5 -- o alcance de uma arma corpo a corpo -- e exatamente o valor que alguem
+    escolheria como default sem pensar, e isso faria toda arma de arremesso
+    nascer errada e em silencio."""
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -186,6 +199,20 @@ class Combatant:
 
     hp: HitPoints
     budget: TurnBudget
+
+    conditions: tuple[Condition, ...]
+    """As condicoes que ele carrega, **em ordem canonica e sem repeticao**.
+
+    Tupla e nao `set` porque ordem de iteracao de conjunto varia com
+    `PYTHONHASHSEED`. Mas tupla aceita ordem arbitraria e repeticao, e as duas
+    coisas mudariam o `fingerprint` sem mudar o estado logico -- `canonical_json`
+    ordena chaves de objeto e **nao** itens de lista. Por isso a ordem canonica
+    (pelo valor da string) e a ausencia de repeticao sao invariantes conferidas
+    na carga, e nao convencao.
+
+    Pelo **valor** e nao pela ordem de declaracao do enum: declarar um membro
+    novo no meio re-canonizaria todo save existente sem salto de schema.
+    """
 
     position: Position
     """Sem default, e isso e uma escolha.
