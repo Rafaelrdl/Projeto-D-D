@@ -28,7 +28,15 @@ PACKAGE = "tacticore.core"
 POLITICAS: dict[str, str] = {
     "": "raiz do pacote: so metadado, nao importa nada de tacticore",
     "core": "motor de regras: stdlib puro e ele mesmo",
-    "render": "apresentacao: le o core e monta texto; puro, nao imprime",
+    "render": (
+        # A frase mudou quando `menu.escolha` entrou: ela nao monta texto,
+        # traduz entrada de humano em Action. Nenhum guardiao confere esta
+        # string -- `test_todo_pacote_tem_politica_declarada` so confere que
+        # a CHAVE existe -- entao ela so continua verdadeira se for reescrita
+        # no commit que a desmente.
+        "apresentacao e leitura da escolha: le o core, monta texto e traduz "
+        "entrada em Action; puro, nao imprime"
+    ),
     "content": "fichas e encontros: dado de jogo, puro, sem abrir arquivo",
 }
 
