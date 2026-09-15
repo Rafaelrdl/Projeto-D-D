@@ -66,8 +66,14 @@ class DiceTerm:
 
     Praticamente todo dano dobra, entao o default e `True`. O campo existe
     porque o primeiro dado bonus que **nao** dobra chega junto com magias, e
-    sem ele essa mecanica exigiria mudar o formato serializado. Com ele, e um
-    bool com default: campo novo, save antigo continua carregando.
+    sem ele essa mecanica exigiria mudar o formato serializado.
+
+    .. warning::
+       Este docstring terminava em "e um bool com default: campo novo, save
+       antigo continua carregando". **E falso**, e a etapa 3 provou medindo:
+       `serde._campo` levanta na chave ausente, com ou sem default. O que o
+       default poupa e o codigo que **constroi**; quem poupa o codigo que
+       **carrega** e funcao de migracao, e nao ha atalho.
     """
 
 

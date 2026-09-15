@@ -72,10 +72,10 @@ from tacticore.core.rng import ALGORITHM, RngState, ScriptedRng, SplitMix64
 
 type JsonValue = str | int | bool | list[JsonValue] | dict[str, JsonValue] | None
 
-SCHEMA_VERSION: Final[int] = 4
+SCHEMA_VERSION: Final[int] = 5
 """Muda quando o FORMATO muda: campo novo, campo removido, campo renomeado."""
 
-SCHEMA_VERSIONS_ACEITAS: Final[tuple[int, ...]] = (1, 2, 3, 4)
+SCHEMA_VERSIONS_ACEITAS: Final[tuple[int, ...]] = (1, 2, 3, 4, 5)
 """Os formatos que este motor sabe abrir, do mais antigo ao atual.
 
 Uma versao so entra aqui junto com a funcao de migracao que a traz ate a atual.
@@ -309,6 +309,7 @@ def dump_attack_profile(profile: AttackProfile) -> dict[str, JsonValue]:
         "ability": profile.ability.value,
         "proficient": profile.proficient,
         "damage": dump_damage_expr(profile.damage),
+        "adds_ability_to_damage": profile.adds_ability_to_damage,
         "range_ft": profile.range_ft,
         "long_range_ft": profile.long_range_ft,
     }
@@ -328,6 +329,7 @@ def load_attack_profile(raw: Mapping[str, JsonValue], caminho: str) -> AttackPro
         ability=ability,
         proficient=_booleano(raw, "proficient", caminho),
         damage=load_damage_expr(_objeto(raw, "damage", caminho), f"{caminho}.damage"),
+        adds_ability_to_damage=_booleano(raw, "adds_ability_to_damage", caminho),
         range_ft=_inteiro(raw, "range_ft", caminho),
         long_range_ft=_inteiro(raw, "long_range_ft", caminho),
     )
@@ -559,10 +561,41 @@ def _migrar_v3_para_v4(estado: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
     return {**estado, "combatants": migrados, "statblocks": com_alcance}
 
 
+def _migrar_v4_para_v5(estado: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
+    """v4 nao tinha a chave que diz se o atributo entra no dano.
+
+    `true` para todo ataque de toda ficha, e isso **nao e invencao**: ate v4 o
+    motor somava o modificador incondicionalmente, e toda ficha gravavel em v4
+    era ficha de arma -- onde somar e a regra certa da SRD. A migracao preserva
+    o comportamento EXATO, e e por isso que `RULES_VERSION` nao sobe com ela.
+
+    E a segunda da cadeia que nao precisa se desculpar por inventar nada, e a
+    simetrica da primeira: em v3->v4 a resposta era a lista vazia porque
+    condicao nao existia; aqui e `true` porque o comportamento existia e era
+    este.
+    """
+    fichas = _objeto(estado, "statblocks", "v4.state")
+    migradas: dict[str, JsonValue] = {}
+    for chave, bruto in fichas.items():
+        ficha = dict(_sub(bruto, f"v4.statblocks[{chave!r}]"))
+        ataques = _lista(ficha, "attacks", f"v4.statblocks[{chave!r}]")
+        ficha["attacks"] = [
+            {
+                **_sub(a, f"v4.statblocks[{chave!r}].attacks[{i}]"),
+                "adds_ability_to_damage": True,
+            }
+            for i, a in enumerate(ataques)
+        ]
+        migradas[chave] = ficha
+
+    return {**estado, "statblocks": migradas}
+
+
 _MIGRACOES: Final[Mapping[int, Callable[[Mapping[str, JsonValue]], dict[str, JsonValue]]]] = {
     1: _migrar_v1_para_v2,
     2: _migrar_v2_para_v3,
     3: _migrar_v3_para_v4,
+    4: _migrar_v4_para_v5,
 }
 """Uma funcao por salto, indexada pela versao de ORIGEM.
 

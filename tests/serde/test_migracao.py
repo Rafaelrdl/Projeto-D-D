@@ -23,6 +23,7 @@ from tacticore.core.errors import InvalidSaveError, UnsupportedSchemaVersion
 from tacticore.core.model import PES_POR_CASA, CombatState
 from tacticore.core.rng import ALGORITHM
 from tacticore.core.serde import (
+    _MIGRACOES,
     SCHEMA_VERSION,
     SCHEMA_VERSIONS_ACEITAS,
     check_invariants,
@@ -60,6 +61,21 @@ def estado_v2() -> CombatState:
 def test_o_motor_le_a_versao_atual_e_as_antigas():
     assert SCHEMA_VERSION in SCHEMA_VERSIONS_ACEITAS
     assert tuple(range(1, SCHEMA_VERSION + 1)) == SCHEMA_VERSIONS_ACEITAS
+
+
+def test_existe_uma_migracao_por_salto_ate_a_versao_atual():
+    """Um salto por versao de origem, de 1 ate SCHEMA_VERSION-1.
+
+    Sem esta trava, esquecer a entrada em `_MIGRACOES` da `KeyError: 4` cru em
+    doze testes -- e um deles e o rotulado "GARANTIA PERMANENTE, nunca
+    relaxada", que passaria a falhar com a mensagem mais errada possivel para o
+    modo de falha mais previsivel desta maquina. O guardiao nao cala os doze;
+    ele acrescenta o decimo terceiro, que e o unico que diz o que fazer.
+    """
+    assert set(_MIGRACOES) == set(range(1, SCHEMA_VERSION)), (
+        "falta (ou sobra) uma funcao de migracao. Versao nova de SCHEMA_VERSION "
+        "entra com a funcao do salto anterior, no mesmo commit."
+    )
 
 
 def test_versao_do_futuro_e_recusada():
@@ -129,7 +145,7 @@ def test_a_migracao_so_acrescenta_os_campos_que_faltavam():
     assert depois["rng"] == antes["rng"]
 
     ACRESCENTADOS_NO_COMBATENTE = {"position", "conditions"}
-    ACRESCENTADOS_NO_ATAQUE = {"range_ft", "long_range_ft"}
+    ACRESCENTADOS_NO_ATAQUE = {"range_ft", "long_range_ft", "adds_ability_to_damage"}
 
     for chave, combatente in depois["combatants"].items():  # type: ignore[union-attr]
         original = antes["combatants"][chave]  # type: ignore[index]

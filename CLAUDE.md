@@ -165,7 +165,9 @@ escrito qual regra ia consumi-lo.
   `serde._campo` levanta na chave ausente. Compatibilidade exige uma função de
   migração por salto em `_MIGRACOES`, e a versão nova em
   `SCHEMA_VERSIONS_ACEITAS`. Os saltos são aplicados **em cadeia**: o
-  `save_legado.json` está em v1 e hoje atravessa dois.
+  `save_legado.json` está em v1 e hoje atravessa **quatro**. Esse número é
+  `len(_MIGRACOES)`, e um teste passou a cobrá-lo na etapa 3: dizia "dois"
+  quando já eram três, e ninguém tinha reparado.
 - **`serde.RULES_VERSION` sobe quando o motor passa a calcular outro
   resultado**, e não só quando o stream se desloca. Uma subida por mudança de
   resultado — o contador é monotônico, não é escasso. O que não pode é fatiar
@@ -182,7 +184,8 @@ escrito qual regra ia consumi-lo.
 - **Toda regra da SRD que o motor simplifica ganha uma linha em
   `docs/srd-atribuicao.md` no mesmo commit.** Nenhum guardião cobra isso. A
   tabela ficou vazia a etapa 1 inteira, e quando foi preenchida tinha onze
-  desvios que ninguém tinha anotado. Hoje são dezoito.
+  desvios que ninguém tinha anotado. Hoje são dezenove, mais uma linha que já
+  virou "implementado" (alcance longo) e ficou como registro.
 
 ## Etapas
 

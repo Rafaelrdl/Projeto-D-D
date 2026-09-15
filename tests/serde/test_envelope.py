@@ -212,6 +212,19 @@ def test_texto_onde_se_espera_booleano_e_recusado():
         load(envelope)
 
 
+def test_inteiro_onde_se_espera_o_booleano_do_dano_e_recusado():
+    """O campo novo da etapa 3, adulterado no save de verdade.
+
+    `1` e nao `"sim"` de proposito: em Python `bool` e subclasse de `int`, e um
+    leitor escrito com `isinstance(valor, int)` aceitaria os dois. O precedente
+    logo acima adultera `proficient` com texto; este cobre o outro lado.
+    """
+    envelope = dump(estado())
+    envelope["state"]["statblocks"]["goblin"]["attacks"][0]["adds_ability_to_damage"] = 1
+    with pytest.raises(InvalidSaveError, match="esperava booleano e achei int"):
+        load(envelope)
+
+
 def test_lista_onde_se_espera_objeto_e_recusada():
     envelope = dump(estado())
     envelope["state"]["combatants"]["goblin_1"]["hp"] = []

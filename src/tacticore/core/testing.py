@@ -90,6 +90,7 @@ def make_attack(
     ability: Ability = Ability.FOR,
     proficient: bool = True,
     damage: str | DamageExpr = "1d6",
+    adds_ability_to_damage: bool = True,
     range_ft: int = 5,
     long_range_ft: int | None = None,
 ) -> AttackProfile:
@@ -100,6 +101,10 @@ def make_attack(
         ability=ability,
         proficient=proficient,
         damage=parse_dice(damage) if isinstance(damage, str) else damage,
+        # O default mora AQUI, e nao na dataclass: builder de teste existe
+        # para o teste escrever so o que importa para ele, e `AttackProfile`
+        # existe para nao deixar ninguem esquecer de decidir.
+        adds_ability_to_damage=adds_ability_to_damage,
         range_ft=range_ft,
         # Sem alcance longo proprio, a arma nao tem "longe": e o que vale
         # para toda arma corpo a corpo.

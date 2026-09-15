@@ -128,7 +128,16 @@ CODECS: Mapping[
         serde.dump_attack_profile,
         lambda raw: serde.load_attack_profile(raw, "t"),
         make_attack(
-            id="cimitarra", proficient=False, damage="1d6-1", range_ft=20, long_range_ft=60
+            id="cimitarra",
+            proficient=False,
+            damage="1d6-1",
+            # NAO-DEFAULT, como manda a regra da casa: e o unico valor que faz
+            # o round-trip provar que o campo atravessa o JSON. Com `True` o
+            # round-trip continua passando mesmo se o `load` descartar a chave,
+            # porque o objeto reconstruido sai igual por coincidencia.
+            adds_ability_to_damage=False,
+            range_ft=20,
+            long_range_ft=60,
         ),
     ),
     Statblock: (  # type: ignore[dict-item]

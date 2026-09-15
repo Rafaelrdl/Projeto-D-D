@@ -404,7 +404,11 @@ def test_o_fingerprint_do_save_legado_e_este():
     permanente ser relaxada junto, sem ninguem perceber.
     """
     envelope, esperado = _save_legado()
-    assert fingerprint(load(envelope)) == esperado
+    assert fingerprint(load(envelope)) == esperado, (
+        "--update-golden NAO regrava este arquivo: ele e o unico de tests/golden/data/ "
+        "que se edita a mao. Rodar o botao de regravar deixa esta falha de pe, e e "
+        "para deixar mesmo."
+    )
 
 
 # ------------------------------------------------- diagnostico da falha -----

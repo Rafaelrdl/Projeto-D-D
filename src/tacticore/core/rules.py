@@ -172,8 +172,13 @@ class AttackMath:
     Uma funcao e nao duas porque o acerto e o dano de 5e usam o **mesmo**
     atributo, e duas funcoes separadas deixam isso valendo por coincidencia:
     basta alguem chamar uma com um perfil e a outra com outro. Aqui os dois
-    saem da mesma leitura de ficha, e `damage == ability_mod` e uma linha do
+    saem da mesma leitura de ficha, e a relacao entre eles e uma linha do
     construtor em vez de um acordo entre dois lugares.
+
+    Ate a etapa 3 essa relacao era `damage == ability_mod`, sempre. Deixou de
+    ser: o dano de um truque nao soma modificador nenhum, e o acerto soma. Sao
+    duas parcelas do **mesmo** atributo com regras diferentes -- que e o
+    argumento de uma funcao so ficando mais forte, e nao mais fraco.
 
     As parcelas saem nomeadas porque o evento `AttackRolled` publica a conta
     decomposta. Devolver so o total obrigaria o motor a refazer as partes --
@@ -189,11 +194,14 @@ class AttackMath:
     """`ability_mod + proficiency`: o que entra no d20."""
 
     damage: int
-    """`ability_mod`, e nada mais.
+    """`ability_mod` quando o ataque soma atributo ao dano, e `0` quando nao.
 
-    Proficiencia **nunca** entra no dano. E o erro de porte de regra mais comum
-    de 5e e o mais silencioso: o dano fica alto demais o combate inteiro sem
-    nada quebrar.
+    Proficiencia **nunca** entra no dano, some quem somar. E o erro de porte de
+    regra mais comum de 5e e o mais silencioso: o dano fica alto demais o
+    combate inteiro sem nada quebrar.
+
+    Quem decide entre as duas leituras e `AttackProfile.adds_ability_to_damage`
+    -- regra de arma contra regra de magia, e nao um caso especial.
     """
 
 
@@ -205,12 +213,23 @@ def attack_math(
     """Tudo que um ataque soma, numa leitura so da ficha."""
     modificador = ability_modifier(ability_score(abilities, profile.ability))
     proficiencia = proficiency_bonus if profile.proficient else 0
+
+    # `if` e nao ternario de proposito, e a diferenca e medida: `coverage.py`
+    # nao cria arco para expressao condicional, entao um ternario aqui daria
+    # 100% de cobertura com o ramo de truque nunca exercitado. O `if` deixa o
+    # ramo visivel, e o teste que o mata entra no mesmo commit.
+    no_dano = modificador
+    if not profile.adds_ability_to_damage:
+        no_dano = 0
+
     return AttackMath(
         ability=profile.ability,
         ability_mod=modificador,
         proficiency=proficiencia,
+        # O atributo entra no ACERTO de qualquer jeito: e o "spell attack
+        # bonus" da SRD, identico em forma ao bonus de ataque com arma.
         attack=modificador + proficiencia,
-        damage=modificador,
+        damage=no_dano,
     )
 
 

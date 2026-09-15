@@ -61,6 +61,10 @@ def test_acerto_e_dano_usam_sempre_o_mesmo_atributo(ability: Ability, proficient
 
     Duas funcoes separadas deixariam isto valendo por coincidencia: bastaria
     alguem chamar uma com um perfil e a outra com outro.
+
+    Vale para ataque de ARMA, que e o que `make_attack` monta por default. Um
+    truque soma o atributo no acerto e nao soma no dano -- e continua sendo uma
+    leitura so da ficha, que e o argumento inteiro de ser uma funcao.
     """
     conta = attack_math(
         make_attack(ability=ability, proficient=proficient), GUERREIRO, PROFICIENCIA
@@ -130,3 +134,46 @@ def test_todo_resultado_possivel_e_alcancavel():
         classificar(2, dc=30),
     }
     assert alcancados == set(AttackOutcome)
+
+
+# ------------------------------------------------ o dano do truque ---------
+
+
+def test_o_truque_soma_o_atributo_no_acerto_e_nao_soma_no_dano():
+    """A regra que justifica o campo, e o unico consumidor de `False` no motor.
+
+    A SRD manda somar o modificador "ao atacar com uma ARMA" e, para magia,
+    delega a decisao a descricao de cada magia. A de Raio de Fogo nomeia o dado
+    e nao manda somar nada. O acerto, esse, soma normalmente: o "spell attack
+    bonus" e atributo + proficiencia, identico em forma ao bonus de arma.
+    """
+    conta = attack_math(
+        make_attack(ability=Ability.FOR, proficient=True, adds_ability_to_damage=False),
+        GUERREIRO,
+        PROFICIENCIA,
+    )
+    assert conta.ability_mod == 4, "a leitura da ficha nao muda"
+    assert conta.attack == 4 + PROFICIENCIA, "o atributo entra no ACERTO"
+    assert conta.damage == 0, "e nao entra no DANO"
+
+
+def test_a_arma_continua_somando():
+    """A metade que prova que o campo nao inverteu a regra para todo mundo."""
+    conta = attack_math(
+        make_attack(ability=Ability.FOR, proficient=True, adds_ability_to_damage=True),
+        GUERREIRO,
+        PROFICIENCIA,
+    )
+    assert conta.damage == 4
+
+
+def test_um_atributo_negativo_no_truque_tambem_zera():
+    """`0` e nao "o modificador, menos ele mesmo": um truque de conjurador
+    fraco nao TIRA dano, so nao soma."""
+    conta = attack_math(
+        make_attack(ability=Ability.FOR, proficient=True, adds_ability_to_damage=False),
+        make_abilities(forca=6),
+        PROFICIENCIA,
+    )
+    assert conta.ability_mod == -2
+    assert conta.damage == 0

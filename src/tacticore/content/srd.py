@@ -48,6 +48,7 @@ BRUTAMONTES: Final = Statblock(
             name="Machado",
             ability=Ability.FOR,
             proficient=True,
+            adds_ability_to_damage=True,
             damage=parse_dice("1d12+1"),
             range_ft=5,
             long_range_ft=5,
@@ -79,6 +80,7 @@ DUELISTA: Final = Statblock(
             # escolha. Nao corrigir neste commit.
             ability=Ability.FOR,
             proficient=True,
+            adds_ability_to_damage=True,
             damage=parse_dice("1d8+1d4"),
             range_ft=5,
             long_range_ft=5,
@@ -90,6 +92,7 @@ DUELISTA: Final = Statblock(
             # Destreza, que e onde o duelista tem 17.
             ability=Ability.DES,
             proficient=True,
+            adds_ability_to_damage=True,
             damage=parse_dice("1d4"),
             # 20/60 e o alcance da adaga de arremesso na SRD.
             range_ft=20,

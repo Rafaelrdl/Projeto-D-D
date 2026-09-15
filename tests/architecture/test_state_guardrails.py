@@ -132,7 +132,13 @@ def _estado_gordo() -> CombatState:
         id="goblin",
         attacks=(
             make_attack(id="cimitarra", damage="1d6+1"),
-            make_attack(id="arco", ability=Ability.DES, proficient=False, damage=parse_dice("1d6")),
+            make_attack(
+                id="arco",
+                ability=Ability.DES,
+                proficient=False,
+                damage=parse_dice("1d6"),
+                adds_ability_to_damage=False,
+            ),
         ),
     )
     return make_state(

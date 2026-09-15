@@ -116,6 +116,28 @@ class AttackProfile:
     proficient: bool
     damage: DamageExpr
 
+    adds_ability_to_damage: bool
+    """Se o modificador de atributo entra no **dano**.
+
+    A SRD manda somar o modificador "ao atacar com uma **arma**", e para magia
+    delega a decisao a descricao de cada uma. Raio de Fogo nomeia o dado e nao
+    manda somar nada -- por omissao deliberada da descricao, e nao por clausula
+    de excecao. Por isso o nome e este e nao `is_spell`: quem decide e a magia,
+    e o campo guarda a **regra**, nao a origem dela.
+
+    **Sem default**, como todo campo desta dataclass e pelo mesmo motivo escrito
+    em `range_ft`, com um agravante proprio: `True` e o valor que alguem
+    escolheria sem pensar, e e exatamente o que faria o proximo truque nascer
+    errado e em silencio -- o bug que este campo existe para impedir. Sem
+    default, quem escrever um ataque novo **tem** que decidir, e o erro vira
+    argumento faltando em vez de dano alto demais o combate inteiro.
+
+    O default tambem nao serviria para o que costumam dizer que ele serve: save
+    antigo **nao** carrega por causa de default nenhum, porque `serde._campo`
+    levanta na chave ausente. Quem paga a compatibilidade e
+    `_migrar_v4_para_v5`.
+    """
+
     long_range_ft: int
     """O alcance longo: ate onde o ataque ainda chega, com desvantagem.
 
@@ -131,16 +153,10 @@ class AttackProfile:
     range_ft: int
     """O alcance curto: ate onde o ataque acerta sem penalidade.
 
-    Sem default, pelo mesmo motivo que `Combatant.position`: um default aqui
-    pareceria manter os saves v2 carregando e nao manteria. E `5` -- o alcance
-    de uma arma corpo a corpo -- e justamente o valor que alguem escolheria como
-    default sem pensar, o que faria toda arma de arremesso nascer errada e em
-    silencio.
-
     Sem default, pelo mesmo motivo que `Combatant.position`, e com um agravante:
-    5 -- o alcance de uma arma corpo a corpo -- e exatamente o valor que alguem
-    escolheria como default sem pensar, e isso faria toda arma de arremesso
-    nascer errada e em silencio."""
+    `5` -- o alcance de uma arma corpo a corpo -- e exatamente o valor que
+    alguem escolheria sem pensar, e isso faria toda arma de arremesso nascer
+    errada e em silencio."""
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -174,10 +190,17 @@ class Statblock:
 class TurnBudget:
     """O que ainda da para fazer neste turno.
 
-    Acao bonus e reacao ficam de fora agora. Nao e esquecimento: `TurnBudget` e
-    frozen, entao acrescentar dois bools com default depois nao quebra save
-    nenhum. Eles entram junto com a primeira mecanica que os consuma, como
-    manda a regra de "mecanica nova entra junto com teste".
+    Acao bonus e reacao ficam de fora agora, e entram junto com a primeira
+    mecanica que as consuma, como manda a regra de "mecanica nova entra junto
+    com teste".
+
+    .. warning::
+       Este docstring dizia que acrescenta-las depois "nao quebra save nenhum,
+       porque sao dois bools com default". **E falso**, e a etapa 3 provou
+       medindo: `serde._campo` levanta na chave ausente, e o default do Python
+       nunca chega a ser consultado. Quem paga compatibilidade e funcao de
+       migracao, nunca default -- e esta era uma das duas frases do projeto que
+       alguem citaria para pular uma.
 
     O movimento e `int` de pes, e nao um bool de "ja andou": Dash e terreno
     dificil precisam de um orcamento, nao de uma chave liga-desliga.
