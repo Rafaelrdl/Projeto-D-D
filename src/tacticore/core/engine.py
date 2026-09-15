@@ -32,6 +32,7 @@ from tacticore.core.events import (
 )
 from tacticore.core.ids import CreatureId, StatblockId
 from tacticore.core.model import (
+    PES_POR_CASA,
     Combatant,
     CombatOutcome,
     CombatState,
@@ -53,7 +54,6 @@ from tacticore.core.results import ActionResult, Applied, Rejected
 from tacticore.core.rng import RngState, position, roll_die
 from tacticore.core.rules import (
     D20_FACES,
-    PES_POR_CASA,
     InitiativeEntry,
     ability_modifier,
     ability_score,
@@ -117,6 +117,11 @@ def _validar_encontro(
             problemas.append(f"{p.id!r} aponta para a ficha inexistente {p.statblock_id!r}")
         elif ficha.max_hp < 1:
             problemas.append(f"a ficha {p.statblock_id!r} tem vida maxima {ficha.max_hp}")
+        elif curto := [a.id for a in ficha.attacks if a.range_ft < PES_POR_CASA]:
+            problemas.append(
+                f"a ficha {p.statblock_id!r} tem ataque de alcance menor que "
+                f"{PES_POR_CASA} pes: {sorted(curto)}"
+            )
 
     ocupadas: dict[tuple[int, int], list[str]] = {}
     for p in participants:
@@ -257,11 +262,21 @@ def _validar_ataque(
             RejectionReason.NO_SUCH_TARGET,
             f"{action.target!r} nao esta neste combate",
         )
-    if attack_of(statblock_of(state, ator.id), action.attack_id) is None:
+    perfil = attack_of(statblock_of(state, ator.id), action.attack_id)
+    if perfil is None:
         return _rejeitar(
             state,
             RejectionReason.NO_SUCH_ATTACK,
             f"{ator.id!r} nao tem o ataque {action.attack_id!r}",
+        )
+
+    alvo = state.combatants[action.target]
+    distancia = distance_ft(ator.position, alvo.position)
+    if distancia > perfil.range_ft:
+        return _rejeitar(
+            state,
+            RejectionReason.OUT_OF_RANGE,
+            f"{alvo.id!r} esta a {distancia} pes e {perfil.id!r} alcanca {perfil.range_ft}",
         )
     return None
 
@@ -608,13 +623,16 @@ def legal_actions(state: CombatState) -> tuple[Action, ...]:
 
     if ator.budget.action_available:
         inimigos = sorted(
-            (c.id for c in state.combatants.values() if c.team != ator.team and is_standing(c)),
-            key=str,
+            (c for c in state.combatants.values() if c.team != ator.team and is_standing(c)),
+            key=lambda c: str(c.id),
         )
+        # So o que esta ao alcance. E aqui que a ordem do menu deixa de ser
+        # incondicional: com o inimigo longe, `acoes[0]` nao e mais um ataque.
         acoes.extend(
-            AttackAction(actor=ator.id, target=alvo, attack_id=perfil.id)
+            AttackAction(actor=ator.id, target=alvo.id, attack_id=perfil.id)
             for perfil in statblock_of(state, ator.id).attacks
             for alvo in inimigos
+            if distance_ft(ator.position, alvo.position) <= perfil.range_ft
         )
 
     destino = _casa_canonica(state, ator)

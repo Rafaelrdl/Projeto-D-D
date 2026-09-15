@@ -88,6 +88,7 @@ def make_attack(
     ability: Ability = Ability.FOR,
     proficient: bool = True,
     damage: str | DamageExpr = "1d6",
+    range_ft: int = 5,
 ) -> AttackProfile:
     """Aceita a notacao em string por conveniencia de quem escreve o teste."""
     return AttackProfile(
@@ -96,6 +97,7 @@ def make_attack(
         ability=ability,
         proficient=proficient,
         damage=parse_dice(damage) if isinstance(damage, str) else damage,
+        range_ft=range_ft,
     )
 
 

@@ -49,6 +49,7 @@ BRUTAMONTES: Final = Statblock(
             ability=Ability.FOR,
             proficient=True,
             damage=parse_dice("1d12+1"),
+            range_ft=5,
         ),
     ),
 )
@@ -78,6 +79,7 @@ DUELISTA: Final = Statblock(
             ability=Ability.FOR,
             proficient=True,
             damage=parse_dice("1d8+1d4"),
+            range_ft=5,
         ),
     ),
 )

@@ -55,6 +55,7 @@ from tacticore.core.events import (
 )
 from tacticore.core.ids import AttackId, CreatureId, StatblockId
 from tacticore.core.model import (
+    PES_POR_CASA,
     Abilities,
     AttackProfile,
     Combatant,
@@ -70,16 +71,16 @@ from tacticore.core.rng import ALGORITHM, RngState, ScriptedRng, SplitMix64
 
 type JsonValue = str | int | bool | list[JsonValue] | dict[str, JsonValue] | None
 
-SCHEMA_VERSION: Final[int] = 2
+SCHEMA_VERSION: Final[int] = 3
 """Muda quando o FORMATO muda: campo novo, campo removido, campo renomeado."""
 
-SCHEMA_VERSIONS_ACEITAS: Final[tuple[int, ...]] = (1, 2)
+SCHEMA_VERSIONS_ACEITAS: Final[tuple[int, ...]] = (1, 2, 3)
 """Os formatos que este motor sabe abrir, do mais antigo ao atual.
 
 Uma versao so entra aqui junto com a funcao de migracao que a traz ate a atual.
 Sem isso, a lista viraria uma lista de boas intencoes."""
 
-RULES_VERSION: Final[int] = 2
+RULES_VERSION: Final[int] = 3
 """Muda quando o RESULTADO muda: ordem de consumo do RNG ou qualquer regra.
 
 Incrementar isto e obrigacao de todo commit que altere o que o motor calcula.
@@ -307,6 +308,7 @@ def dump_attack_profile(profile: AttackProfile) -> dict[str, JsonValue]:
         "ability": profile.ability.value,
         "proficient": profile.proficient,
         "damage": dump_damage_expr(profile.damage),
+        "range_ft": profile.range_ft,
     }
 
 
@@ -324,6 +326,7 @@ def load_attack_profile(raw: Mapping[str, JsonValue], caminho: str) -> AttackPro
         ability=ability,
         proficient=_booleano(raw, "proficient", caminho),
         damage=load_damage_expr(_objeto(raw, "damage", caminho), f"{caminho}.damage"),
+        range_ft=_inteiro(raw, "range_ft", caminho),
     )
 
 
@@ -480,8 +483,32 @@ def _migrar_v1_para_v2(estado: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
     return {**estado, "combatants": migrados}
 
 
+def _migrar_v2_para_v3(estado: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
+    """v2 nao tinha alcance. Todo ataque vira corpo a corpo de 5 pes.
+
+    Nao ha como adivinhar melhor: a informacao nao esta no save. Cinco pes e a
+    resposta certa para a esmagadora maioria das armas e, quando estiver errada,
+    erra para o lado seguro -- um arco migrado vira uma arma de perto, que e
+    obviamente esquisito no log, em vez de um soco que acerta a trinta metros,
+    que ninguem notaria.
+    """
+    fichas = _objeto(estado, "statblocks", "v2.state")
+    migradas: dict[str, JsonValue] = {}
+    for chave, bruto in fichas.items():
+        ficha = dict(_sub(bruto, f"v2.statblocks[{chave!r}]"))
+        ataques = _lista(ficha, "attacks", f"v2.statblocks[{chave!r}]")
+        ficha["attacks"] = [
+            {**_sub(a, f"v2.statblocks[{chave!r}].attacks[{i}]"), "range_ft": PES_POR_CASA}
+            for i, a in enumerate(ataques)
+        ]
+        migradas[chave] = ficha
+
+    return {**estado, "statblocks": migradas}
+
+
 _MIGRACOES: Final[Mapping[int, Callable[[Mapping[str, JsonValue]], dict[str, JsonValue]]]] = {
     1: _migrar_v1_para_v2,
+    2: _migrar_v2_para_v3,
 }
 """Uma funcao por salto, indexada pela versao de ORIGEM.
 
@@ -564,6 +591,12 @@ def check_invariants(state: CombatState) -> tuple[str, ...]:
     for sid, sb in state.statblocks.items():
         if sb.id != sid:
             problemas.append(f"ficha sob a chave {sid!r} se diz {sb.id!r}")
+        for perfil in sb.attacks:
+            if perfil.range_ft < PES_POR_CASA:
+                problemas.append(
+                    f"o ataque {perfil.id!r} de {sid!r} alcanca {perfil.range_ft} pes; "
+                    f"o minimo e {PES_POR_CASA}"
+                )
 
     ordem = state.turn_order.order
     if len(set(ordem)) != len(ordem):

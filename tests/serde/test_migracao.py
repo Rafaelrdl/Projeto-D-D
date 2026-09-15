@@ -20,7 +20,7 @@ from typing import Any
 import pytest
 
 from tacticore.core.errors import InvalidSaveError, UnsupportedSchemaVersion
-from tacticore.core.model import CombatState
+from tacticore.core.model import PES_POR_CASA, CombatState
 from tacticore.core.rng import ALGORITHM
 from tacticore.core.serde import (
     SCHEMA_VERSION,
@@ -120,19 +120,35 @@ def test_o_save_migrado_pode_ser_regravado_na_versao_nova():
     assert load(regravado) == migrado
 
 
-def test_a_migracao_nao_toca_no_que_ja_existia():
-    """Ela acrescenta posicao e mais nada: vida, orcamento e RNG intactos."""
+def test_a_migracao_so_acrescenta_os_campos_que_faltavam():
+    """Vida, orcamento, ordem e RNG ficam intactos; entram posicao e alcance."""
     antes = envelope_v1()["state"]
     depois = dump_state(load(envelope_v1()))
 
     assert depois["turn_order"] == antes["turn_order"]
     assert depois["rng"] == antes["rng"]
-    assert depois["statblocks"] == antes["statblocks"]
 
     for chave, combatente in depois["combatants"].items():  # type: ignore[union-attr]
         original = antes["combatants"][chave]  # type: ignore[index]
         sem_posicao = {k: v for k, v in combatente.items() if k != "position"}
         assert sem_posicao == original
+
+    for chave, ficha in depois["statblocks"].items():  # type: ignore[union-attr]
+        original = antes["statblocks"][chave]  # type: ignore[index]
+        sem_ataques = {k: v for k, v in ficha.items() if k != "attacks"}
+        assert sem_ataques == {k: v for k, v in original.items() if k != "attacks"}
+        for ataque, antigo in zip(ficha["attacks"], original["attacks"], strict=True):
+            sem_alcance = {k: v for k, v in ataque.items() if k != "range_ft"}
+            assert sem_alcance == antigo
+
+
+def test_a_migracao_de_alcance_assume_corpo_a_corpo():
+    """Cinco pes erra para o lado seguro: um arco migrado vira arma de perto,
+    que e obviamente esquisito no log -- em vez de um soco que acerta a trinta
+    metros, que ninguem notaria."""
+    estado = load(envelope_v1())
+    alcances = {a.range_ft for f in estado.statblocks.values() for a in f.attacks}
+    assert alcances == {PES_POR_CASA}
 
 
 def test_save_v1_sem_combatente_nenhum_nao_explode():

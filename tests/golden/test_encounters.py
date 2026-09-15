@@ -158,8 +158,11 @@ def rodar_com_vantagem(seed: int) -> tuple[str, tuple[Event, ...]]:
     desvantagem, de modo que os dois estados aparecem no mesmo log.
     """
     participantes = (
+        # Colados: este golden e sobre vantagem, e nao sobre andar. O laco
+        # abaixo ataca sem consultar `legal_actions`, entao comecar longe o
+        # transformaria num teste de OUT_OF_RANGE.
         make_participant(id="atacante", statblock_id="brutamontes", team="herois", position=(0, 0)),
-        make_participant(id="defensor", statblock_id="duelista", team="viloes", position=(4, 0)),
+        make_participant(id="defensor", statblock_id="duelista", team="viloes", position=(1, 0)),
     )
     abertura = start_combat(
         statblocks=CATALOGO, participants=participantes, rng=SplitMix64(seed=seed)

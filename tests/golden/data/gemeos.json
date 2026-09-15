@@ -40,6 +40,20 @@
       "kind": "turn_started"
     },
     {
+      "creature": "gemeo_a",
+      "destination": {
+        "x": 3,
+        "y": 0
+      },
+      "feet": 15,
+      "kind": "movement_spent",
+      "origin": {
+        "x": 0,
+        "y": 0
+      },
+      "remaining_ft": 20
+    },
+    {
       "ability": "FOR",
       "ability_mod": 0,
       "actor": "gemeo_a",
@@ -104,20 +118,6 @@
       "dealt": 5,
       "kind": "hp_changed",
       "overkill": 0
-    },
-    {
-      "creature": "gemeo_a",
-      "destination": {
-        "x": 3,
-        "y": 0
-      },
-      "feet": 15,
-      "kind": "movement_spent",
-      "origin": {
-        "x": 0,
-        "y": 0
-      },
-      "remaining_ft": 20
     },
     {
       "creature": "gemeo_a",
@@ -328,9 +328,9 @@
       }
     }
   ],
-  "final_fingerprint": "8ab1a39dee45e9458add7f32936e6834d901006d8e515cdff40de8991e8cc6e6",
+  "final_fingerprint": "e65d9146b1f50006389d971afd324b8cb3c62191dc72d091588b37a7dce9ae1b",
   "rng_algo": "splitmix64-lemire/1",
-  "rules_version": 2,
-  "schema_version": 2,
+  "rules_version": 3,
+  "schema_version": 3,
   "seed": "7"
 }

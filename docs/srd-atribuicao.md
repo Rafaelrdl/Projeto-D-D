@@ -28,7 +28,7 @@ motor simplifica acrescenta uma linha aqui no mesmo commit que a simplifica**
 
 | Regra da SRD | O que fazemos | Por quê |
 |---|---|---|
-| Alcance e distância: cada ataque tem alcance, e atacar fora dele é impossível | Qualquer alvo é atacável de qualquer lugar | O grid existe desde a fatia 2, mas alcance é o passo seguinte |
+| Armas à distância têm alcance **curto e longo**, com desvantagem no longo | `AttackProfile.range_ft` é um número só; além dele o ataque é recusado | O alcance longo precisa de uma fonte de desvantagem derivada do estado, que chega no passo seguinte |
 | Tipo de dano, resistência, vulnerabilidade, imunidade | Dano não tem tipo | Tipo sem resistência implementada é campo inerte no objeto mais serializado do projeto |
 | Multiataque | Uma ação, um ataque | Muda o contrato de consumo do RNG por ação |
 | Acuidade (usar DES com arma de acuidade) | `AttackProfile.ability` é um atributo só | Vira `tuple[Ability, ...]` quando entrar |

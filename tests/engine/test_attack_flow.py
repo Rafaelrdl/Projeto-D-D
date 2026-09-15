@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from tacticore.core.actions import AttackAction
 from tacticore.core.engine import apply
-from tacticore.core.enums import AdvantageState, AttackOutcome
+from tacticore.core.enums import AdvantageState, AttackOutcome, RejectionReason
 from tacticore.core.events import (
     AttackRolled,
     CombatEnded,
@@ -23,7 +23,7 @@ from tacticore.core.events import (
 )
 from tacticore.core.ids import AttackId, CreatureId
 from tacticore.core.model import CombatState
-from tacticore.core.results import ActionResult, Applied
+from tacticore.core.results import ActionResult, Applied, Rejected
 from tacticore.core.rng import ScriptedRng, position
 from tacticore.core.testing import (
     make_abilities,
@@ -291,3 +291,76 @@ def test_a_mesma_fita_da_o_mesmo_resultado():
     b = atacar(arena(fita=(15, 1, 4)))
     assert a.state == b.state
     assert a.events == b.events
+
+
+# ------------------------------------------------------------- alcance -----
+
+
+def arena_com_alcance(*, alcance: int, casas: int, fita: tuple[int, ...] = ()) -> CombatState:
+    """`a` e `b` separados por `casas`, com uma arma de alcance `alcance`."""
+    ficha = make_statblock(
+        id="ficha",
+        armor_class=10,
+        attacks=(make_attack(id="espada", damage="1d6", range_ft=alcance),),
+    )
+    return make_state(
+        statblocks=(ficha,),
+        combatants=(
+            make_combatant(id="a", statblock_id="ficha", team="herois"),
+            make_combatant(id="b", statblock_id="ficha", team="viloes"),
+        ),
+        current="a",
+        rng=ScriptedRng(script=fita),
+        posicoes={"a": (0, 0), "b": (casas, 0)},
+    )
+
+
+def atacar_em(estado: CombatState) -> ActionResult:
+    return apply(
+        estado,
+        AttackAction(actor=CreatureId("a"), target=CreatureId("b"), attack_id=ESPADA),
+    )
+
+
+def test_ataque_dentro_do_alcance_vale():
+    resultado = atacar_em(arena_com_alcance(alcance=5, casas=1, fita=(15, 1, 4)))
+    assert isinstance(resultado, Applied)
+
+
+def test_ataque_na_diagonal_conta_como_uma_casa():
+    """A geometria de grade vale para alcance tambem, e nao so para movimento."""
+    estado = arena_com_alcance(alcance=5, casas=1, fita=(15, 1, 4))
+    diagonal = make_state(
+        statblocks=tuple(estado.statblocks.values()),
+        combatants=tuple(estado.combatants.values()),
+        current="a",
+        rng=estado.rng,
+        posicoes={"a": (0, 0), "b": (1, 1)},
+    )
+    assert isinstance(atacar_em(diagonal), Applied)
+
+
+def test_ataque_fora_do_alcance_e_recusado():
+    resultado = atacar_em(arena_com_alcance(alcance=5, casas=2))
+    assert isinstance(resultado, Rejected)
+    assert resultado.reason is RejectionReason.OUT_OF_RANGE
+    assert "10 pes" in resultado.detail
+
+
+def test_a_recusa_por_alcance_nao_consome_entropia():
+    """Como toda rejeicao: a validacao roda inteira antes do primeiro dado."""
+    estado = arena_com_alcance(alcance=5, casas=2, fita=(15, 1, 4))
+    resultado = atacar_em(estado)
+    assert isinstance(resultado, Rejected)
+    assert resultado.state is estado
+
+
+def test_o_limite_e_inclusivo():
+    """Alcance 10 acerta a 10 pes, e nao a 5."""
+    assert isinstance(atacar_em(arena_com_alcance(alcance=10, casas=2, fita=(15, 1, 4))), Applied)
+    assert isinstance(atacar_em(arena_com_alcance(alcance=10, casas=3)), Rejected)
+
+
+def test_arma_de_arremesso_alcanca_longe():
+    resultado = atacar_em(arena_com_alcance(alcance=30, casas=6, fita=(15, 1, 4)))
+    assert isinstance(resultado, Applied)

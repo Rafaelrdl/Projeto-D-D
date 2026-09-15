@@ -15,6 +15,7 @@ from tacticore.core.rng import ScriptedRng, SplitMix64, position
 from tacticore.core.serde import check_invariants, dump, events_to_list, load
 from tacticore.core.testing import (
     make_abilities,
+    make_attack,
     make_duelo,
     make_participant,
     make_statblock,
@@ -279,3 +280,12 @@ def test_a_posicao_inicial_vem_do_encontro():
     )
     casas = {str(c.id): (c.position.x, c.position.y) for c in resultado.state.combatants.values()}
     assert casas == {"a": (-1, 4), "b": (7, 0)}
+
+
+def test_ficha_com_ataque_de_alcance_curto_e_recusada():
+    """A mesma invariante do save, cobrada tambem na montagem: ficha e conteudo,
+    e conteudo malformado vira erro de autoria e nao jogada ilegal."""
+    manca = make_statblock(id="manca", attacks=(make_attack(id="soco", range_ft=0),))
+    catalogo, gente = make_duelo(ficha_b=manca)
+    with pytest.raises(InvalidEncounterError, match=r"alcance menor que 5 pes: \['soco'\]"):
+        start_combat(statblocks=catalogo, participants=gente, rng=ScriptedRng(script=(1, 2)))

@@ -3,10 +3,10 @@ lamina rola iniciativa: d20 14 +3 (DES 17) = 17
 ordem de iniciativa: lamina, bruto
 == rodada 1 ==
 turno de lamina: 1 acao, 35 pes
+lamina anda 15 pes (4,0) -> (1,0), 20 restantes
 lamina ataca bruto com Estoque: d20 15 +0 FOR +3 prof = 18 vs CA 13 -> acerto
   dano: d8=2 d4=1 +0 = 3
   bruto: 14 -> 11 hp (3 de dano)
-lamina anda 15 pes (4,0) -> (1,0), 20 restantes
 lamina encerra o turno
 turno de bruto: 1 acao, 30 pes
 bruto ataca lamina com Machado: d20 20 +3 FOR +2 prof = 25 vs CA 15 -> ACERTO CRITICO

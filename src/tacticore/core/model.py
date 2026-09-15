@@ -52,6 +52,20 @@ class Abilities:
     carisma: int
 
 
+PES_POR_CASA = 5
+"""Quantos pes vale uma casa da grade.
+
+Mora aqui e nao em `rules` porque e a **unidade** de `Position`, e nao uma
+regra: quem converte casa em pes precisa dela tanto quanto quem valida um save.
+Deixa-la em `rules` obrigaria `serde` a importar a camada de regra, que e
+exatamente o que o guardiao de camadas existe para impedir -- e foi ele que
+apontou isto.
+
+O valor em si vem da SRD: uma casa de 5 pes, na horizontal, na vertical e na
+diagonal.
+"""
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Position:
     """Uma casa do tabuleiro, em coordenadas de casa e nao de pes.
@@ -101,6 +115,19 @@ class AttackProfile:
 
     proficient: bool
     damage: DamageExpr
+
+    range_ft: int
+    """Ate onde o ataque alcanca, em pes.
+
+    Sem default, pelo mesmo motivo que `Combatant.position`: um default aqui
+    pareceria manter os saves v2 carregando e nao manteria. E `5` -- o alcance
+    de uma arma corpo a corpo -- e justamente o valor que alguem escolheria como
+    default sem pensar, o que faria toda arma de arremesso nascer errada e em
+    silencio.
+
+    A SRD tem alcance curto e longo para armas a distancia, com desvantagem no
+    longo. Aqui e um numero so; o segundo esta registrado em
+    `docs/srd-atribuicao.md`."""
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

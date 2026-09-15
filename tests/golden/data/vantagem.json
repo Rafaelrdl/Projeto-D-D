@@ -353,9 +353,9 @@
       }
     }
   ],
-  "final_fingerprint": "75e0f6b14ba99e8db80246031e2069e8e6564c3a0de91d01f919cc16e845f0b6",
+  "final_fingerprint": "ea7844677665bf3e948b8fa65290da1f5994981f0af5feabd4ada6e67f0d2de5",
   "rng_algo": "splitmix64-lemire/1",
-  "rules_version": 2,
-  "schema_version": 2,
+  "rules_version": 3,
+  "schema_version": 3,
   "seed": "991"
 }

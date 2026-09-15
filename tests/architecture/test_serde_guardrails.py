@@ -125,7 +125,7 @@ CODECS: Mapping[
     AttackProfile: (  # type: ignore[dict-item]
         serde.dump_attack_profile,
         lambda raw: serde.load_attack_profile(raw, "t"),
-        make_attack(id="cimitarra", proficient=False, damage="1d6-1"),
+        make_attack(id="cimitarra", proficient=False, damage="1d6-1", range_ft=20),
     ),
     Statblock: (  # type: ignore[dict-item]
         serde.dump_statblock,

@@ -40,6 +40,19 @@ def duelo(*, current: str = "a", hp_a: int = 10, budget_a: TurnBudget | None = N
     )
 
 
+def longe() -> CombatState:
+    """Como `duelo`, mas com os dois fora do alcance um do outro."""
+    return make_state(
+        statblocks=(make_statblock(id="ficha", speed_ft=30, attacks=(make_attack(id="espada"),)),),
+        combatants=(
+            make_combatant(id="a", team="herois"),
+            make_combatant(id="b", team="viloes"),
+        ),
+        current="a",
+        posicoes={"a": (0, 0), "b": (4, 0)},
+    )
+
+
 def trio(*, hp_a: int = 10) -> CombatState:
     """Como `duelo`, mas com um terceiro de pe para o combate nao acabar."""
     return make_state(
@@ -113,6 +126,11 @@ CASOS: dict[RejectionReason, tuple[CombatState, Action]] = {
     RejectionReason.SELF_TARGET_NOT_ALLOWED: (
         duelo(),
         AttackAction(actor=CreatureId("a"), target=CreatureId("a"), attack_id=AttackId("espada")),
+    ),
+    # A espada alcanca 5 pes; `b` esta a 20.
+    RejectionReason.OUT_OF_RANGE: (
+        longe(),
+        AttackAction(actor=CreatureId("a"), target=CreatureId("b"), attack_id=AttackId("espada")),
     ),
 }
 

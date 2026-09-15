@@ -147,3 +147,25 @@ def test_posicao_negativa_e_valida():
     env = envelope_valido()
     env["state"]["combatants"]["goblin_1"]["position"] = {"x": -40, "y": -9}
     assert load(env).combatants["goblin_1"].position.x == -40
+
+
+def test_ataque_de_alcance_curto_demais_e_recusado():
+    """Alcance zero nao e "corpo a corpo": e um ataque que nao acerta nada,
+    nem a casa ao lado nem a propria. So chega ao motor por save adulterado."""
+    env = envelope_valido()
+    env["state"]["statblocks"]["goblin"]["attacks"][0]["range_ft"] = 0
+    with pytest.raises(InvalidSaveError, match="alcanca 0 pes; o minimo e 5"):
+        load(env)
+
+
+def test_alcance_negativo_e_recusado():
+    env = envelope_valido()
+    env["state"]["statblocks"]["goblin"]["attacks"][0]["range_ft"] = -5
+    with pytest.raises(InvalidSaveError, match="o minimo e 5"):
+        load(env)
+
+
+def test_alcance_de_uma_casa_e_o_minimo_valido():
+    env = envelope_valido()
+    env["state"]["statblocks"]["goblin"]["attacks"][0]["range_ft"] = 5
+    assert load(env) is not None

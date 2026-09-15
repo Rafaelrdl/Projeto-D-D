@@ -243,9 +243,10 @@ def test_o_menu_nao_oferece_aliado():
 
 
 def test_o_menu_e_um_por_par_de_ataque_e_alvo():
+    """Com os dois alvos ao alcance de ambas as armas."""
     ficha = make_statblock(
         id="ficha",
-        attacks=(make_attack(id="espada"), make_attack(id="arco")),
+        attacks=(make_attack(id="espada", range_ft=30), make_attack(id="arco", range_ft=30)),
     )
     estado = make_state(
         statblocks=(ficha,),
