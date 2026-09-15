@@ -16,13 +16,16 @@ from tacticore.core.actions import (
     AttackAction,
     EndTurnAction,
     MoveAction,
+    ShoveAction,
     StandUpAction,
 )
 from tacticore.core.dice import roll_damage
 from tacticore.core.enums import (
     Ability,
+    AdvantageState,
     AttackOutcome,
     Condition,
+    ContestOutcome,
     RejectionReason,
     SkipReason,
     canonical_conditions,
@@ -31,11 +34,13 @@ from tacticore.core.errors import CorruptStateError, InvalidEncounterError
 from tacticore.core.events import (
     AttackRolled,
     CombatEnded,
+    ContestRolled,
     CreatureDowned,
     DamageRolled,
     Event,
     HpChanged,
     InitiativeRolled,
+    KnockedProne,
     MovementSpent,
     RoundStarted,
     StoodUp,
@@ -74,9 +79,12 @@ from tacticore.core.rules import (
     apply_damage,
     attack_math,
     classify_attack,
+    contest,
     d20_check,
+    defense_ability,
     distance_ft,
     initiative_sort_key,
+    is_adjacent,
     resolve_advantage,
     roll_d20,
     stand_up_cost_ft,
@@ -363,6 +371,51 @@ def _validar_levantar(state: CombatState, ator: Combatant) -> Rejected | None:
     return None
 
 
+def _validar_empurrar(
+    state: CombatState,
+    ator: Combatant,
+    action: ShoveAction,
+) -> Rejected | None:
+    """As checagens de Empurrar. Validador proprio, e nao `_validar_ataque`.
+
+    Das cinco checagens de ataque, tres valem aqui (acao disponivel, alvo que
+    nao e o proprio ator, alvo que existe) e duas nao (o ataque existir na
+    ficha, e o alcance sair de `AttackProfile`). Empurrar nao tem `attack_id` --
+    "Instead of making an attack roll" -- e o alcance e sempre casa adjacente.
+
+    Compartilhar as tres significaria editar `_validar_ataque`, com quarenta
+    testes em cima, dentro do commit que acrescenta uma mecanica. Se a
+    duplicacao incomodar, e commit proprio, depois.
+    """
+    if not ator.budget.action_available:
+        return _rejeitar(
+            state,
+            RejectionReason.ACTION_ALREADY_USED,
+            f"{ator.id!r} ja usou a acao deste turno",
+        )
+    if action.target == ator.id:
+        return _rejeitar(
+            state,
+            RejectionReason.SELF_TARGET_NOT_ALLOWED,
+            f"{ator.id!r} nao pode empurrar a si mesmo",
+        )
+    alvo = combatant_of(state, action.target)
+    if alvo is None:
+        return _rejeitar(
+            state,
+            RejectionReason.NO_SUCH_TARGET,
+            f"{action.target!r} nao esta neste combate",
+        )
+    if not is_adjacent(ator.position, alvo.position):
+        return _rejeitar(
+            state,
+            RejectionReason.OUT_OF_RANGE,
+            f"empurrar exige casa adjacente, e {alvo.id!r} esta a "
+            f"{distance_ft(ator.position, alvo.position)} pes",
+        )
+    return None
+
+
 def _validar_contexto(state: CombatState, action: Action) -> Rejected | Combatant:
     """As checagens que valem para qualquer acao, na ordem em que importam.
 
@@ -407,6 +460,8 @@ def validate(state: CombatState, action: Action) -> Rejected | None:
             return _validar_ataque(state, contexto, action)
         case MoveAction():
             return _validar_movimento(state, contexto, action)
+        case ShoveAction():
+            return _validar_empurrar(state, contexto, action)
         case StandUpAction():
             return _validar_levantar(state, contexto)
         case EndTurnAction():
@@ -497,6 +552,9 @@ def _aplicar(state: CombatState, action: Action) -> ActionResult:
         case AttackAction():
             return _atacar(state, action)
 
+        case ShoveAction():
+            return _empurrar(state, action)
+
         case MoveAction():
             ator = state.combatants[action.actor]
             custo = distance_ft(ator.position, action.to)
@@ -543,6 +601,83 @@ def _aplicar(state: CombatState, action: Action) -> ActionResult:
 
         case _:  # pragma: no cover - inalcancavel: mypy fecha a uniao
             assert_never(action)
+
+
+def _empurrar(state: CombatState, action: ShoveAction) -> Applied:
+    """O empurrao, ja validado, na ordem que o item 6 do contrato do RNG fixa.
+
+    **Quatro d20: dois do ator, depois dois do alvo.** O quadro e fixo por tipo
+    de checagem, e aqui ele vale por lado -- cada lado consome o quadro de um
+    d20 mesmo sem vantagem nenhuma, pelo mesmo argumento que o ataque: ligar
+    vantagem num empurrao nao pode deslocar o resto do combate.
+
+    A ordem entre os lados tambem e contrato, e nao detalhe: inverte-la muda
+    todo dado seguinte de todo combate com empurrao. Esta escrita no item 6 e
+    travada por teste.
+
+    A acao e gasta acontecendo o que acontecer -- resistir tambem custa o turno,
+    como errar um ataque custa.
+    """
+    ator = state.combatants[action.actor]
+    alvo = state.combatants[action.target]
+
+    antes = position(state.rng)
+    # Sem fonte de vantagem: a SRD nao da nenhuma a Empurrar, e este motor nao
+    # tem pericia nem condicao que conceda. NORMAL consome os dois dados assim
+    # mesmo, que e o ponto do quadro fixo.
+    rolagem_ator, rng = roll_d20(state.rng, AdvantageState.NORMAL)
+    rolagem_alvo, rng = roll_d20(rng, AdvantageState.NORMAL)
+
+    # Quem empurra faz teste de Forca (Atletismo). Quem resiste escolhe o
+    # melhor de Forca (Atletismo) ou Destreza (Acrobacia) -- na SRD quem
+    # escolhe e o alvo, e aqui a escolha e deterministica.
+    ficha_ator = statblock_of(state, ator.id)
+    ficha_alvo = statblock_of(state, alvo.id)
+    atributo_alvo = defense_ability(ficha_alvo.abilities)
+
+    bonus_ator = ability_modifier(ability_score(ficha_ator.abilities, Ability.FOR))
+    bonus_alvo = ability_modifier(ability_score(ficha_alvo.abilities, atributo_alvo))
+
+    disputa = contest(
+        actor=rolagem_ator,
+        actor_bonus=bonus_ator,
+        target=rolagem_alvo,
+        target_bonus=bonus_alvo,
+    )
+
+    eventos: list[Event] = [
+        ContestRolled(
+            actor=ator.id,
+            target=alvo.id,
+            actor_pair=rolagem_ator.pair,
+            actor_chosen_index=rolagem_ator.chosen_index,
+            actor_natural=rolagem_ator.natural,
+            actor_ability=Ability.FOR,
+            actor_bonus=bonus_ator,
+            actor_total=disputa.actor_total,
+            target_pair=rolagem_alvo.pair,
+            target_chosen_index=rolagem_alvo.chosen_index,
+            target_natural=rolagem_alvo.natural,
+            target_ability=atributo_alvo,
+            target_bonus=bonus_alvo,
+            target_total=disputa.target_total,
+            outcome=disputa.outcome,
+            rng_before=antes,
+            rng_after=position(rng),
+        )
+    ]
+
+    gasto = replace(ator, budget=replace(ator.budget, action_available=False))
+    novo = _com_combatente(replace(state, rng=rng), gasto)
+
+    if disputa.outcome is ContestOutcome.SUCCESS:
+        derrubado = replace(
+            alvo, conditions=canonical_conditions((*alvo.conditions, Condition.CAIDO))
+        )
+        novo = _com_combatente(novo, derrubado)
+        eventos.append(KnockedProne(creature=alvo.id))
+
+    return Applied(state=novo, events=tuple(eventos))
 
 
 def _atacar(state: CombatState, action: AttackAction) -> Applied:

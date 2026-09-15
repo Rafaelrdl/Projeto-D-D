@@ -384,7 +384,7 @@
   ],
   "final_fingerprint": "83092738dcd7669f6611ea666bb84129166249a4e736f632dcceb4af2876d6eb",
   "rng_algo": "splitmix64-lemire/1",
-  "rules_version": 7,
+  "rules_version": 8,
   "schema_version": 5,
   "seed": "4"
 }

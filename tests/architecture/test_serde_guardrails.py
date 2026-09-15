@@ -26,15 +26,18 @@ from tacticore.core.enums import (
     AdvantageState,
     AttackOutcome,
     Condition,
+    ContestOutcome,
     SkipReason,
 )
 from tacticore.core.events import (
     AttackRolled,
     CombatEnded,
+    ContestRolled,
     CreatureDowned,
     DamageRolled,
     HpChanged,
     InitiativeRolled,
+    KnockedProne,
     MovementSpent,
     RoundStarted,
     StoodUp,
@@ -205,6 +208,35 @@ EVENT_CODECS: Mapping[type, tuple[Callable[[object], dict[str, JsonValue]], obje
         TurnSkipped(creature=CreatureId("vilao"), reason=SkipReason.ACTOR_IS_DOWN),
     ),
     TurnEnded: (serde.dump_turn_ended, TurnEnded(creature=CreatureId("heroi"))),  # type: ignore[dict-item]
+    ContestRolled: (  # type: ignore[dict-item]
+        serde.dump_contest_rolled,
+        ContestRolled(
+            actor=CreatureId("heroi"),
+            target=CreatureId("vilao"),
+            # Pares com os dois dados DIFERENTES e indices escolhidos
+            # diferentes: com pares iguais, um codec que trocasse os lados
+            # passaria no round-trip sem ninguem notar.
+            actor_pair=(17, 4),
+            actor_chosen_index=0,
+            actor_natural=17,
+            actor_ability=Ability.FOR,
+            actor_bonus=3,
+            actor_total=20,
+            target_pair=(2, 11),
+            target_chosen_index=1,
+            target_natural=11,
+            target_ability=Ability.DES,
+            target_bonus=-1,
+            target_total=10,
+            outcome=ContestOutcome.SUCCESS,
+            rng_before=6,
+            rng_after=10,
+        ),
+    ),
+    KnockedProne: (  # type: ignore[dict-item]
+        serde.dump_knocked_prone,
+        KnockedProne(creature=CreatureId("vilao")),
+    ),
     MovementSpent: (  # type: ignore[dict-item]
         serde.dump_movement_spent,
         MovementSpent(

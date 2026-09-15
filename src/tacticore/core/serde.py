@@ -41,11 +41,13 @@ from tacticore.core.errors import InvalidSaveError, UnsupportedSchemaVersion
 from tacticore.core.events import (
     AttackRolled,
     CombatEnded,
+    ContestRolled,
     CreatureDowned,
     DamageRolled,
     Event,
     HpChanged,
     InitiativeRolled,
+    KnockedProne,
     MovementSpent,
     RoundStarted,
     StoodUp,
@@ -81,7 +83,7 @@ SCHEMA_VERSIONS_ACEITAS: Final[tuple[int, ...]] = (1, 2, 3, 4, 5)
 Uma versao so entra aqui junto com a funcao de migracao que a traz ate a atual.
 Sem isso, a lista viraria uma lista de boas intencoes."""
 
-RULES_VERSION: Final[int] = 7
+RULES_VERSION: Final[int] = 8
 """Muda quando o RESULTADO muda: ordem de consumo do RNG ou qualquer regra.
 
 Incrementar isto e obrigacao de todo commit que altere o que o motor calcula.
@@ -858,6 +860,33 @@ def dump_creature_downed(event: CreatureDowned) -> dict[str, JsonValue]:
     return {"kind": event.kind, "creature": str(event.creature)}
 
 
+def dump_contest_rolled(event: ContestRolled) -> dict[str, JsonValue]:
+    return {
+        "kind": event.kind,
+        "actor": str(event.actor),
+        "target": str(event.target),
+        "actor_pair": list(event.actor_pair),
+        "actor_chosen_index": event.actor_chosen_index,
+        "actor_natural": event.actor_natural,
+        "actor_ability": event.actor_ability.value,
+        "actor_bonus": event.actor_bonus,
+        "actor_total": event.actor_total,
+        "target_pair": list(event.target_pair),
+        "target_chosen_index": event.target_chosen_index,
+        "target_natural": event.target_natural,
+        "target_ability": event.target_ability.value,
+        "target_bonus": event.target_bonus,
+        "target_total": event.target_total,
+        "outcome": event.outcome.value,
+        "rng_before": event.rng_before,
+        "rng_after": event.rng_after,
+    }
+
+
+def dump_knocked_prone(event: KnockedProne) -> dict[str, JsonValue]:
+    return {"kind": event.kind, "creature": str(event.creature)}
+
+
 def dump_stood_up(event: StoodUp) -> dict[str, JsonValue]:
     return {
         "kind": event.kind,
@@ -896,6 +925,10 @@ def event_to_dict(event: Event) -> dict[str, JsonValue]:
             return dump_combat_ended(event)
         case StoodUp():
             return dump_stood_up(event)
+        case ContestRolled():
+            return dump_contest_rolled(event)
+        case KnockedProne():
+            return dump_knocked_prone(event)
         case _:  # pragma: no cover - inalcancavel: mypy fecha a uniao
             assert_never(event)
 

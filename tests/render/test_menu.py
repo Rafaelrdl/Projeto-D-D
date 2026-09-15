@@ -17,6 +17,7 @@ from tacticore.core.actions import (
     AttackAction,
     EndTurnAction,
     MoveAction,
+    ShoveAction,
     StandUpAction,
 )
 from tacticore.core.ids import AttackId, CreatureId
@@ -30,7 +31,26 @@ LEVANTAR = StandUpAction(actor=CreatureId("heroi"))
 ANDAR = MoveAction(actor=CreatureId("heroi"), to=Position(x=2, y=-1))
 ENCERRAR = EndTurnAction(actor=CreatureId("heroi"))
 
+EMPURRAR = ShoveAction(actor=CreatureId("heroi"), target=CreatureId("vilao"))
+
 MENU = (ATACAR, LEVANTAR, ANDAR, ENCERRAR)
+"""O menu das asercoes de INDICE. Quatro itens, e mexer nisto quebra os testes
+de faixa la embaixo -- acao nova entra em `DESCRICOES`, e nao aqui."""
+
+DESCRICOES: list[tuple[Action, str]] = [
+    (ATACAR, "atacar vilao com machado"),
+    (LEVANTAR, "levantar"),
+    (ANDAR, "andar ate (2,-1)"),
+    (EMPURRAR, "empurrar vilao"),
+    (ENCERRAR, "encerrar o turno"),
+]
+"""Uma entrada por membro da uniao `Action`, e um teste que cobra isso.
+
+A uniao `Action` era a unica das quatro unioes fechadas do projeto sem guardiao
+de teste: `Event` tem dois (codec e narrativa), `RejectionReason` tem um de
+exaustividade, e esta nao tinha nenhum. Medido: `ShoveAction` entrou na uniao e
+a suite deu 1047 verdes com tres erros de mypy -- ou seja, quem rodasse so o
+pytest nao veria nada."""
 
 
 # ------------------------------------------------------------ o menu -------
@@ -58,17 +78,27 @@ def test_o_menu_vazio_e_vazio_e_nao_estoura():
 
 @pytest.mark.parametrize(
     ("action", "trecho"),
-    [
-        (ATACAR, "atacar vilao com machado"),
-        (LEVANTAR, "levantar"),
-        (ANDAR, "andar ate (2,-1)"),
-        (ENCERRAR, "encerrar o turno"),
-    ],
+    DESCRICOES,
+    ids=[type(a).__name__ for a, _ in DESCRICOES],
 )
 def test_cada_acao_da_uniao_tem_descricao(action: Action, trecho: str):
     """Se um membro novo entrar sem frase, o `assert_never` reprova no mypy --
     mas este teste e quem garante que a frase diz algo, e nao so que existe."""
     assert descrever(action) == trecho
+
+
+def test_toda_acao_da_uniao_tem_caso_aqui():
+    """Acao nova sem descricao testada reprova **pelo nome**.
+
+    O `assert_never` de `descrever` ja pega no mypy; este pega para quem rodar
+    so a suite, e nomeia o culpado. E o espelho de
+    `test_todo_evento_tem_caso_aqui`, que a uniao `Event` tem desde a etapa 2 e
+    que a uniao `Action` nao tinha.
+    """
+    cobertas = {type(a) for a, _ in DESCRICOES}
+    membros = set(Action.__value__.__args__)  # type: ignore[attr-defined]
+    faltando = membros - cobertas
+    assert not faltando, f"acoes sem descricao testada: {sorted(c.__name__ for c in faltando)}"
 
 
 def test_nenhuma_linha_do_menu_e_vazia():

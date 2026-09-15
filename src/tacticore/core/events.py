@@ -27,7 +27,13 @@ from dataclasses import dataclass
 from typing import Literal
 
 from tacticore.core.dice import DamageRoll
-from tacticore.core.enums import Ability, AdvantageState, AttackOutcome, SkipReason
+from tacticore.core.enums import (
+    Ability,
+    AdvantageState,
+    AttackOutcome,
+    ContestOutcome,
+    SkipReason,
+)
 from tacticore.core.ids import AttackId, CreatureId
 from tacticore.core.model import CombatOutcome, HitPoints, Position, TurnBudget
 
@@ -204,8 +210,71 @@ class StoodUp:
     remaining_ft: int
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ContestRolled:
+    """Um teste de atributo oposto, com as duas contas **decompostas**.
+
+    Campos planos com prefixo `actor_`/`target_`, e nao uma dataclass aninhada
+    por lado: e o formato de `AttackRolled`, que tambem publica a conta aberta,
+    e um tipo novo aqui custaria codec, entrada no guardiao e uma indirecao a
+    mais para quem le o log -- sem responder nenhuma pergunta nova.
+
+    Os dois pares vem inteiros. Quatro d20 por disputa, dois por lado, e e aqui
+    que isso fica provado no log: contar os dados do evento e como se confere
+    que o quadro fixo do item 6 do contrato foi respeitado.
+    """
+
+    kind: Literal["contest_rolled"] = "contest_rolled"
+    actor: CreatureId
+    target: CreatureId
+
+    actor_pair: tuple[int, int]
+    actor_chosen_index: Literal[0, 1]
+    actor_natural: int
+    actor_ability: Ability
+    """Sempre FOR: quem empurra faz um teste de Forca (Atletismo)."""
+
+    actor_bonus: int
+    actor_total: int
+
+    target_pair: tuple[int, int]
+    target_chosen_index: Literal[0, 1]
+    target_natural: int
+    target_ability: Ability
+    """FOR ou DES, o melhor dos dois. Na SRD quem escolhe e o alvo; aqui a
+    escolha e deterministica, e gravar QUAL saiu e o que impede a regra de
+    virar folclore."""
+
+    target_bonus: int
+    target_total: int
+
+    outcome: ContestOutcome
+    rng_before: int
+    rng_after: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class KnockedProne:
+    """Alguem foi derrubado, e agora esta Caido.
+
+    Evento proprio e nao um campo de `ContestRolled` pelo mesmo motivo que
+    `_atacar` separa `AttackRolled` de `CreatureDowned`: rolagem e uma coisa,
+    efeito e outra. Sem ele, aplicar `CAIDO` seria o unico efeito deste motor
+    que quem le o log precisa **inferir** de um desfecho -- e a inferencia morre
+    no dia em que "empurrar 5 pes" entrar, porque ai vencer a disputa passa a
+    ter dois efeitos possiveis.
+
+    E o espelho de `StoodUp`, que ja existia para o outro lado da transicao.
+    """
+
+    kind: Literal["knocked_prone"] = "knocked_prone"
+    creature: CreatureId
+
+
 type Event = (
     StoodUp
+    | ContestRolled
+    | KnockedProne
     | InitiativeRolled
     | TurnOrderSet
     | RoundStarted

@@ -29,6 +29,7 @@ from tacticore.core.actions import (
     AttackAction,
     EndTurnAction,
     MoveAction,
+    ShoveAction,
     StandUpAction,
 )
 
@@ -50,6 +51,8 @@ def descrever(action: Action) -> str:
             return f"atacar {action.target} com {action.attack_id}"
         case MoveAction():
             return f"andar ate ({action.to.x},{action.to.y})"
+        case ShoveAction():
+            return f"empurrar {action.target}"
         case StandUpAction():
             return "levantar"
         case EndTurnAction():

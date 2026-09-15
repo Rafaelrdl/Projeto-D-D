@@ -20,7 +20,7 @@ import pytest
 
 import tacticore.core
 from tacticore.core.dice import parse_dice
-from tacticore.core.enums import Ability
+from tacticore.core.enums import Ability, Condition
 from tacticore.core.model import CombatState
 from tacticore.core.rng import ScriptedRng, SplitMix64
 from tacticore.core.testing import (
@@ -144,7 +144,19 @@ def _estado_gordo() -> CombatState:
     return make_state(
         statblocks=(ficha,),
         combatants=(
-            make_combatant(id="goblin_1", statblock_id="goblin", team="inimigos", hp=0),
+            make_combatant(
+                id="goblin_1",
+                statblock_id="goblin",
+                team="inimigos",
+                hp=0,
+                # A lacuna do quadruplo do CLAUDE.md, fechada onde ela deixa de
+                # ser higiene retroativa: ate a etapa 3, `CAIDO` so vinha do
+                # encontro, e ninguem tinha notado que o estado gordo nao a
+                # carregava -- `Condition` e `StrEnum` e passaria na lista
+                # branca de qualquer jeito. E este commit que cria a primeira
+                # FONTE de `CAIDO` dentro do motor.
+                conditions=(Condition.CAIDO,),
+            ),
             make_combatant(id="goblin_2", statblock_id="goblin", team="inimigos"),
         ),
         current="goblin_2",

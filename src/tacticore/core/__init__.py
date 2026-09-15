@@ -33,8 +33,18 @@ combate em andamento, e invalida todo save e todo golden existente.
    toque no RNG.
 5. **O mapeamento palavra -> face nao tem rejeicao**: exatamente uma palavra de
    64 bits por dado fisico, qualquer que seja a face sorteada.
+6. **Teste de atributo oposto.** Quatro d20: **dois por lado**, sempre, e os
+   dois do **ator primeiro**. Cada lado consome o quadro fixo de um d20 mesmo
+   sem vantagem nenhuma, pelo mesmo motivo do item 2; a ordem entre os lados e
+   contrato pelo motivo do item 1. O desfecho -- vitoria, empate ou derrota --
+   e lido **depois**, e **nunca o consumo**: qualquer automatismo futuro
+   sobrescreve o resultado, jamais a quantidade de dados.
 
 Mudar qualquer um destes pontos obriga a incrementar ``serde.RULES_VERSION``.
+**Acrescentar** um ponto tambem, e o precedente e explicito: o commit de
+``StandUpAction`` subiu a versao sem mexer no log de nenhum golden. O que a
+versao responde nao e "os combates antigos mudaram", e sim "este motor calcula
+coisas que o seu nao calculava".
 O porque de cada um esta em ``docs/adr/0001-contrato-de-consumo-do-rng.md``.
 """
 

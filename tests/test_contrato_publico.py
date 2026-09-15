@@ -19,6 +19,13 @@ TRECHOS_OBRIGATORIOS = (
     "dois** d20",
     "somente em acerto",
     "recusada nao consome nada",
+    # O item 5 nao tinha pino nenhum: apagar as duas linhas dele deixava este
+    # arquivo inteiro verde. Conferido antes de acrescentar.
+    "nao tem rejeicao",
+    # Item 6, uma substring por afirmacao independente: quantos dados por lado,
+    # e que o automatismo nunca mexe no consumo.
+    "dois por lado",
+    "nunca o consumo",
     "RULES_VERSION",
 )
 

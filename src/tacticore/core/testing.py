@@ -32,11 +32,13 @@ from tacticore.core.errors import CorruptStateError
 from tacticore.core.events import (
     AttackRolled,
     CombatEnded,
+    ContestRolled,
     CreatureDowned,
     DamageRolled,
     Event,
     HpChanged,
     InitiativeRolled,
+    KnockedProne,
     MovementSpent,
     RoundStarted,
     StoodUp,
@@ -295,6 +297,13 @@ def tape_from_events(events: Sequence[Event]) -> tuple[int, ...]:
                 dados.extend(evento.pair)
             case DamageRolled():
                 dados.extend(d.value for d in evento.roll.dice)
+            case ContestRolled():
+                # Os QUATRO, na ordem em que sairam: os dois do ator primeiro.
+                # Inverter aqui compila, passa no mypy e fica verde na suite
+                # inteira -- e deixa a fita errada no primeiro combate com
+                # empurrao. Os testes de fita sao a unica coisa que separa as
+                # duas versoes.
+                dados.extend((*evento.actor_pair, *evento.target_pair))
             # Os que nao rolam dado sao listados um a um, e nao varridos por um
             # `case _`. Esquecer um evento de rolagem NOVO num `case _` nao da
             # erro de mypy nem de lint: estoura como `RngExhausted` dentro de
@@ -310,6 +319,7 @@ def tape_from_events(events: Sequence[Event]) -> tuple[int, ...]:
                 | CreatureDowned()
                 | CombatEnded()
                 | StoodUp()
+                | KnockedProne()
             ):
                 continue
             case _:  # pragma: no cover - inalcancavel: mypy fecha a uniao

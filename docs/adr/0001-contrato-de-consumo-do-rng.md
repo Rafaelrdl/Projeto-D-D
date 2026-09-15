@@ -1,7 +1,10 @@
 # ADR 0001 — O contrato de consumo do RNG
 
 **Status:** aceito
-**Contexto:** etapa 1 do motor de regras
+**Contexto:** etapa 1 do motor de regras.
+**Sec. 3 reescrita na etapa 3**, quando o empurrao trouxe o primeiro d20 fora
+de ataque e mostrou que o enunciado era verdadeiro mas incompleto. A reescrita
+esta no corpo, com o motivo, e nao substitui o texto original em silencio.
 
 ## O problema
 
@@ -48,17 +51,45 @@ este documento existe para impedir.
 
 O viés residual é da ordem de `faces / 2**64`, algo como 10⁻¹⁸ para um d20.
 
-### 3. Ataque consome sempre dois d20
+### 3. O quadro de dados é fixo por TIPO de checagem
 
-Inclusive sem vantagem. A alternativa — um dado em NORMAL, dois com vantagem —
-faz o consumo depender do resultado de uma regra, e então uma condição nova que
-conceda vantagem desloca todo o resto do combate.
+**Reescrita na etapa 3.** O título original era "Ataque consome sempre dois
+d20", e continuava verdadeiro — mas incompleto: a iniciativa sempre consumiu
+**um**, e isso nunca tinha sido declarado aqui. O empurrão obrigou a
+generalizar, e a generalização é a regra que sempre valeu.
 
-Entropia desperdiçada custa zero. Regravar quarenta goldens porque alguém
-implementou a condição "Caído" custa uma tarde.
+Cada tipo de checagem declara quantos dados consome, e esse número **não
+depende do resultado de regra nenhuma**:
+
+| Checagem | Dados | Desde |
+|---|---|---|
+| Iniciativa | 1 d20 por participante | etapa 1 |
+| Ataque | 2 d20, inclusive sem vantagem | etapa 1 |
+| Teste de atributo oposto | 2 d20 **por lado**, o ator primeiro | etapa 3 |
+
+A alternativa — um dado em NORMAL, dois com vantagem — faria o consumo depender
+do resultado de uma regra, e então uma condição nova que conceda vantagem
+deslocaria todo o resto do combate. Entropia desperdiçada custa zero; regravar
+quarenta goldens porque alguém implementou "Caído" custa uma tarde.
 
 Em NORMAL vale o primeiro dado; o segundo vai no evento como descartado, e
-serve de prova de que o quadro fixo está sendo respeitado.
+serve de prova de que o quadro fixo está sendo respeitado. A prova é
+verificável de fora: nos goldens de encontro, **todo** `attack_rolled` tem
+`rng_after - rng_before == 2` e **todo** `initiative_rolled` tem `== 1`.
+
+**O quadro é da CHECAGEM, e não da AÇÃO** — e a diferença é medível no mesmo
+lugar. Uma ação de ataque inteira consome 2, 3, 4 ou 6 palavras, porque o dano
+vem depois e depende da expressão de dados e do crítico. Isso não viola nada: o
+item 5 diz que o dano só é rolado em acerto, e a ausência de `DamageRolled` no
+log é a prova. Confundir os dois níveis levaria a "fixar" o consumo da ação
+inteira, que é impossível e desnecessário.
+
+**Corolário, que ninguém tinha escrito.** O que vem **depois** da checagem pode
+depender do resultado dela; o que vem **antes** não. `expand_crit` dobra os
+dados de dano porque o d20 saiu 20 — e está certo, porque a checagem já
+terminou. O contrário — decidir quantos d20 rolar olhando o estado do alvo — é
+o modo de falha que esta seção existe para impedir, e vale para todo
+automatismo futuro.
 
 ### 4. Iniciativa percorre os ids em ordem lexicográfica
 

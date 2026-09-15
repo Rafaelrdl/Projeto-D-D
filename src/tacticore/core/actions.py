@@ -91,4 +91,34 @@ class StandUpAction:
     actor: CreatureId
 
 
-type Action = AttackAction | MoveAction | EndTurnAction | StandUpAction
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ShoveAction:
+    """Empurrar para derrubar: o primeiro teste de atributo oposto do motor.
+
+    Gasta a ACAO. Na SRD, Empurrar e "a special melee attack" que "replaces one
+    of them" quando alguem tem multiplos ataques -- e com um ataque por acao,
+    que e o recorte deste motor, isso e a mesma frase que "gasta a acao".
+
+    **Nao carrega `attack_id`**, e essa e a diferenca que mais custa entender:
+    a SRD abre a regra dizendo "Instead of making an attack roll, you make a
+    Strength (Athletics) check". Nao ha arma envolvida, entao o alcance nao pode
+    sair de `AttackProfile` -- ler `range_ft` daria 120 pes ao arcanista e
+    deixaria sem empurrao quem nao tem arma corpo a corpo. Empurra-se com as
+    maos, de casa adjacente, sempre.
+
+    .. warning::
+       **E uma jogada dominada no recorte de hoje, e isso e limitacao
+       declarada, nao bug.** Medido em 500 duelos: quem so bate ganha 370;
+       quem empurra uma vez ganha 276; quem empurra sempre ganha ZERO. Derrubar
+       custa a acao inteira e devolve vantagem para o ataque seguinte, que num
+       motor sem multiataque, acao bonus e reacao nunca chega a compensar. As
+       tres estao fora de escopo por decisao escrita, e e a entrada delas que
+       torna o empurrao uma jogada de verdade.
+    """
+
+    kind: Literal["shove"] = "shove"
+    actor: CreatureId
+    target: CreatureId
+
+
+type Action = AttackAction | MoveAction | EndTurnAction | StandUpAction | ShoveAction

@@ -18,16 +18,19 @@ from tacticore.core.enums import (
     Ability,
     AdvantageState,
     AttackOutcome,
+    ContestOutcome,
     SkipReason,
 )
 from tacticore.core.events import (
     AttackRolled,
     CombatEnded,
+    ContestRolled,
     CreatureDowned,
     DamageRolled,
     Event,
     HpChanged,
     InitiativeRolled,
+    KnockedProne,
     MovementSpent,
     RoundStarted,
     StoodUp,
@@ -92,6 +95,35 @@ def dano(*, critical: bool = False) -> DamageRoll:
 
 
 # (evento, linha esperada) -- um por membro da uniao.
+def disputa(outcome: ContestOutcome) -> ContestRolled:
+    """A mesma rolagem com os tres desfechos.
+
+    Os numeros nao batem com o desfecho de proposito: o que se testa aqui e a
+    FRASE, e o narrador nao recalcula regra nenhuma. Os tres casos existem
+    porque o empate tem frase propria, e ela e uma das duas coisas que seguram
+    `ContestOutcome.TIE` existindo.
+    """
+    return ContestRolled(
+        actor=HEROI,
+        target=VILAO,
+        actor_pair=(17, 4),
+        actor_chosen_index=0,
+        actor_natural=17,
+        actor_ability=Ability.FOR,
+        actor_bonus=3,
+        actor_total=20,
+        target_pair=(2, 11),
+        target_chosen_index=1,
+        target_natural=11,
+        target_ability=Ability.DES,
+        target_bonus=-1,
+        target_total=10,
+        outcome=outcome,
+        rng_before=6,
+        rng_after=10,
+    )
+
+
 CASOS: list[tuple[str, Event, str]] = [
     (
         "initiative_rolled",
@@ -215,6 +247,22 @@ CASOS: list[tuple[str, Event, str]] = [
         "heroi levanta (15 pes, 20 restantes)",
     ),
     ("creature_downed", CreatureDowned(creature=VILAO), "  vilao cai"),
+    (
+        "contest_rolled_derruba",
+        disputa(ContestOutcome.SUCCESS),
+        "heroi empurra vilao: d20 17 +3 FOR = 20 vs d20 11 -1 DES = 10 -> DERRUBA",
+    ),
+    (
+        "contest_rolled_resiste",
+        disputa(ContestOutcome.FAILURE),
+        "heroi empurra vilao: d20 17 +3 FOR = 20 vs d20 11 -1 DES = 10 -> resiste",
+    ),
+    (
+        "contest_rolled_empate",
+        disputa(ContestOutcome.TIE),
+        "heroi empurra vilao: d20 17 +3 FOR = 20 vs d20 11 -1 DES = 10 -> empate, resiste",
+    ),
+    ("knocked_prone", KnockedProne(creature=VILAO), "  vilao cai no chao"),
     (
         "combat_ended",
         CombatEnded(outcome=CombatOutcome(winning_team="herois", last_round=3)),

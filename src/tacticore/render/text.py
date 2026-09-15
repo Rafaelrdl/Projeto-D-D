@@ -21,15 +21,17 @@ from collections.abc import Sequence
 from typing import assert_never
 
 from tacticore.core.dice import DamageRoll
-from tacticore.core.enums import AdvantageState, AttackOutcome
+from tacticore.core.enums import AdvantageState, AttackOutcome, ContestOutcome
 from tacticore.core.events import (
     AttackRolled,
     CombatEnded,
+    ContestRolled,
     CreatureDowned,
     DamageRolled,
     Event,
     HpChanged,
     InitiativeRolled,
+    KnockedProne,
     MovementSpent,
     RoundStarted,
     StoodUp,
@@ -43,6 +45,17 @@ RECUO = "  "
 """Consequencia de uma acao entra recuada: dano e vida sao efeito do ataque da
 linha de cima, e alinha-los faria o log parecer uma lista de coisas
 independentes."""
+
+_DISPUTA = {
+    ContestOutcome.SUCCESS: "DERRUBA",
+    ContestOutcome.TIE: "empate, resiste",
+    ContestOutcome.FAILURE: "resiste",
+}
+"""O empate ganha frase propria mesmo tendo o mesmo efeito da falha.
+
+E uma das duas coisas que seguram `ContestOutcome.TIE` existindo -- a outra e o
+cobrador do golden. Sem elas, a primeira seed que deixasse de empatar apagaria o
+unico registro de que o terceiro estado existe."""
 
 _DESFECHO = {
     AttackOutcome.CRITICAL_HIT: "ACERTO CRITICO",
@@ -131,6 +144,19 @@ def narrate_event(event: Event) -> str:
                 f"{RECUO}{event.creature}: {event.before.current} -> "
                 f"{event.after.current} hp ({event.dealt} de dano{perdido})"
             )
+
+        case ContestRolled():
+            return (
+                f"{event.actor} empurra {event.target}: "
+                f"d20 {event.actor_natural} {_sinal(event.actor_bonus)} "
+                f"{event.actor_ability.value} = {event.actor_total} vs "
+                f"d20 {event.target_natural} {_sinal(event.target_bonus)} "
+                f"{event.target_ability.value} = {event.target_total} "
+                f"-> {_DISPUTA[event.outcome]}"
+            )
+
+        case KnockedProne():
+            return f"{RECUO}{event.creature} cai no chao"
 
         case StoodUp():
             return f"{event.creature} levanta ({event.feet} pes, {event.remaining_ft} restantes)"
